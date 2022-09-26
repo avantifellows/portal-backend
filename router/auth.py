@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 from fastapi_jwt_auth import AuthJWT
-from typing import Union, Dict
 from models import User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -23,6 +22,7 @@ def create_access_token(user: User, Authorize: AuthJWT = Depends()):
     return access_token
 
 
+# generates refresh token
 @router.post("/refresh_token")
 def refresh_token(Authorize: AuthJWT = Depends()):
     Authorize.jwt_refresh_token_required()
