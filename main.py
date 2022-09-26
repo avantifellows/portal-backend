@@ -8,11 +8,14 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+# 'authjwt_secret_key' stores the secret key for encoding and decoding
+
 
 class Settings(BaseModel):
     authjwt_secret_key: str = "secret"
 
 
+# callback to get the configuration
 @AuthJWT.load_config
 def get_config():
     return Settings()
