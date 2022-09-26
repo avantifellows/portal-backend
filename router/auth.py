@@ -30,9 +30,8 @@ def refresh_token(Authorize: AuthJWT = Depends()):
     new_access_token = Authorize.create_access_token(subject=current_user)
     return {"access_token": new_access_token}
 
+
 # example ->  protected method
-
-
 @router.get('/user')
 def user(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
