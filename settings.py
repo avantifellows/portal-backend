@@ -12,7 +12,7 @@ class Settings(BaseModel):
     authjwt_token_location: set = {"cookies"}
     # Allow JWT cookies to be sent over https only
     authjwt_cookie_secure: bool = False
-    # Enable csrf double submit protection. default is True
+    # Enable csrf double submit protection.
     authjwt_cookie_csrf_protect: bool = False
     # makes your website more secure from CSRF Attacks
     authjwt_cookie_samesite: str = 'lax'
