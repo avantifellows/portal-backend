@@ -12,14 +12,9 @@ def create_access_token(user: User, Authorize: AuthJWT = Depends()):
     if user.data is None:
         data = {}
     if user.is_user_valid:
-        access_token = Authorize.create_access_token(
-            subject=user.id, user_claims=data)
         refresh_token = Authorize.create_refresh_token(
             subject=user.id, user_claims=data)
-        print("hello")
-        Authorize.set_access_cookies(access_token)
         Authorize.set_refresh_cookies(refresh_token)
-        return {"message": "Successful login"}
     access_token = Authorize.create_access_token(
         subject=user.id, user_claims=data)
     Authorize.set_access_cookies(access_token)
