@@ -2,7 +2,6 @@ import psycopg2
 import os
 
 def create_db_connection():
-    print("welcome")
     return
     # if "DB_HOST" or "DB_USER" or "DB_NAME" or "DB_PASSWORD" not in os.environ:
     #     from dotenv import load_dotenv
