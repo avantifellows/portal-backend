@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Prod - Portal backend
+
+Parameters:
+  JwtSecretKey:
+    Type: String
+    Description: Key to generate tokens
+
+Resources:
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "PortalBackendProd"
+      CodeUri: app
+      Handler: main.handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          JWT_SECRET_KEY: !Ref JwtSecretKey
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+
+  Api:
+    Type: AWS::Serverless::HttpApi
+
+Outputs:
+  ApiUrl:
+    Description: URL of your API
+    Value:
+      Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
