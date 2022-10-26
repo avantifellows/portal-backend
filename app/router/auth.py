@@ -8,7 +8,6 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create_access_token")
 def create_access_token(user: User, Authorize: AuthJWT = Depends()):
-    print("hello world")
     data = user.data
     if user.data is None:
         data = {}
