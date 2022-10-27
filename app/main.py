@@ -5,6 +5,8 @@ from fastapi_jwt_auth.exceptions import AuthJWTException
 import app.settings as settings
 from mangum import Mangum
 
+print("I've been deployed!");
+
 app = FastAPI()
 
 
