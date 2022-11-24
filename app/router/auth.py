@@ -13,10 +13,10 @@ def create_access_token(user: User, Authorize: AuthJWT = Depends()):
         data = {}
     if user.is_user_valid:
         refresh_token = Authorize.create_refresh_token(
-            subject=user.id, user_claims=data)
+            subject=user.id, user_claims=data
+        )
         Authorize.set_refresh_cookies(refresh_token)
-    access_token = Authorize.create_access_token(
-        subject=user.id, user_claims=data)
+    access_token = Authorize.create_access_token(subject=user.id, user_claims=data)
     Authorize.set_access_cookies(access_token)
     return {"message": "Successful login"}
 
@@ -32,14 +32,14 @@ def refresh_token(Authorize: AuthJWT = Depends()):
 
 
 # example ->  protected method
-@router.get('/user')
+@router.get("/user")
 def user(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
     current_user = Authorize.get_jwt_subject()
     return {"user": current_user}
 
 
-@router.delete('/logout')
+@router.delete("/logout")
 def logout(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
     Authorize.unset_jwt_cookies()
