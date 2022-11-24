@@ -17,13 +17,13 @@ def get_current_date():
     """
     Returns current date
     """
-    return get_current_datetime.date()
+    return get_current_datetime().date()
 
 def get_current_timestamp():
     """
     Returns current timestamp
     """
-    return get_current_datetime.timestamp()
+    return get_current_datetime().timestamp()
 
 def get_date(datetime: datetime):
     """
