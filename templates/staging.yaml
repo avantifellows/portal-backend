@@ -13,7 +13,7 @@ Resources:
     Properties:
       FunctionName: "PortalBackendStaging"
       CodeUri: ../app
-      Handler: app.handler
+      Handler: app/main.handler
       Runtime: python3.9
       Environment:
         Variables:
