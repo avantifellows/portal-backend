@@ -11,7 +11,7 @@ def get_group_data(group_id: str):
     """
     API to get details about a group
     """
-    group_data = requests.get(group_db_url + group_id).json()
-    if "errors" not in group_data:
-            return group_data
+    group_data = requests.get(group_db_url + group_id)
+    if group_data.status_code != 404:
+            return group_data.json()
     return JSONResponse("Group not found")
