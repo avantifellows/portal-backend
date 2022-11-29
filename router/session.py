@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 import requests
 from settings import settings
 from datetime import datetime
@@ -99,4 +99,4 @@ def get_session_data(session_id: str):
         if session_data["is_active"] and is_start_time_valid(session_data["start_time"], session_data["repeat_schedule"]) and is_end_time_valid(session_data["end_time"], session_data["repeat_schedule"]) and is_repeat_schedule_valid(session_data["repeat_schedule"]):
             return session_data
         return False
-    return False
+    raise HTTPException(status_code=response.status_code, detail=response.errors)
