@@ -1,7 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 import requests
 from settings import settings
-from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/group", tags=["Group"])
 group_db_url = settings.db_url + "group/"
@@ -14,4 +13,4 @@ def get_group_data(group_id: str):
     group_data = requests.get(group_db_url + group_id)
     if group_data.status_code == 200:
             return group_data.json()
-    return JSONResponse("Group not found")
+    return HTTPException(status_code=group_data.status_code, detail=group_data.errors)
