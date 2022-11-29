@@ -93,8 +93,9 @@ def get_session_data(session_id: str):
     API to get details about a session if the session is active.
     Otherwise, returns False to denote session is not active.
     """
-    session_data = requests.get(session_db_url + session_id).json()
-    if "errors" not in session_data:
+    response = requests.get(session_db_url + session_id)
+    session_data = response.json()
+    if response.status_code == 200:
         if session_data["is_active"] and is_start_time_valid(session_data["start_time"], session_data["repeat_schedule"]) and is_end_time_valid(session_data["end_time"], session_data["repeat_schedule"]) and is_repeat_schedule_valid(session_data["repeat_schedule"]):
             return session_data
         return False
