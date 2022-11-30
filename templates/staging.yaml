@@ -8,13 +8,14 @@ Parameters:
     Description: Key to generate tokens
 
 Resources:
-  PortalBackend:
+  Function:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: "PortalBackendStaging"
       CodeUri: ../app
       Handler: main.handler
       Runtime: python3.9
+      Timeout: 10
       Environment:
         Variables:
           JWT_SECRET_KEY: !Ref JwtSecretKey
