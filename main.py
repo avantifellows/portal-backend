@@ -1,4 +1,4 @@
-from router import auth,session
+from router import auth,session, group
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi_jwt_auth.exceptions import AuthJWTException
@@ -14,3 +14,4 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
 
 app.include_router(auth.router)
 app.include_router(session.router)
+app.include_router(group.router)
