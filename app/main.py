@@ -14,4 +14,8 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
 
 app.include_router(auth.router)
 
+@app.get("/")
+def index():
+    return "Welcome to Portal!"
+
 handler = Mangum(app)
