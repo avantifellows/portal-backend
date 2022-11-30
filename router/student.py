@@ -10,7 +10,19 @@ def student_id_exists(student_id: str):
     """
     API to check if a student ID exists
     """
-    response = requests.get(student_db_url + student_id)
+    query_params = {'student_id':student_id}
+    response = requests.get(student_db_url, params=query_params)
+    if response.status_code == 200:
+            return response.json()
+    return HTTPException(status_code=response.status_code, detail=response.errors)
+
+@router.post("/birthdate-matches")
+def birthdate_matches(student_id:str, birth_date:str):
+    """
+    API to check if the given birthdate matches to the student ID
+    """
+    query_params = {'student_id':student_id, 'date_of_birth': birth_date}
+    response = requests.get(student_db_url, params=query_params)
     if response.status_code == 200:
             return response.json()
     return HTTPException(status_code=response.status_code, detail=response.errors)
