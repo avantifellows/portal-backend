@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi_jwt_auth import AuthJWT
-from app.models import User
+from models import User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
