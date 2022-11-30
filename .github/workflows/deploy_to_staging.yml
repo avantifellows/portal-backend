@@ -34,9 +34,6 @@ jobs:
       - name: Build
         run: sam build --use-container -t templates/staging.yaml
 
-      - name: Package
-        run: sam package --region ap-south-1 --template-file ../../.aws-sam/build/template.yaml --s3-bucket portal-backend-staging
-
       - name: Deploy
         env:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
