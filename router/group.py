@@ -10,7 +10,8 @@ def get_group_data(group_id: str):
     """
     API to get details about a group
     """
-    group_data = requests.get(group_db_url + group_id)
-    if group_data.status_code == 200:
-            return group_data.json()
-    return HTTPException(status_code=group_data.status_code, detail=group_data.errors)
+    query_params = {'group_id':group_id}
+    response = requests.get(group_db_url, params=query_params)
+    if response.status_code == 200:
+            return response.json()
+    return HTTPException(status_code=response.status_code, detail=response.errors)
