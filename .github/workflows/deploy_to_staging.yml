@@ -35,7 +35,7 @@ jobs:
         run: sam build --use-container -t templates/staging.yaml
 
       - name: Package
-        run: sam package --region ap-south-1 --template-file templates/staging.yaml --s3-bucket portal-backend-staging
+        run: sam package --region ap-south-1 --template-file ../../.aws-sam/build/template.yaml --s3-bucket portal-backend-staging
 
       - name: Deploy
         env:
