@@ -7,6 +7,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.get("/")
 def index():
     return "Portal Authentication!"
+    
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
 def create_access_token(user: User, Authorize: AuthJWT = Depends()):
