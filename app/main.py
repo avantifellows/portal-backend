@@ -1,4 +1,4 @@
-from app.router import auth
+from router import auth
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi_jwt_auth.exceptions import AuthJWTException
