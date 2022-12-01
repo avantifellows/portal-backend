@@ -18,4 +18,4 @@ app.include_router(auth.router)
 def index():
     return "Welcome to Portal!"
 
-#handler = Mangum(app)
+handler = Mangum(app)
