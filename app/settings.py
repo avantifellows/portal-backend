@@ -17,7 +17,9 @@ class Settings(BaseModel):
     # Enable csrf double submit protection.
     authjwt_cookie_csrf_protect: bool = False
     # makes your website more secure from CSRF Attacks
-    authjwt_cookie_samesite: str = "lax"
+    authjwt_cookie_samesite: str = 'lax'
+    # DB service base URL
+    db_url = os.environ.get("DB_SERVICE_URL")
 
 
 # callback to get the configuration
