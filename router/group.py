@@ -5,7 +5,7 @@ from settings import settings
 router = APIRouter(prefix="/group", tags=["Group"])
 group_db_url = settings.db_url + "group/"
 
-@router.post("/get-group-data")
+@router.get("/get-group-data/{group_id}")
 def get_group_data(group_id: str):
     """
     API to get details about a group
