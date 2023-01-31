@@ -8,11 +8,13 @@ router = APIRouter(prefix="/session", tags=["Session"])
 session_db_url = settings.db_url + "/session/"
 session_start_buffer_time = 900000
 
+
 def get_current_date():
     """
     Returns current date
     """
     return datetime.today().date()
+
 
 def get_current_timestamp():
     """
@@ -20,11 +22,13 @@ def get_current_timestamp():
     """
     return datetime.today().timestamp()
 
+
 def get_date(datetime: datetime):
     """
     Returns date for the given datetime
     """
     return datetime.date()
+
 
 def get_timestamp(datetime: datetime):
     """
@@ -32,15 +36,30 @@ def get_timestamp(datetime: datetime):
     """
     return datetime.timestamp()
 
+
 def build_datetime_and_timestamp(date_time: str):
     """
     Parses the given datetime into separate strings of date and timstamp
     """
-    parsed_time = datetime.strptime(date_time,'%Y-%m-%dT%H:%M:%SZ')
+    parsed_time = datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%SZ")
     session_date, session_timestamp = get_date(parsed_time), get_timestamp(parsed_time)
     current_date, current_timestamp = get_current_date(), get_current_timestamp()
-    repeated_session_datetime = datetime(current_date.year, current_date.month, current_date.day, parsed_time.hour, parsed_time.minute, parsed_time.second)
-    return (session_date, session_timestamp, current_date, current_timestamp, repeated_session_datetime)
+    repeated_session_datetime = datetime(
+        current_date.year,
+        current_date.month,
+        current_date.day,
+        parsed_time.hour,
+        parsed_time.minute,
+        parsed_time.second,
+    )
+    return (
+        session_date,
+        session_timestamp,
+        current_date,
+        current_timestamp,
+        repeated_session_datetime,
+    )
+
 
 def has_session_started(start_time: str, repeat_schedule: str):
     """
@@ -51,14 +70,27 @@ def has_session_started(start_time: str, repeat_schedule: str):
     - Otherwise, returns False
     """
     if start_time is not None:
-        (session_start_date, session_start_timestamp,current_date, current_timestamp, repeated_session_start_datetime) = build_datetime_and_timestamp(start_time)
+        (
+            session_start_date,
+            session_start_timestamp,
+            current_date,
+            current_timestamp,
+            repeated_session_start_datetime,
+        ) = build_datetime_and_timestamp(start_time)
         if session_start_date <= current_date:
             if repeat_schedule is None:
-                return session_start_timestamp <= current_timestamp + session_start_buffer_time
+                return (
+                    session_start_timestamp
+                    <= current_timestamp + session_start_buffer_time
+                )
             else:
-                return repeated_session_start_datetime <= current_timestamp + session_start_buffer_time
+                return (
+                    repeated_session_start_datetime
+                    <= current_timestamp + session_start_buffer_time
+                )
         return False
     return True
+
 
 def has_session_ended(end_time: str, repeat_schedule: str):
     """
@@ -70,7 +102,13 @@ def has_session_ended(end_time: str, repeat_schedule: str):
     - Else, always returns True
     """
     if end_time is not None:
-        (session_end_date, session_end_timestamp,current_date, current_timestamp, repeated_session_end_datetime) = build_datetime_and_timestamp(end_time)
+        (
+            session_end_date,
+            session_end_timestamp,
+            current_date,
+            current_timestamp,
+            repeated_session_end_datetime,
+        ) = build_datetime_and_timestamp(end_time)
         if session_end_date >= current_date:
             if repeat_schedule is not None:
                 return current_timestamp <= repeated_session_end_datetime
@@ -88,21 +126,26 @@ def is_session_repeating(repeat_schedule: str):
             return datetime.today().weekday() in repeat_schedule["params"]
     return True
 
+
 @router.get("/get-session-data/{session_id}")
-def get_session_data(session_id: str, response_model=SessionResponse):
+async def get_session_data(session_id: str, response_model=SessionResponse):
     """
     API to get details about a session if the session is active.
     Otherwise, returns False to denote session is not active.
     """
-    query_params = {'session_id':session_id}
+    query_params = {"session_id": session_id}
     response = requests.get(session_db_url, params=query_params)
     session_data = SessionResponse(response.json()[0])
     if response.status_code == 200:
         if (
             session_data["is_active"]
-        and has_session_started(session_data["start_time"], session_data["repeat_schedule"])
-        and has_session_ended(session_data["end_time"], session_data["repeat_schedule"])
-        and is_session_repeating(session_data["repeat_schedule"])
+            and has_session_started(
+                session_data["start_time"], session_data["repeat_schedule"]
+            )
+            and has_session_ended(
+                session_data["end_time"], session_data["repeat_schedule"]
+            )
+            and is_session_repeating(session_data["repeat_schedule"])
         ):
             return session_data
         return False

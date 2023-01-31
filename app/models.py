@@ -7,6 +7,7 @@ class User(BaseModel):
     is_user_valid: bool
     data: Union[Dict[str, str], None]
 
+
 class SessionResponse(BaseModel):
     id: str
     session_id: str
@@ -17,5 +18,5 @@ class SessionResponse(BaseModel):
     repeat_schedule: str
     platform: str
     platform_link: str
-    purpose: Optional[str] = None
+    purpose: str
     meta_data: Optional[Dict] = {}
