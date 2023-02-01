@@ -7,6 +7,7 @@ class User(BaseModel):
     is_user_valid: bool
     data: Union[Dict[str, str], None]
 
+
 class GroupResponse(BaseModel):
     id: str
     name: str
