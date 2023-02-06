@@ -3,7 +3,7 @@ import requests
 from settings import settings
 
 router = APIRouter(prefix="/group", tags=["Group"])
-group_db_url = settings.db_url + "group/"
+group_db_url = settings.db_url + "/group/"
 
 
 @router.get("/{group_id}")
@@ -28,7 +28,7 @@ def get_group_data(group_id: str):
         "headers": null
     }
     """
-    query_params = {"group_id": group_id}
+    query_params = {"name": group_id, "type": "group"}
     response = requests.get(group_db_url, params=query_params)
     if response.status_code == 200:
         if len(response.json()) != 0:
