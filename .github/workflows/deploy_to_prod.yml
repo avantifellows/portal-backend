@@ -35,5 +35,5 @@ jobs:
 
       - name: Deploy
         env:
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY_PROD }}
         run: sam deploy --stack-name PortalBackendProd --s3-bucket af-portal-backend --s3-prefix prod --no-confirm-changeset --no-fail-on-empty-changeset --region ap-south-1 --capabilities CAPABILITY_IAM --parameter-overrides JwtSecretKey=$JWT_SECRET_KEY

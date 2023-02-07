@@ -7,6 +7,7 @@ from models import StudentRequest
 from utils import form_details
 from typing import Optional
 import random
+from models import Student
 
 router = APIRouter(prefix="/student", tags=["Student"])
 student_db_url = settings.db_url + "/student/"
@@ -47,12 +48,17 @@ def build_data_object(params):
 
 
 @router.get("/")
-def index(student: StudentRequest):
-    return
+def index(student: Student):
+    response = requests.get(student_db_url, params=dict(student))
+    if response.status_code == 200:
+        if len(response.json()) == 0:
+            return HTTPException(status_code=404, detail="No student found!")
+        return response.json()
+    return HTTPException(status_code=response.status_code, detail=response.errors)
 
 
 @router.get("/{student_id}")
-def get_student(student_id: str, request: Request):
+def get_student(student_id: str):
     """
     This API checks if the provided student ID exists in the database.
     Additionally, if any other details need to be matched in the database, these details can be sent as query parameters.
@@ -82,30 +88,11 @@ def get_student(student_id: str, request: Request):
     returns [{student_data}]
 
     """
+    response = requests.get(student_db_url, params={"student_id": student_id})
 
-    extra_parameters = dict(request.query_params)
-    query_params = {}
-    if student_id != "":
-        query_params = {"student_id": student_id}
-    response = requests.get(student_db_url, params=query_params)
-    print(response.status_code)
     if response.status_code == 200:
         if len(response.json()) == 0:
             return HTTPException(status_code=404, detail="Student ID does not exist!")
-
-        elif len(extra_parameters) != 0:
-            query_params.update(extra_parameters)
-            response = requests.get(student_db_url, params=query_params)
-            if response.status_code == 200:
-                if len(response.json()) == 0:
-                    return HTTPException(
-                        status_code=404, detail="Parameters do not match!"
-                    )
-                return response.json()
-            return HTTPException(
-                status_code=response.status_code, detail=response.errors
-            )
-
         return response.json()
     return HTTPException(status_code=response.status_code, detail=response.errors)
 
