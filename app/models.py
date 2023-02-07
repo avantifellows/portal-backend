@@ -8,6 +8,11 @@ class User(BaseModel):
     data: Union[Dict[str, str], None]
 
 
+class StudentRequest(BaseModel):
+    id: str
+    stream: Optional[str]
+
+
 class SessionResponse(BaseModel):
     id: str
     session_id: str
