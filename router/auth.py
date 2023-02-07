@@ -22,8 +22,6 @@ def handle_options_root():
 @router.post("/create-access-token")
 def create_access_token(user: User, Authorize: AuthJWT = Depends()):
     data = user.data
-    print(user)
-    print(data)
     if user.data is None:
         data = {}
     if user.is_user_valid:
@@ -59,4 +57,3 @@ def logout(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
     Authorize.unset_jwt_cookies()
     return {"message": "Successful logout"}
-    
