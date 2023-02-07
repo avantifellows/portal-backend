@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException
 import requests
 from settings import settings
+from models import GroupResponse
 
 router = APIRouter(prefix="/group", tags=["Group"])
 group_db_url = settings.db_url + "/group/"
 
 
 @router.get("/{group_id}")
-def get_group_data(group_id: str):
+def get_group_data(group_id: str, response_model=GroupResponse):
     """
     This API returns group details corresponding to the provided group ID, if the ID exists in the database
 
