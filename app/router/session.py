@@ -127,26 +127,47 @@ def is_session_repeating(repeat_schedule: str):
     return True
 
 
-@router.get("/get-session-data/{session_id}")
+@router.get("/{session_id}")
 async def get_session_data(session_id: str, response_model=SessionResponse):
     """
-    API to get details about a session if the session is active.
-    Otherwise, returns False to denote session is not active.
+    This API returns session details corresponding to the provided session ID, if the ID exists in the database and if the session is open
+
+    Parameters:
+    session_id (str): The ID against which details need to be retrieved
+
+    Returns:
+    list: Returns session details if the session ID exists in the database and the session is open, false if the session is closed. If the ID does not exist, 404 is returned
+
+    Example:
+    > $BASE_URL/session/1234
+    returns [{session_data}]
+
+    > $BASE_URL/session/{closed_session_id}
+    returns false
+
+    > $BASE_URL/session/{invalid_id}
+    returns {
+        "status_code": 404,
+        "detail": "Session ID does not exist!",
+        "headers": null
+    }
     """
     query_params = {"session_id": session_id}
     response = requests.get(session_db_url, params=query_params)
-    session_data = SessionResponse(response.json()[0])
     if response.status_code == 200:
-        if (
-            session_data["is_active"]
-            and has_session_started(
-                session_data["start_time"], session_data["repeat_schedule"]
-            )
-            and has_session_ended(
-                session_data["end_time"], session_data["repeat_schedule"]
-            )
-            and is_session_repeating(session_data["repeat_schedule"])
-        ):
-            return session_data
-        return False
+        if len(response.json()) != 0:
+            session_data = response.json()[0]
+            if (
+                session_data["is_active"]
+                and has_session_started(
+                    session_data["start_time"], session_data["repeat_schedule"]
+                )
+                and has_session_ended(
+                    session_data["end_time"], session_data["repeat_schedule"]
+                )
+                and is_session_repeating(session_data["repeat_schedule"])
+            ):
+                return session_data
+            return False
+        return HTTPException(status_code=404, detail="Session ID does not exist!")
     raise HTTPException(status_code=response.status_code, detail=response.errors)
