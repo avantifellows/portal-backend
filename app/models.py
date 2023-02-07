@@ -9,7 +9,6 @@ class User(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    id: str
     session_id: str
     name: Optional[str] = None
     is_active: bool
@@ -23,9 +22,8 @@ class SessionResponse(BaseModel):
 
 
 class GroupResponse(BaseModel):
-    id: str
     name: str
     group_input_schema: Optional[Dict] = {}
     group_locale: Optional[str] = ""
-    group_locale_data = Optional[Dict] = {}
-    auth_type = Optional[str] = ""
+    group_locale_data: Optional[Dict] = {}
+    auth_type: Optional[str] = ""
