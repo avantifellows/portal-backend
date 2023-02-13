@@ -36,7 +36,6 @@ def generate_three_digit_code(code):
 def build_data_object(params):
     data = {}
     for field in form_details.fields:
-
         if (
             field in params.keys()
             and params[field]
@@ -49,7 +48,7 @@ def build_data_object(params):
 
 @router.get("/")
 def index(student: Student):
-    response = requests.get(student_db_url, params=dict(student))
+    response = requests.get(student_db_url, params=student.dict(exclude_none=True))
     if response.status_code == 200:
         if len(response.json()) == 0:
             return HTTPException(status_code=404, detail="No student found!")
@@ -102,7 +101,7 @@ async def create_student(request: Request):
     params = await request.json()
     data = build_data_object(params)
 
-    does_student_already_exist = index(request=request)
+    does_student_already_exist = index(params)
     if does_student_already_exist.status_code == 200:
         student_id = does_student_already_exist.json()
         if len(student_id) == 0:
