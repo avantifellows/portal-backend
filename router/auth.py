@@ -1,23 +1,15 @@
 from fastapi import APIRouter, Depends
 from fastapi_jwt_auth import AuthJWT
-from fastapi.responses import JSONResponse
 from models import User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
 
 @router.get("/")
 def index():
     return "Portal Authentication!"
 
-# Handles pre-flight requests
-@router.options("/create-access-token")
-def handle_options_root():
-    response = JSONResponse(content={"message": "Success"})
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "X-Requested-With, Content-Type"
-    return response
-    
+
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
 def create_access_token(user: User, Authorize: AuthJWT = Depends()):
@@ -26,10 +18,10 @@ def create_access_token(user: User, Authorize: AuthJWT = Depends()):
         data = {}
     if user.is_user_valid:
         refresh_token = Authorize.create_refresh_token(
-            subject=user.id, user_claims=data)
+            subject=user.id, user_claims=data
+        )
         Authorize.set_refresh_cookies(refresh_token)
-    access_token = Authorize.create_access_token(
-        subject=user.id, user_claims=data)
+    access_token = Authorize.create_access_token(subject=user.id, user_claims=data)
     Authorize.set_access_cookies(access_token)
     return {"message": "Successful login"}
 
@@ -45,14 +37,14 @@ def refresh_token(Authorize: AuthJWT = Depends()):
 
 
 # example ->  protected method
-@router.get('/user')
+@router.get("/user")
 def user(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
     current_user = Authorize.get_jwt_subject()
     return {"user": current_user}
 
 
-@router.delete('/logout')
+@router.delete("/logout")
 def logout(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
     Authorize.unset_jwt_cookies()
