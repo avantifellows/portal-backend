@@ -1,14 +1,33 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Query
 import requests
 from settings import settings
-from models import Student
 
 router = APIRouter(prefix="/student", tags=["Student"])
 student_db_url = settings.db_url + "/student"
 
+QUERY_PARAMS = [
+    "student_id",
+    "father_name",
+    "father_phone_number",
+    "mother_name",
+    "mother_phone_number",
+    "category",
+    "stream",
+    "physically_handicapped",
+    "family_income",
+    "father_profession",
+    "father_educational_level",
+    "mother_profession",
+    "mother_educational_level",
+    "time_of_device_availability",
+    "has_internet_access",
+    "contact_hours_per_week",
+    "is_dropper",
+]
+
 
 @router.get("/")
-def get_students(student: Student, student_id: str = None):
+def get_students(request: Request):
     """
     This API returns a student or a list of students who match the criteria(s) given in the request.
 
@@ -26,12 +45,10 @@ def get_students(student: Student, student_id: str = None):
     > $BASE_URL/student/?student_id=1234
     returns [{student_data}]
 
-    > $BASE_URL/student/
-    body: {"stream":"PCB"}
+    > $BASE_URL/student/?stream=PCB
     returns [data_of_all_students_with_stream_PCB]
 
-    > $BASE_URL/student/?student_id=student_id_with_stream_PCM
-    body: {"stream":"PCB"}
+    > $BASE_URL/student/?student_id=student_id_with_stream_PCM&stream=PCB
 
     returns {
         "status_code": 404,
@@ -41,11 +58,12 @@ def get_students(student: Student, student_id: str = None):
 
     """
     query_params = {}
-    student_attributes = student.dict(exclude_unset=True)
-    for key in student_attributes.keys():
-        query_params[key] = student_attributes[key]
-    if student_id:
-        query_params["student_id"] = student_id
+    for key in request.query_params.keys():
+        if key not in QUERY_PARAMS:
+            return HTTPException(
+                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
+            )
+        query_params[key] = request.query_params[key]
 
     response = requests.get(student_db_url, params=query_params)
     if response.status_code == 200:
@@ -56,7 +74,7 @@ def get_students(student: Student, student_id: str = None):
 
 
 @router.get("/verify")
-def verify_student(student_id: str, student: Student):
+async def verify_student(request: Request, student_id: str):
     """
     This API checks if the provided student ID and the additional details match in the database.
 
@@ -92,14 +110,15 @@ def verify_student(student_id: str, student: Student):
 
     """
     query_params = {}
-    student_attributes = student.dict(exclude_unset=True)
-    for key in student_attributes.keys():
-        query_params[key] = student_attributes[key]
-    if student_id:
-        query_params["student_id"] = student_id
+    for key in request.query_params.keys():
+        if key not in QUERY_PARAMS:
+            return HTTPException(
+                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
+            )
+        query_params[key] = request.query_params[key]
+    query_params["student_id"] = student_id
 
     response = requests.get(student_db_url, params=query_params)
-
     if response.status_code == 200:
         if len(response.json()) == 0:
             return HTTPException(status_code=404, detail="Student ID does not exist!")
