@@ -90,7 +90,9 @@ async def verify_student(request: Request, student_id: str):
 
     Example:
     > $BASE_URL/student/verify/?student_id=1234
-    body: {"stream":"PCB"}
+    returns True
+
+    > $BASE_URL/student/verify/?student_id=1234&stream=PCB
     returns True
 
     > $BASE_URL/student/verify/?student_id={invalid_id}
@@ -100,8 +102,7 @@ async def verify_student(request: Request, student_id: str):
         "headers": null
     }
 
-    > $BASE_URL/student/1234/?student_id=1234
-    body: {"stream":"PCM"}
+    > $BASE_URL/student/1234/?student_id=1234&stream=PCM
     returns {
         "status_code": 404,
         "detail": "Student ID does not exist!",
