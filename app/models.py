@@ -8,31 +8,6 @@ class User(BaseModel):
     data: Union[Dict[str, str], None]
 
 
-class StudentRequest(BaseModel):
-    id: str
-    stream: Optional[str]
-
-
-class Student(BaseModel):
-    student_id: Optional[str]
-    father_name: Optional[str] = None
-    father_phone_number: Optional[str] = None
-    mother_name: Optional[str] = None
-    mother_phone_number: Optional[str] = None
-    category: Optional[str] = None
-    stream: Optional[str] = None
-    physically_handicapped: Optional[str] = None
-    family_income: Optional[int] = None
-    father_profession: Optional[str] = None
-    father_educational_level: Optional[str] = None
-    mother_profession: Optional[str] = None
-    mother_educational_level: Optional[str] = None
-    time_of_device_availability: Optional[str] = None
-    has_internet_access: Optional[str] = None
-    contact_hours_per_week: Optional[str] = None
-    is_dropper: Optional[bool] = None
-
-
 class SessionResponse(BaseModel):
     id: str
     session_id: str
