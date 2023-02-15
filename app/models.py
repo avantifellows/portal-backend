@@ -9,23 +9,22 @@ class User(BaseModel):
 
 
 class Student(BaseModel):
-    student_id: Optional[str] = ""
-    father_name: Optional[str] = ""
-    father_phone_number: Optional[str] = ""
-    mother_name: Optional[str] = ""
-    mother_phone_number: Optional[str] = ""
-    category: Optional[str] = ""
-    stream: Optional[str] = ""
-    physically_handicapped: Optional[str] = ""
-    family_income: Optional[int] = ""
-    father_profession: Optional[str] = ""
-    father_educational_level: Optional[str] = ""
-    mother_profession: Optional[str] = ""
-    mother_educational_level: Optional[str] = ""
-    time_of_device_availability: Optional[str] = ""
-    has_internet_access: Optional[str] = ""
-    contact_hours_per_week: Optional[str] = ""
-    is_dropper: Optional[bool] = ""
+    father_name: Optional[str] = None
+    father_phone_number: Optional[str] = None
+    mother_name: Optional[str] = None
+    mother_phone_number: Optional[str] = None
+    category: Optional[str] = None
+    stream: Optional[str] = None
+    physically_handicapped: Optional[str] = None
+    family_income: Optional[int] = None
+    father_profession: Optional[str] = None
+    father_educational_level: Optional[str] = None
+    mother_profession: Optional[str] = None
+    mother_educational_level: Optional[str] = None
+    time_of_device_availability: Optional[str] = None
+    has_internet_access: Optional[str] = None
+    contact_hours_per_week: Optional[str] = None
+    is_dropper: Optional[bool] = None
 
 
 class SessionResponse(BaseModel):
