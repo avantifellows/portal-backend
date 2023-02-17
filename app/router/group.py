@@ -7,8 +7,8 @@ router = APIRouter(prefix="/group", tags=["Group"])
 group_db_url = settings.db_url + "/group/"
 
 
-@router.get("/{group_id}")
-def get_group_data(group_id: str, response_model=GroupResponse):
+@router.get("/{group_id}", response_model=GroupResponse)
+def get_group_data(group_id: str):
     """
     This API returns group details corresponding to the provided group ID, if the ID exists in the database
 

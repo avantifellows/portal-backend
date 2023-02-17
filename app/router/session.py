@@ -127,8 +127,8 @@ def is_session_repeating(repeat_schedule: str):
     return True
 
 
-@router.get("/{session_id}")
-async def get_session_data(session_id: str, response_model=SessionResponse):
+@router.get("/{session_id}", response_model=SessionResponse)
+async def get_session_data(session_id: str):
     """
     This API returns session details corresponding to the provided session ID, if the ID exists in the database and if the session is open
 
