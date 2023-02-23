@@ -127,8 +127,8 @@ def is_session_repeating(repeat_schedule: str):
     return True
 
 
-@router.get("/{session_id}", response_model=SessionResponse)
-async def get_session_data(session_id: str):
+@router.get("/", response_model=SessionResponse)
+async def get_session_data(request: Request):
     """
     This API returns session details corresponding to the provided session ID, if the ID exists in the database and if the session is open
 
@@ -152,7 +152,14 @@ async def get_session_data(session_id: str):
         "headers": null
     }
     """
-    query_params = {"session_id": session_id}
+    query_params = {}
+    for key in request.query_params.keys():
+        if key not in ['name','session_id']:
+            return HTTPException(
+                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
+            )
+        query_params[key] = request.query_params[key]
+
     response = requests.get(session_db_url, params=query_params)
     if response.status_code == 200:
         if len(response.json()) != 0:
