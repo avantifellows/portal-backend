@@ -5,6 +5,7 @@ from settings import settings
 router = APIRouter(prefix="/session-group", tags=["Session-Group"])
 session_group_db_url = settings.db_url + "/group-session/"
 
+
 @router.get("/{session_id}")
 def get_group_for_session(session_id: str):
     response = requests.get(session_group_db_url + session_id)

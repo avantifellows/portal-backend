@@ -31,7 +31,7 @@ def get_group_data(request: Request):
     """
     query_params = {}
     for key in request.query_params.keys():
-        if key not in ['name','id']:
+        if key not in ["name", "id"]:
             return HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )

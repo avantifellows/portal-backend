@@ -13,18 +13,21 @@ class SessionOpenResponse(BaseModel):
     session_id: str
     name: Optional[str] = None
     is_active: bool
-    start_time:  Optional[str] = None
-    end_time:  Optional[str] = None
-    repeat_schedule:  Optional[str] = None
-    platform:  Optional[str] = None
-    platform_link:  Optional[str] = None
-    purpose:  Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    repeat_schedule: Optional[str] = None
+    platform: Optional[str] = None
+    platform_link: Optional[str] = None
+    purpose: Optional[str] = None
     meta_data: Optional[Dict] = {}
-    platform_id:  Optional[str] = None
+    platform_id: Optional[str] = None
     is_session_open: bool
+
 
 class SessionCloseResponse(BaseModel):
     is_session_open: bool
+
+
 class GroupResponse(BaseModel):
     id: str
     name: str
@@ -32,6 +35,7 @@ class GroupResponse(BaseModel):
     group_locale: Optional[str] = ""
     group_locale_data: Optional[Dict] = {}
     auth_type: Optional[str] = ""
+
 
 class UserSession(BaseModel):
     user_id: int

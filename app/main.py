@@ -21,6 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.exception_handler(AuthJWTException)
 def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
@@ -32,6 +33,7 @@ app.include_router(group.router)
 app.include_router(student.router)
 app.include_router(session_group.router)
 app.include_router(user_session.router)
+
 
 @app.get("/")
 def index():
