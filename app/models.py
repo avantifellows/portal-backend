@@ -8,7 +8,7 @@ class User(BaseModel):
     data: Union[Dict[str, str], None]
 
 
-class SessionResponse(BaseModel):
+class SessionOpenResponse(BaseModel):
     id: str
     session_id: str
     name: Optional[str] = None
@@ -20,8 +20,11 @@ class SessionResponse(BaseModel):
     platform_link:  Optional[str] = None
     purpose:  Optional[str] = None
     meta_data: Optional[Dict] = {}
+    platform_id:  Optional[str] = None
+    is_session_open: bool
 
-
+class SessionCloseResponse(BaseModel):
+    is_session_open: bool
 class GroupResponse(BaseModel):
     id: str
     name: str
