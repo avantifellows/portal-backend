@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+from typing import Union
 import requests
 from settings import settings
 from datetime import datetime
@@ -102,7 +103,7 @@ async def get_session_data(request: Request):
     raise HTTPException(status_code=response.status_code, detail=response.errors)
 
 
-@router.get("/", response_model=SessionOpenResponse | SessionCloseResponse)
+@router.get("/", response_model= Union[SessionOpenResponse, SessionCloseResponse])
 async def get_session_occurrence_data(request: Request):
     """
     This API returns session occurrence details corresponding to the provided session ID, if the ID exists in the database and if the session is open
