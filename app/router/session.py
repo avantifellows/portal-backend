@@ -6,6 +6,7 @@ from models import SessionOpenResponse
 router = APIRouter(prefix="/session", tags=["Session"])
 session_db_url = settings.db_url + "/session/"
 
+
 @router.get("/", response_model=SessionOpenResponse)
 async def get_session_data(request: Request):
     """
