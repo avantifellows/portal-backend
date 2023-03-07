@@ -10,26 +10,11 @@ session_occurrence_db_url = settings.db_url + "/session-occurrence/"
 session_start_buffer_time = 900000
 
 
-def get_current_date():
-    """
-    Returns current date
-    """
-    return datetime.today().date()
-
-
 def get_current_timestamp():
     """
     Returns current timestamp
     """
     return datetime.today().timestamp()
-
-
-def get_date(datetime: datetime):
-    """
-    Returns date for the given datetime
-    """
-    return datetime.date()
-
 
 def get_timestamp(datetime: datetime):
     """
@@ -57,7 +42,7 @@ def build_datetime_and_timestamp(date_time: str):
 def has_session_started(start_time: str):
     """
     Checks if session has started
-    - If session start date is less than or equal to current date, returns True
+    - If session time is given and session start date is less than or equal to current date, returns True
     - Otherwise, returns False
     """
     if start_time is not None:
@@ -69,27 +54,13 @@ def has_session_started(start_time: str):
 def has_session_ended(end_time: str, repeat_schedule: str):
     """
     Checks if session has ended
-    - If end time is given:
-        - If session end date is greater than or equal to current date:
-            - If session is not repeating, checks if the current timestamp is less than or equal to session end timestamp
-            - If session is repeating, builds a timestamp using current date and session end time and checks that with current timestamp
+    - If end time is given and if session end date is greater than or equal to current date, returns True
     - Else, always returns True
     """
     if end_time is not None:
         session_end_timestamp,current_timestamp = build_datetime_and_timestamp(end_time)
         return session_end_timestamp <= current_timestamp + session_start_buffer_time
     return True
-
-
-def is_session_repeating(repeat_schedule: str):
-    """
-    Checks if the repeating schedule matches to the current day.
-    """
-    if repeat_schedule is not None:
-        if repeat_schedule["type"] == "weekly":
-            return datetime.today().weekday() in repeat_schedule["params"]
-    return True
-
 
 @router.get("/", response_model=SessionOpenResponse)
 async def get_session_data(request: Request):

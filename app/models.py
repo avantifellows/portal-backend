@@ -32,3 +32,10 @@ class GroupResponse(BaseModel):
     group_locale: Optional[str] = ""
     group_locale_data: Optional[Dict] = {}
     auth_type: Optional[str] = ""
+
+class UserSession(BaseModel):
+    user_id: int
+    session_occurrence_id: int
+    start_time: str
+    end_time: Optional[str] = ""
+    data: Optional[Dict] = {}
