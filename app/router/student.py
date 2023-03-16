@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
 
@@ -60,7 +60,7 @@ def get_students(request: Request):
     query_params = {}
     for key in request.query_params.keys():
         if key not in QUERY_PARAMS:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
@@ -70,7 +70,7 @@ def get_students(request: Request):
         if len(response.json()) == 0:
             return HTTPException(status_code=404, detail="No student found!")
         return response.json()
-    return HTTPException(status_code=response.status_code, detail=response.errors)
+    raise HTTPException(status_code=404, detail="No student found!")
 
 
 @router.get("/verify")
@@ -113,7 +113,7 @@ async def verify_student(request: Request, student_id: str):
     query_params = {}
     for key in request.query_params.keys():
         if key not in QUERY_PARAMS:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
@@ -122,6 +122,6 @@ async def verify_student(request: Request, student_id: str):
     response = requests.get(student_db_url, params=query_params)
     if response.status_code == 200:
         if len(response.json()) == 0:
-            return HTTPException(status_code=404, detail="Student ID does not exist!")
+            raise HTTPException(status_code=404, detail="Student ID does not exist!")
         return True
-    return HTTPException(status_code=response.status_code, detail=response.errors)
+    raise HTTPException(status_code=404, detail="Student ID does not exist!")

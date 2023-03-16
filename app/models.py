@@ -8,23 +8,16 @@ class User(BaseModel):
     data: Union[Dict[str, str], None]
 
 
-class SessionOpenResponse(BaseModel):
-    id: str
-    session_id: str
+class SessionResponse(BaseModel):
+    session_id: Optional[str] = None
     name: Optional[str] = None
-    is_active: bool
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    repeat_schedule: Optional[str] = None
     platform: Optional[str] = None
     platform_link: Optional[str] = None
     purpose: Optional[str] = None
     meta_data: Optional[Dict] = {}
     platform_id: Optional[str] = None
-    is_session_open: bool
-
-
-class SessionCloseResponse(BaseModel):
     is_session_open: bool
 
 

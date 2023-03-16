@@ -7,7 +7,7 @@ router = APIRouter(prefix="/group", tags=["Group"])
 group_db_url = settings.db_url + "/group/"
 
 
-@router.get("/")
+@router.get("/", response_model=GroupResponse)
 def get_group_data(request: Request):
     """
     This API returns group details corresponding to the provided group ID, if the ID exists in the database
@@ -32,7 +32,7 @@ def get_group_data(request: Request):
     query_params = {}
     for key in request.query_params.keys():
         if key not in ["name", "id"]:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
@@ -42,5 +42,5 @@ def get_group_data(request: Request):
     if response.status_code == 200:
         if len(response.json()) != 0:
             return response.json()[0]
-        return HTTPException(status_code=404, detail="Group does not exist!")
-    return HTTPException(status_code=response.status_code, detail=response.errors)
+        raise HTTPException(status_code=404, detail="Group does not exist!")
+    raise HTTPException(status_code=404, detail="Group does not exist!")

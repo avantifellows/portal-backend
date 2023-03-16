@@ -32,5 +32,5 @@ def get_group_for_session(session_id: str):
     if response.status_code == 200:
         if len(response.json()) != 0:
             return response.json()
-        return HTTPException(status_code=404, detail="Session does not exist!")
-    return HTTPException(status_code=response.status_code, detail=response.errors)
+        raise HTTPException(status_code=404, detail="Session ID does not exist!")
+    raise HTTPException(status_code=404, detail="Session ID does not exist!")

@@ -1,4 +1,12 @@
-from router import auth, session, group, student, session_group, user_session
+from router import (
+    auth,
+    session,
+    group,
+    student,
+    session_group,
+    user_session,
+    session_occurrence,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -33,6 +41,7 @@ app.include_router(group.router)
 app.include_router(student.router)
 app.include_router(session_group.router)
 app.include_router(user_session.router)
+app.include_router(session_occurrence.router)
 
 
 @app.get("/")
