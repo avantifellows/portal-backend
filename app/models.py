@@ -9,6 +9,7 @@ class User(BaseModel):
 
 
 class SessionResponse(BaseModel):
+    id: str
     session_id: Optional[str] = None
     name: Optional[str] = None
     start_time: Optional[str] = None
