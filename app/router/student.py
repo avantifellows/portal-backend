@@ -122,6 +122,6 @@ async def verify_student(request: Request, student_id: str):
     response = requests.get(student_db_url, params=query_params)
     if response.status_code == 200:
         if len(response.json()) == 0:
-            raise HTTPException(status_code=404, detail="Student ID does not exist!")
+            return False
         return True
     raise HTTPException(status_code=404, detail="Student ID does not exist!")

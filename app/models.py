@@ -9,7 +9,7 @@ class User(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    id: str
+    id: Optional[str] = None
     session_id: Optional[str] = None
     name: Optional[str] = None
     start_time: Optional[str] = None
@@ -34,6 +34,5 @@ class GroupResponse(BaseModel):
 class UserSession(BaseModel):
     user_id: int
     session_occurrence_id: int
-    start_time: str
-    end_time: Optional[str] = ""
+    is_user_valid: bool
     data: Optional[Dict] = {}
