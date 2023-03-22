@@ -33,7 +33,7 @@ jobs:
 
       - name: Build
         run: sam build --use-container -t templates/staging.yaml
-        
+
       - name: Deploy
         env:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
