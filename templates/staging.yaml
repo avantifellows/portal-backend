@@ -7,6 +7,10 @@ Parameters:
     Type: String
     Description: Key to generate tokens
 
+  DbServiceUrl:
+    Type: String
+    Description: URL for the DB service
+
 Resources:
   Function:
     Type: AWS::Serverless::Function
@@ -19,6 +23,7 @@ Resources:
       Environment:
         Variables:
           JWT_SECRET_KEY: !Ref JwtSecretKey
+          DB_SERVICE_URL: !Ref DbServiceUrl
       Events:
         Api:
           Type: HttpApi
