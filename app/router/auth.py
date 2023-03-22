@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
 from models import AuthUser
-from datetime import datetime
+import datetime
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -25,7 +25,7 @@ def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
             return HTTPException(
                 status_code=400, detail="Data Parameter {} is missing!".format("name")
             )
-        expires = datetime.timedelta(years=5)
+        expires = datetime.timedelta(weeks=260)
         access_token = Authorize.create_access_token(
             subject=auth_user.id,
             user_claims={"name": auth_user.name},
