@@ -6,6 +6,13 @@ Parameters:
   JwtSecretKey:
     Type: String
     Description: Key to generate tokens
+Globals:
+    Api:
+        Cors:
+            AllowMethods: "*"
+            AllowHeaders: "*"
+            AllowOrigin: ""http://localhost:808""
+            AllowCredentials: true
 
 Resources:
   Function:
