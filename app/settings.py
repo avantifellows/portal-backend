@@ -11,7 +11,7 @@ if "JWT_SECRET_KEY" not in os.environ:
 # 'authjwt_secret_key' stores the secret key for encoding and decoding
 class Settings(BaseModel):
     authjwt_secret_key: str = os.getenv("JWT_SECRET_KEY")
-    authjwt_token_location: set = {"cookies"}
+    authjwt_token_location: set = {"headers"}
     # Allow JWT cookies to be sent over https only
     authjwt_cookie_secure: bool = False
     # Enable csrf double submit protection.

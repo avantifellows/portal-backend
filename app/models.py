@@ -4,7 +4,9 @@ from typing import Union, Dict, Optional
 
 class User(BaseModel):
     id: str
-    is_user_valid: bool
+    type: str
+    name: Optional[str] = None
+    is_user_valid: Optional[bool] = None
     data: Union[Dict[str, str], None]
 
 
