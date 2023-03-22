@@ -33,16 +33,6 @@ Resources:
   Api:
     Type: AWS::Serverless::HttpApi
 
-  ApiGatewayApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: PortalBackendStaging
-      Cors:
-        AllowMethods: "*"
-        AllowHeaders: "*"
-        AllowOrigin: "'http://localhost:8080'"
-        AllowCredentials: true
-
 Outputs:
   ApiUrl:
     Description: URL of your API
