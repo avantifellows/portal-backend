@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Union, Dict, Optional
 
 
-class User(BaseModel):
+class AuthUser(BaseModel):
     id: str
     type: str
     name: Optional[str] = None

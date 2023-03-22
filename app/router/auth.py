@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
-from models import User
+from models import AuthUser
 from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -13,30 +13,32 @@ def index():
 
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
-def create_access_token(user: User, Authorize: AuthJWT = Depends()):
+def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
     refresh_token = ""
-    if user.type == "organization":
-        if not user.name:
+    if auth_user.type == "organization":
+        if not auth_user.name:
             return HTTPException(
                 status_code=400, detail="Data Parameter {} is missing!".format("name")
             )
         expires = datetime.timedelta(years=5)
         access_token = Authorize.create_access_token(
-            subject=user.id, user_claims={"name": user.name}, expires_time=expires
+            subject=auth_user.id,
+            user_claims={"name": auth_user.name},
+            expires_time=expires,
         )
 
-    elif user.type == "user":
-        if "is_user_valid" not in user:
+    elif auth_user.type == "user":
+        if "is_user_valid" not in auth_user:
             return HTTPException(
                 status_code=400,
                 detail="Data Parameter {} is missing!".format("is_user_valid"),
             )
-        if user.is_user_valid:
+        if auth_user.is_user_valid:
             refresh_token = Authorize.create_refresh_token(
-                subject=user.id, user_claims=user.data
+                subject=auth_user.id, user_claims=auth_user.data
             )
         access_token = Authorize.create_access_token(
-            subject=user.id, user_claims=user.data
+            subject=auth_user.id, user_claims=auth_user.data
         )
 
     return {"access_token": access_token, "refresh_token": refresh_token}
