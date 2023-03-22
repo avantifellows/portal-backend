@@ -15,6 +15,11 @@ def index():
 @router.post("/create-access-token")
 def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
     refresh_token = ""
+    data = auth_user.data
+
+    if auth_user.data is None:
+        data = {}
+
     if auth_user.type == "organization":
         if not auth_user.name:
             return HTTPException(
@@ -28,17 +33,17 @@ def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
         )
 
     elif auth_user.type == "user":
-        if "is_user_valid" not in auth_user:
+        if "is_user_valid" not in auth_user.dict().keys():
             return HTTPException(
                 status_code=400,
                 detail="Data Parameter {} is missing!".format("is_user_valid"),
             )
         if auth_user.is_user_valid:
             refresh_token = Authorize.create_refresh_token(
-                subject=auth_user.id, user_claims=auth_user.data
+                subject=auth_user.id, user_claims=data
             )
         access_token = Authorize.create_access_token(
-            subject=auth_user.id, user_claims=auth_user.data
+            subject=auth_user.id, user_claims=data
         )
 
     return {"access_token": access_token, "refresh_token": refresh_token}
