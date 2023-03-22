@@ -10,6 +10,7 @@ session_occurrence_db_url = settings.db_url + "/session-occurrence/"
 
 print(session_occurrence_db_url)
 
+
 def build_date_and_time(date_time: str):
     """
     Parses string into date and time strings
