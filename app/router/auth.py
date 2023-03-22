@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
-from models import User
+from models import AuthUser
+from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -12,18 +13,35 @@ def index():
 
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
-def create_access_token(user: User, Authorize: AuthJWT = Depends()):
-    data = user.data
-    if user.data is None:
-        data = {}
-    if user.is_user_valid:
-        refresh_token = Authorize.create_refresh_token(
-            subject=user.id, user_claims=data
+def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
+    refresh_token = ""
+    if auth_user.type == "organization":
+        if not auth_user.name:
+            return HTTPException(
+                status_code=400, detail="Data Parameter {} is missing!".format("name")
+            )
+        expires = datetime.timedelta(years=5)
+        access_token = Authorize.create_access_token(
+            subject=auth_user.id,
+            user_claims={"name": auth_user.name},
+            expires_time=expires,
         )
-        Authorize.set_refresh_cookies(refresh_token)
-    access_token = Authorize.create_access_token(subject=user.id, user_claims=data)
-    Authorize.set_access_cookies(access_token)
-    return {"message": "Successful login"}
+
+    elif auth_user.type == "user":
+        if "is_user_valid" not in auth_user:
+            return HTTPException(
+                status_code=400,
+                detail="Data Parameter {} is missing!".format("is_user_valid"),
+            )
+        if auth_user.is_user_valid:
+            refresh_token = Authorize.create_refresh_token(
+                subject=auth_user.id, user_claims=auth_user.data
+            )
+        access_token = Authorize.create_access_token(
+            subject=auth_user.id, user_claims=auth_user.data
+        )
+
+    return {"access_token": access_token, "refresh_token": refresh_token}
 
 
 # generates refresh token
@@ -32,16 +50,16 @@ def refresh_token(Authorize: AuthJWT = Depends()):
     Authorize.jwt_refresh_token_required()
     current_user = Authorize.get_jwt_subject()
     new_access_token = Authorize.create_access_token(subject=current_user)
-    Authorize.set_access_cookies(new_access_token)
-    return {"message": "Token has been refreshed"}
+    return {"access_token": new_access_token}
 
 
-# example ->  protected method
-@router.get("/user")
-def user(Authorize: AuthJWT = Depends()):
+# verifies token
+@router.get("/verify")
+def verify_token(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
     current_user = Authorize.get_jwt_subject()
-    return {"user": current_user}
+    data = Authorize.get_raw_jwt()
+    return {"id": current_user, "data": data}
 
 
 @router.delete("/logout")
