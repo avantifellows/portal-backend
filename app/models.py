@@ -34,7 +34,7 @@ class GroupResponse(BaseModel):
 
 
 class UserSession(BaseModel):
-    user_id: int
+    user_id: str
     session_occurrence_id: int
     is_user_valid: bool
     data: Optional[Dict] = {}
