@@ -10,11 +10,11 @@ group_type_db_url = settings.db_url + "/group-type/"
 def get_group_type_data(request: Request):
     """
     This API returns details of a group-type based on the provided ID, if it exists in the database. The group-type is identified by a combination of type and child_id, where the child_id corresponds to the ID of either the program, group, or batch table, depending on the type of the group.
-    
-    Parameters: 
+
+    Parameters:
     id (int): The ID against which details need to be retrieved
     type (str): The type of the group-type being retrieved. Must be one of "group", "program", or "batch"
-    child_id (int): The ID of the corresponding table depending on the type of group-type being retrieved. 
+    child_id (int): The ID of the corresponding table depending on the type of group-type being retrieved.
 
     Returns:
     list: Returns group-type details if the ID exists in the database, 404 otherwise.
