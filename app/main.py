@@ -6,7 +6,7 @@ from router import (
     session_group,
     user_session,
     session_occurrence,
-    group_type
+    group_type,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request

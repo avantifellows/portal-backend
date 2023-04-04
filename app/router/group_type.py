@@ -42,6 +42,5 @@ def get_group_type_data(request: Request):
     if response.status_code == 200:
         if len(response.json()) != 0:
             return response.json()
-        raise HTTPException(
-            status_code=404, detail="GroupType does not exist!")
+        raise HTTPException(status_code=404, detail="GroupType does not exist!")
     raise HTTPException(status_code=404, detail="GroupType does not exist!")
