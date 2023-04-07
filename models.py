@@ -11,7 +11,7 @@ class User(BaseModel):
 class GroupResponse(BaseModel):
     id: str
     name: str
-    group_input_schema: Dict
-    group_locale: str = "default"
-    group_locale_data: Dict
+    input_schema: Dict
+    locale: str = "default"
+    locale_data: Dict
     auth_type: Optional[str] = ""
