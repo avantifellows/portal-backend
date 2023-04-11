@@ -6,6 +6,7 @@ from router import (
     session_group,
     user_session,
     session_occurrence,
+    batch,
     program,
     group_type,
 )
@@ -45,6 +46,7 @@ app.include_router(student.router)
 app.include_router(session_group.router)
 app.include_router(user_session.router)
 app.include_router(session_occurrence.router)
+app.include_router(batch.router)
 app.include_router(program.router)
 app.include_router(group_type.router)
 
