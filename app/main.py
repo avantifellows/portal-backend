@@ -6,6 +6,7 @@ from router import (
     session_group,
     user_session,
     session_occurrence,
+    group_type,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -43,6 +44,7 @@ app.include_router(student.router)
 app.include_router(session_group.router)
 app.include_router(user_session.router)
 app.include_router(session_occurrence.router)
+app.include_router(group_type.router)
 
 
 @app.get("/")
