@@ -8,6 +8,7 @@ student_db_url = settings.db_url + "/student"
 QUERY_PARAMS = [
     "student_id",
     "birth_date",
+    "phone_number",
     "father_name",
     "father_phone_number",
     "mother_name",
