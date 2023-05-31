@@ -125,4 +125,3 @@ async def verify_student(request: Request, student_id: str):
     if len(response.json()) != 0:
         return True
     return False
-    
