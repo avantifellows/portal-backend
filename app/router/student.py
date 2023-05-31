@@ -123,6 +123,6 @@ async def verify_student(request: Request, student_id: str):
 
     response = requests.get(student_db_url, params=query_params)
     if len(response.json()) != 0:
-          return True
+        return True
     return False
     
