@@ -26,7 +26,7 @@ STUDENT_QUERY_PARAMS = [
 ]
 
 USER_QUERY_PARAMS = [
-    "birth_date",
+    "date_of_birth",
     "phone",
 ]
 
@@ -135,12 +135,14 @@ async def verify_student(request: Request, student_id: str):
             for key in query_params.keys():
 
                 if key in USER_QUERY_PARAMS:
-                    if data["user"][key] != query_params[key]:
-                        return False
+                    if data["user"][key] != "":
+                        if data["user"][key] != query_params[key]:
+                            return False
 
                 if key in STUDENT_QUERY_PARAMS:
-                    if data[key] != query_params[key]:
-                        return False
+                    if data[key] != "":
+                        if data[key] != query_params[key]:
+                            return False
 
         return True
     return False
