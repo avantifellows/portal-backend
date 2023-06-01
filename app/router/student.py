@@ -121,9 +121,10 @@ async def verify_student(request: Request, student_id: str):
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
-        if key != 'student_id': query_params[key] = request.query_params[key]
+        if key != "student_id":
+            query_params[key] = request.query_params[key]
 
-    response = requests.get(student_db_url, params={'student_id' : student_id})
+    response = requests.get(student_db_url, params={"student_id": student_id})
 
     if response.status_code == 200:
         if len(response.json()) == 0:
@@ -134,7 +135,7 @@ async def verify_student(request: Request, student_id: str):
             for key in query_params.keys():
 
                 if key in USER_QUERY_PARAMS:
-                    if data['user'][key] != query_params[key]:
+                    if data["user"][key] != query_params[key]:
                         return False
 
                 if key in STUDENT_QUERY_PARAMS:
