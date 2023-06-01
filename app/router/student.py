@@ -5,10 +5,8 @@ from settings import settings
 router = APIRouter(prefix="/student", tags=["Student"])
 student_db_url = settings.db_url + "/student"
 
-QUERY_PARAMS = [
+STUDENT_QUERY_PARAMS = [
     "student_id",
-    "birth_date",
-    "phone_number",
     "father_name",
     "father_phone_number",
     "mother_name",
@@ -25,6 +23,11 @@ QUERY_PARAMS = [
     "has_internet_access",
     "contact_hours_per_week",
     "is_dropper",
+]
+
+USER_QUERY_PARAMS = [
+    "birth_date",
+    "phone",
 ]
 
 
@@ -61,7 +64,7 @@ def get_students(request: Request):
     """
     query_params = {}
     for key in request.query_params.keys():
-        if key not in QUERY_PARAMS:
+        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS:
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
@@ -114,14 +117,29 @@ async def verify_student(request: Request, student_id: str):
     """
     query_params = {}
     for key in request.query_params.keys():
-        if key not in QUERY_PARAMS:
+        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS:
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
-        query_params[key] = request.query_params[key]
-    query_params["student_id"] = student_id
+        if key != 'student_id': query_params[key] = request.query_params[key]
 
-    response = requests.get(student_db_url, params=query_params)
-    if len(response.json()) != 0:
+    response = requests.get(student_db_url, params={'student_id' : student_id})
+
+    if response.status_code == 200:
+        if len(response.json()) == 0:
+            return False
+        if len(query_params) != 0:
+
+            data = response.json()[0]
+            for key in query_params.keys():
+
+                if key in USER_QUERY_PARAMS:
+                    if data['user'][key] != query_params[key]:
+                        return False
+
+                if key in STUDENT_QUERY_PARAMS:
+                    if data[key] != query_params[key]:
+                        return False
+
         return True
     return False
