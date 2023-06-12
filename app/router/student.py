@@ -123,7 +123,6 @@ async def verify_student(request: Request, student_id: str):
             )
         if key != "student_id":
             query_params[key] = request.query_params[key]
-
     print(student_db_url)
     response = requests.get(student_db_url, params={"student_id": student_id})
 
