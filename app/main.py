@@ -9,6 +9,7 @@ from router import (
     batch,
     program,
     group_type,
+    user,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -49,6 +50,7 @@ app.include_router(session_occurrence.router)
 app.include_router(batch.router)
 app.include_router(program.router)
 app.include_router(group_type.router)
+app.include_router(user.router)
 
 
 @app.get("/")
