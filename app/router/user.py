@@ -3,6 +3,7 @@ import requests
 from settings import settings
 from router import student
 from id_generation import JNVIDGeneration
+from request import build_request
 
 router = APIRouter(prefix="/user", tags=["User"])
 user_db_url = settings.db_url + "/user"
@@ -26,6 +27,7 @@ STUDENT_QUERY_PARAMS = [
     "has_internet_access",
     "contact_hours_per_week",
     "is_dropper",
+
 ]
 
 USER_QUERY_PARAMS = [
@@ -33,11 +35,16 @@ USER_QUERY_PARAMS = [
     "last_name",
     "date_of_birth",
     "phone",
+    "whatsapp_phone",
     "email",
     "region",
     "state",
+    "district",
+    "gender",
+    "consent_check"
 ]
 
+ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_code", "school_name"]
 
 @router.get("/")
 def get_users(request: Request):
@@ -107,13 +114,13 @@ async def create_user(request: Request):
     data = await request.json()
     query_params = {}
     for key in data["form_data"].keys():
-        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS:
+        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS and key not in ENROLLMENT_RECORD_PARAMS:
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = data["form_data"][key]
-    print(data)
-    if not data["id_generation"]:
+
+    if data["id_generation"] == "false":
         if data["user_type"] == "student":
             if (
                 "student_id" not in query_params
@@ -123,13 +130,14 @@ async def create_user(request: Request):
                 raise HTTPException(
                     status_code=400, detail="Student ID is not part of the request data"
                 )
-            does_student_already_exist = student.verify_student(
-                student_id=query_params["student_id"]
+
+            does_student_already_exist = await student.verify_student(
+                build_request(query_params={"student_id": query_params["student_id"]}), student_id=query_params["student_id"]
             )
             if does_student_already_exist:
                 return query_params["student_id"]
             else:
-                response = requests.post(user_db_url, params=query_params)
+                response = requests.post(student_db_url+'/register', data=data["form_data"])
                 if response.status_code == 201:
                     return query_params["student_id"]
                 raise HTTPException(status_code=500, detail="User not created!")
