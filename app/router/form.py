@@ -4,11 +4,14 @@ from settings import settings
 from router import student
 from request import build_request
 
-router = APIRouter(prefix="/form-schema", tags=["Form"])
+router = APIRouter( tags=["Form"])
 form_db_url = settings.db_url + "/form-schema"
 student_db_url = settings.db_url + "/student"
 enrollment_record_db_url = settings.db_url + "/enrollment-record"
 
+FORM_GROUP_MAPPING = {
+    'HaryanaStudents': 'Haryana_Student_Details'
+}
 STUDENT_QUERY_PARAMS = [
     "student_id",
     "father_name",
@@ -43,7 +46,7 @@ USER_QUERY_PARAMS = [
 ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_code", "school_name"]
 
 
-@router.get("/")
+@router.get("/form-schema")
 def get_form_schema(request: Request):
     query_params = {}
     for key in request.query_params.keys():
@@ -64,13 +67,13 @@ def get_form_schema(request: Request):
 def get_student_fields(request: Request):
     query_params = {}
     for key in request.query_params.keys():
-        if key not in ["number_of_fields", "form_name", "student_id"]:
+        if key not in ["number_of_fields", "group", "student_id"]:
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
 
-    response = requests.get(form_db_url, params={"name": query_params["form_name"]})
+    response = requests.get(form_db_url, params={"name": FORM_GROUP_MAPPING[query_params["group"]]})
     if response.status_code == 200:
         if len(response.json()) != 0:
             form = response.json()
@@ -80,10 +83,11 @@ def get_student_fields(request: Request):
             enrollment_record_response = requests.get(
                 enrollment_record_db_url,
                 params={"student_id": query_params["student_id"]},
-            )
+            ).json()
+
             priority_order = sorted(form[0]["attributes"].keys())
             form_attributes = form[0]["attributes"]
-            print(response)
+
             returned_form_schema = {}
             number_of_fields = int(query_params["number_of_fields"])
             for priority in priority_order:
@@ -104,7 +108,7 @@ def get_student_fields(request: Request):
                             ] = form_attributes[priority]
                             number_of_fields -= 1
                     elif form_attributes[priority]["key"] in ENROLLMENT_RECORD_PARAMS:
-                        if (
+                        if (len(enrollment_record_response) > 0 and
                             enrollment_record_response[form_attributes[priority]["key"]]
                             is None
                         ):
@@ -118,6 +122,7 @@ def get_student_fields(request: Request):
                                 5 - number_of_fields
                             ] = form_attributes[priority]
                             number_of_fields -= 1
+
             return returned_form_schema
 
         raise HTTPException(status_code=404, detail="Program does not exist!")

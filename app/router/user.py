@@ -8,25 +8,28 @@ from request import build_request
 router = APIRouter(prefix="/user", tags=["User"])
 user_db_url = settings.db_url + "/user"
 student_db_url = settings.db_url + "/student"
+enrollment_record_db_url = settings.db_url + "/enrollment-record"
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
     "father_name",
-    "father_phone_number",
+    "father_phone",
     "mother_name",
-    "mother_phone_number",
+    "mother_phone",
     "category",
     "stream",
     "physically_handicapped",
     "family_income",
     "father_profession",
-    "father_educational_level",
+    "father_education_level",
     "mother_profession",
-    "mother_educational_level",
+    "mother_education_level",
     "time_of_device_availability",
     "has_internet_access",
     "contact_hours_per_week",
     "is_dropper",
+    "primary_smartphone_owner_profession",
+    "primary_smartphone_owner"
 
 ]
 
@@ -106,6 +109,7 @@ def id_generation(data):
         )
 
 
+
 @router.post("/")
 async def create_user(request: Request):
     """
@@ -137,6 +141,8 @@ async def create_user(request: Request):
             if does_student_already_exist:
                 return query_params["student_id"]
             else:
+                if "first_name" in data["form_data"] or "last_name" in data["form_data"]:
+                    data["form_data"]["full_name"] = data["form_data"]["first_name"] + " " + data["form_data"]["last_name"]
                 response = requests.post(student_db_url+'/register', data=data["form_data"])
                 if response.status_code == 201:
                     return query_params["student_id"]
@@ -174,3 +180,55 @@ async def create_user(request: Request):
                 if response.status_code == 200:
                     return response["student_id"]
                 raise HTTPException(status_code=500, detail="User not created!")
+
+
+@router.post("/complete-profile-details")
+async def complete_profile_details(request: Request):
+    data = await request.json()
+    student_data, user_data, enrollment_data = {}, {}, {}
+    for key in data.keys():
+        if key in STUDENT_QUERY_PARAMS:
+            if key in ['has_internet_access']:
+                student_data[key] = str(data[key] == 'Yes').lower()
+            else:
+                student_data[key] = data[key]
+        elif key in USER_QUERY_PARAMS:
+            user_data[key] = data[key]
+        elif key in ENROLLMENT_RECORD_PARAMS:
+            enrollment_data[key] = data[key]
+        else:
+            raise HTTPException(
+                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
+            )
+
+    if "first_name" in user_data or "last_name" in user_data:
+        user_data["full_name"] = user_data["first_name"] + " " + user_data["last_name"]
+
+
+    response = requests.get(student_db_url, params={"student_id": data["student_id"]})
+    if response.status_code == 200:
+        data = response.json()[0]
+        patched_data = requests.patch(student_db_url + "/" + str(data['id']), data=student_data)
+
+        if patched_data.status_code != 200:
+            raise HTTPException(status_code=500, detail="Student data not patched!")
+    else:
+        raise HTTPException(status_code=404, detail="Student not found!")
+
+    if len(user_data) > 0:
+        patched_data = requests.patch(user_db_url + "/" + str(response.user.id), data=user_data)
+        if patched_data != 200:
+            raise HTTPException(status_code=500, detail="User data not patched!")
+
+    if len(enrollment_data) > 0:
+        enrollment_response = requests.get(enrollment_record_db_url, params={"student_id": data["student_id"]})
+        if enrollment_response.status_code == 200:
+            data = enrollment_response.json()[0]
+            patched_data = requests.patch(enrollment_record_db_url + "/" + str(data['id']), data=enrollment_data)
+
+            if patched_data.status_code != 200:
+                raise HTTPException(status_code=500, detail="Enrollment data not patched!")
+        else:
+            raise HTTPException(status_code=404, detail="Enrollment not found!")
+
+    return True
