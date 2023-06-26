@@ -4,14 +4,12 @@ from settings import settings
 from router import student
 from request import build_request
 
-router = APIRouter( tags=["Form"])
+router = APIRouter(tags=["Form"])
 form_db_url = settings.db_url + "/form-schema"
 student_db_url = settings.db_url + "/student"
 enrollment_record_db_url = settings.db_url + "/enrollment-record"
 
-FORM_GROUP_MAPPING = {
-    'HaryanaStudents': 'Haryana_Student_Details'
-}
+FORM_GROUP_MAPPING = {"HaryanaStudents": "Haryana_Student_Details"}
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
@@ -74,7 +72,9 @@ def get_student_fields(request: Request):
             )
         query_params[key] = request.query_params[key]
 
-    response = requests.get(form_db_url, params={"name": FORM_GROUP_MAPPING[query_params["group"]]})
+    response = requests.get(
+        form_db_url, params={"name": FORM_GROUP_MAPPING[query_params["group"]]}
+    )
     if response.status_code == 200:
         if len(response.json()) != 0:
             form = response.json()
@@ -90,7 +90,9 @@ def get_student_fields(request: Request):
             form_attributes = form[0]["attributes"]
 
             returned_form_schema = {}
-            total_number_of_fields = number_of_fields = int(query_params["number_of_fields"])
+            total_number_of_fields = number_of_fields = int(
+                query_params["number_of_fields"]
+            )
             for priority in priority_order:
                 if number_of_fields > 0:
                     if (
@@ -109,8 +111,11 @@ def get_student_fields(request: Request):
                             ] = form_attributes[priority]
                             number_of_fields -= 1
                     elif form_attributes[priority]["key"] in ENROLLMENT_RECORD_PARAMS:
-                        if (len(enrollment_record_response) > 0 and
-                            enrollment_record_response[form_attributes[priority]["key"]]
+                        if (
+                            len(enrollment_record_response) > 0
+                            and enrollment_record_response[
+                                form_attributes[priority]["key"]
+                            ]
                             is None
                         ):
                             returned_form_schema[

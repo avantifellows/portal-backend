@@ -29,8 +29,7 @@ STUDENT_QUERY_PARAMS = [
     "contact_hours_per_week",
     "is_dropper",
     "primary_smartphone_owner_profession",
-    "primary_smartphone_owner"
-
+    "primary_smartphone_owner",
 ]
 
 USER_QUERY_PARAMS = [
@@ -44,10 +43,11 @@ USER_QUERY_PARAMS = [
     "state",
     "district",
     "gender",
-    "consent_check"
+    "consent_check",
 ]
 
 ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_code", "school_name"]
+
 
 @router.get("/")
 def get_users(request: Request):
@@ -109,7 +109,6 @@ def id_generation(data):
         )
 
 
-
 @router.post("/")
 async def create_user(request: Request):
     """
@@ -118,7 +117,11 @@ async def create_user(request: Request):
     data = await request.json()
     query_params = {}
     for key in data["form_data"].keys():
-        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS and key not in ENROLLMENT_RECORD_PARAMS:
+        if (
+            key not in STUDENT_QUERY_PARAMS
+            and key not in USER_QUERY_PARAMS
+            and key not in ENROLLMENT_RECORD_PARAMS
+        ):
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
@@ -136,14 +139,24 @@ async def create_user(request: Request):
                 )
 
             does_student_already_exist = await student.verify_student(
-                build_request(query_params={"student_id": query_params["student_id"]}), student_id=query_params["student_id"]
+                build_request(query_params={"student_id": query_params["student_id"]}),
+                student_id=query_params["student_id"],
             )
             if does_student_already_exist:
                 return query_params["student_id"]
             else:
-                if "first_name" in data["form_data"] or "last_name" in data["form_data"]:
-                    data["form_data"]["full_name"] = data["form_data"]["first_name"] + " " + data["form_data"]["last_name"]
-                response = requests.post(student_db_url+'/register', data=data["form_data"])
+                if (
+                    "first_name" in data["form_data"]
+                    or "last_name" in data["form_data"]
+                ):
+                    data["form_data"]["full_name"] = (
+                        data["form_data"]["first_name"]
+                        + " "
+                        + data["form_data"]["last_name"]
+                    )
+                response = requests.post(
+                    student_db_url + "/register", data=data["form_data"]
+                )
                 if response.status_code == 201:
                     return query_params["student_id"]
                 raise HTTPException(status_code=500, detail="User not created!")
@@ -188,8 +201,8 @@ async def complete_profile_details(request: Request):
     student_data, user_data, enrollment_data = {}, {}, {}
     for key in data.keys():
         if key in STUDENT_QUERY_PARAMS:
-            if key in ['has_internet_access']:
-                student_data[key] = str(data[key] == 'Yes').lower()
+            if key in ["has_internet_access"]:
+                student_data[key] = str(data[key] == "Yes").lower()
             else:
                 student_data[key] = data[key]
         elif key in USER_QUERY_PARAMS:
@@ -206,11 +219,12 @@ async def complete_profile_details(request: Request):
     if "last_name" in user_data:
         user_data["full_name"] = user_data["last_name"]
 
-
     response = requests.get(student_db_url, params={"student_id": data["student_id"]})
     data = response.json()[0]
     if response.status_code == 200:
-        patched_data = requests.patch(student_db_url + "/" + str(data['id']), data=student_data)
+        patched_data = requests.patch(
+            student_db_url + "/" + str(data["id"]), data=student_data
+        )
 
         if patched_data.status_code != 200:
             raise HTTPException(status_code=500, detail="Student data not patched!")
@@ -219,19 +233,25 @@ async def complete_profile_details(request: Request):
 
     if len(user_data) > 0:
         print(user_data, data)
-        patched_data = requests.patch(user_db_url + "/" + str(data["user"]["id"]), data=user_data)
+        patched_data = requests.patch(
+            user_db_url + "/" + str(data["user"]["id"]), data=user_data
+        )
         if patched_data.status_code != 200:
             raise HTTPException(status_code=500, detail="User data not patched!")
 
     if len(enrollment_data) > 0:
-        enrollment_response = requests.get(enrollment_record_db_url, params={"student_id": data["student_id"]})
+        enrollment_response = requests.get(
+            enrollment_record_db_url, params={"student_id": data["student_id"]}
+        )
         if enrollment_response.status_code == 200:
             data = enrollment_response.json()[0]
-            patched_data = requests.patch(enrollment_record_db_url + "/" + str(data['id']), data=enrollment_data)
+            patched_data = requests.patch(
+                enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
+            )
 
             if patched_data.status_code != 200:
-                raise HTTPException(status_code=500, detail="Enrollment data not patched!")
+                raise HTTPException(
+                    status_code=500, detail="Enrollment data not patched!"
+                )
         else:
             raise HTTPException(status_code=404, detail="Enrollment not found!")
-
-
