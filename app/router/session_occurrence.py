@@ -15,6 +15,7 @@ def build_date_and_time(date_time: str):
     """
     parsed_time = datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%SZ")
     date_string, time_string = str(parsed_time).split()
+    print(date_string, time_string)
     return (date_string, time_string)
 
 
