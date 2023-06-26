@@ -8,7 +8,7 @@ def build_request(
     path: str = "/",
     headers: dict = None,
     body: str = None,
-    query_params: dict = None
+    query_params: dict = None,
 ) -> Request:
     if headers is None:
         headers = {}
@@ -22,10 +22,11 @@ def build_request(
             "scheme": "https",
             "client": ("127.0.0.1", 8080),
             "server": (server, 443),
-            "query_string": query_params
+            "query_string": query_params,
         }
     )
     if body:
+
         async def request_body():
             return body
 

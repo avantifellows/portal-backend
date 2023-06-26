@@ -54,6 +54,7 @@ app.include_router(group_type.router)
 app.include_router(form.router)
 app.include_router(user.router)
 
+
 @app.get("/")
 def index():
     return "Welcome to Portal!"

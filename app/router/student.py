@@ -24,14 +24,10 @@ STUDENT_QUERY_PARAMS = [
     "has_internet_access",
     "contact_hours_per_week",
     "is_dropper",
-    "group"
+    "group",
 ]
 
-USER_QUERY_PARAMS = [
-    "date_of_birth",
-    "phone",
-    "id"
-]
+USER_QUERY_PARAMS = ["date_of_birth", "phone", "id"]
 
 
 @router.get("/")
@@ -146,7 +142,6 @@ async def verify_student(request: Request, student_id: str):
                     if data[key] != "":
                         if data[key] != query_params[key]:
                             return False
-
 
         return True
     return False

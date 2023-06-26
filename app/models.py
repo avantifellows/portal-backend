@@ -23,11 +23,12 @@ class SessionResponse(BaseModel):
     platform_id: Optional[str] = None
     is_session_open: bool
     type: Optional[str] = None
-    auth_type: Optional[str]= None
-    activate_signup: Optional[str]= None
-    id_generation: Optional[str]= None
-    redirection: Optional[str]= None
-    pop_up_form: Optional[str]= None
+    auth_type: Optional[str] = None
+    activate_signup: Optional[str] = None
+    id_generation: Optional[str] = None
+    redirection: Optional[str] = None
+    pop_up_form: Optional[str] = None
+
 
 class GroupResponse(BaseModel):
     id: str
