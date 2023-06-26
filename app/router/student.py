@@ -127,7 +127,6 @@ async def verify_student(request: Request, student_id: str):
         if key != "student_id" or key != "group":
             query_params[key] = request.query_params[key]
 
-    print(student_db_url)
     response = requests.get(student_db_url, params={"student_id": student_id})
 
     if response.status_code == 200:
@@ -148,7 +147,6 @@ async def verify_student(request: Request, student_id: str):
                         if data[key] != query_params[key]:
                             return False
 
-                print(data["user"]["id"])
 
         return True
     return False
