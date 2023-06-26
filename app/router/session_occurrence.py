@@ -15,7 +15,6 @@ def build_date_and_time(date_time: str):
     """
     parsed_time = datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%SZ")
     date_string, time_string = str(parsed_time).split()
-    print(date_string, time_string)
     return (date_string, time_string)
 
 
@@ -24,6 +23,7 @@ def get_current_datetime():
     Returns current datetime
     """
     current_datetime = datetime.now()
+    print(current_datetime)
     return build_date_and_time(current_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
