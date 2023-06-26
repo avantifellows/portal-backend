@@ -4,6 +4,7 @@ from settings import settings
 
 router = APIRouter(prefix="/student", tags=["Student"])
 student_db_url = settings.db_url + "/student"
+group_db_url = settings.db_url + "/group"
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
@@ -23,11 +24,13 @@ STUDENT_QUERY_PARAMS = [
     "has_internet_access",
     "contact_hours_per_week",
     "is_dropper",
+    "group"
 ]
 
 USER_QUERY_PARAMS = [
     "date_of_birth",
     "phone",
+    "id"
 ]
 
 
@@ -121,17 +124,17 @@ async def verify_student(request: Request, student_id: str):
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
-        if key != "student_id":
+        if key != "student_id" or key != "group":
             query_params[key] = request.query_params[key]
-    print(student_db_url)
+
     response = requests.get(student_db_url, params={"student_id": student_id})
 
     if response.status_code == 200:
         if len(response.json()) == 0:
             return False
         if len(query_params) != 0:
-
             data = response.json()[0]
+
             for key in query_params.keys():
 
                 if key in USER_QUERY_PARAMS:
@@ -143,6 +146,7 @@ async def verify_student(request: Request, student_id: str):
                     if data[key] != "":
                         if data[key] != query_params[key]:
                             return False
+
 
         return True
     return False

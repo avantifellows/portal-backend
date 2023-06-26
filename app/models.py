@@ -18,19 +18,23 @@ class SessionResponse(BaseModel):
     end_time: Optional[str] = None
     platform: Optional[str] = None
     platform_link: Optional[str] = None
-    purpose: Optional[str] = None
+    purpose: Optional[Dict] = {}
     meta_data: Optional[Dict] = {}
     platform_id: Optional[str] = None
     is_session_open: bool
-
+    type: Optional[str] = None
+    auth_type: Optional[str]= None
+    activate_signup: Optional[str]= None
+    id_generation: Optional[str]= None
+    redirection: Optional[str]= None
+    pop_up_form: Optional[str]= None
 
 class GroupResponse(BaseModel):
     id: str
     name: str
-    group_input_schema: Optional[Dict] = {}
-    group_locale: Optional[str] = ""
-    group_locale_data: Optional[Dict] = {}
-    auth_type: Optional[str] = ""
+    input_schema: Optional[Dict] = {}
+    locale: Optional[str] = ""
+    locale_data: Optional[Dict] = {}
 
 
 class UserSession(BaseModel):
