@@ -201,13 +201,15 @@ async def complete_profile_details(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
 
-    if "first_name" in user_data or "last_name" in user_data:
-        user_data["full_name"] = user_data["first_name"] + " " + user_data["last_name"]
+    if "first_name" in user_data:
+        user_data["full_name"] = user_data["first_name"] + " "
+    if "last_name" in user_data:
+        user_data["full_name"] = user_data["last_name"]
 
 
     response = requests.get(student_db_url, params={"student_id": data["student_id"]})
+    data = response.json()[0]
     if response.status_code == 200:
-        data = response.json()[0]
         patched_data = requests.patch(student_db_url + "/" + str(data['id']), data=student_data)
 
         if patched_data.status_code != 200:
@@ -216,8 +218,9 @@ async def complete_profile_details(request: Request):
         raise HTTPException(status_code=404, detail="Student not found!")
 
     if len(user_data) > 0:
-        patched_data = requests.patch(user_db_url + "/" + str(response.user.id), data=user_data)
-        if patched_data != 200:
+        print(user_data, data)
+        patched_data = requests.patch(user_db_url + "/" + str(data["user"]["id"]), data=user_data)
+        if patched_data.status_code != 200:
             raise HTTPException(status_code=500, detail="User data not patched!")
 
     if len(enrollment_data) > 0:
@@ -231,4 +234,4 @@ async def complete_profile_details(request: Request):
         else:
             raise HTTPException(status_code=404, detail="Enrollment not found!")
 
-    return True
+
