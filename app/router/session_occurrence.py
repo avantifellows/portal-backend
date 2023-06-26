@@ -23,6 +23,7 @@ def get_current_datetime():
     Returns current datetime
     """
     current_datetime = datetime.now()
+    print(current_datetime)
     return build_date_and_time(current_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
