@@ -4,6 +4,7 @@ from settings import settings
 
 router = APIRouter(prefix="/session-group", tags=["Session-Group"])
 session_group_db_url = settings.db_url + "/group-session/"
+group_type_db_url = settings.db_url + "/group-type/"
 
 
 @router.get("/{session_id}")
@@ -31,6 +32,14 @@ def get_group_for_session(session_id: str):
     response = requests.get(session_group_db_url + session_id)
     if response.status_code == 200:
         if len(response.json()) != 0:
-            return response.json()
+            data = response.json()
+            group_type_response = requests.get(
+                group_type_db_url,
+                params={"type": "group", "child_id": data["group_type_id"]},
+            )
+            if group_type_response.status_code == 200:
+                if len(group_type_response.json()) != 0:
+                    group_data = group_type_response.json()
+                    return group_data[0]["child_id"]
         raise HTTPException(status_code=404, detail="Session ID does not exist!")
     raise HTTPException(status_code=404, detail="Session ID does not exist!")

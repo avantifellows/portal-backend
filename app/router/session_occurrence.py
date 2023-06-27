@@ -3,7 +3,9 @@ import requests
 from settings import settings
 from datetime import datetime
 from models import SessionResponse
+import pytz
 
+IST = pytz.timezone("Asia/Kolkata")
 router = APIRouter(prefix="/session-occurrence", tags=["Session Occurrence"])
 session_db_url = settings.db_url + "/session/"
 session_occurrence_db_url = settings.db_url + "/session-occurrence/"
@@ -22,7 +24,8 @@ def get_current_datetime():
     """
     Returns current datetime
     """
-    current_datetime = datetime.now()
+    current_datetime = datetime.now(IST)
+
     return build_date_and_time(current_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
@@ -33,8 +36,10 @@ def has_session_started(start_time: str):
     - Otherwise, returns False
     """
     if start_time is not None:
+
         session_start_date, session_start_time = build_date_and_time(start_time)
         current_date, current_time = get_current_datetime()
+
         return session_start_date == current_date and session_start_time <= current_time
     return True
 
@@ -48,6 +53,7 @@ def has_session_ended(end_time: str):
     if end_time is not None:
         session_end_date, session_end_time = build_date_and_time(end_time)
         current_date, current_time = get_current_datetime()
+
         return session_end_date == current_date and session_end_time >= current_time
     return True
 
@@ -87,9 +93,10 @@ async def get_session_occurrence_data(request: Request):
         query_params[key] = request.query_params[key]
 
     response = requests.get(session_occurrence_db_url, params=query_params)
-
+    print(response)
     if response.status_code == 200:
         if len(response.json()) != 0:
+
             session_occurrence_data = response.json()
             matched_session_occurrences = [
                 session_occurrence
@@ -97,13 +104,16 @@ async def get_session_occurrence_data(request: Request):
                 if has_session_started(session_occurrence["start_time"])
                 and has_session_ended(session_occurrence["end_time"])
             ]
+
             if len(matched_session_occurrences) > 0:
                 response = requests.get(session_db_url, params=query_params)
 
                 if response.status_code == 200:
                     session_data = response.json()[0]
+
                     if session_data["is_active"]:
                         session_data["is_session_open"] = True
+
                         return session_data
                     return {"is_session_open": False}
                 raise HTTPException(
