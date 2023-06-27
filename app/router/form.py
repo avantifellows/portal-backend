@@ -94,8 +94,9 @@ def get_student_fields(request: Request):
             total_number_of_fields = number_of_fields = int(
                 query_params["number_of_fields"]
             )
-
+            print(priority_order)
             for priority in priority_order:
+                print(form_attributes[str(priority)]["key"])
                 if number_of_fields > 0:
                     if (
                         form_attributes[str(priority)]["key"] == "first_name"

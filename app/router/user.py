@@ -48,6 +48,38 @@ USER_QUERY_PARAMS = [
 
 ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_code", "school_name"]
 
+def is_response_valid(response):
+    if response.status_code == 200:
+        if len(response.json()) == 0:
+            return HTTPException(status_code=404, detail="No user found!")
+        return response.json()
+    raise HTTPException(status_code=404, detail="No user found!")
+
+def build_enrollment_data(data):
+    print(data)
+    enrollment_data ={}
+    for key in data.keys():
+        print(key)
+        if key in ENROLLMENT_RECORD_PARAMS:
+            enrollment_data[key] = data[key]
+    return enrollment_data
+
+def build_student_data(data):
+    student_data = {}
+    for key in data.keys():
+        if key in STUDENT_QUERY_PARAMS:
+            if key in ["has_internet_access"]:
+                student_data[key] = str(data[key] == "Yes").lower()
+            else:
+                student_data[key] = data[key]
+    return student_data
+
+def build_user_data(data):
+    user_data = {}
+    for key in data.keys():
+       if key in USER_QUERY_PARAMS:
+            user_data[key] = data[key]
+    return user_data
 
 @router.get("/")
 def get_users(request: Request):
@@ -88,11 +120,7 @@ def get_users(request: Request):
         query_params[key] = request.query_params[key]
 
     response = requests.get(user_db_url, params=query_params)
-    if response.status_code == 200:
-        if len(response.json()) == 0:
-            return HTTPException(status_code=404, detail="No user found!")
-        return response.json()
-    raise HTTPException(status_code=404, detail="No user found!")
+    return is_response_valid(response)
 
 
 def id_generation(data):
@@ -145,21 +173,24 @@ async def create_user(request: Request):
             if does_student_already_exist:
                 return query_params["student_id"]
             else:
-                if (
-                    "first_name" in data["form_data"]
-                    or "last_name" in data["form_data"]
-                ):
-                    data["form_data"]["full_name"] = (
-                        data["form_data"]["first_name"]
-                        + " "
-                        + data["form_data"]["last_name"]
-                    )
+                print(data["form_data"])
                 response = requests.post(
                     student_db_url + "/register", data=data["form_data"]
                 )
                 if response.status_code == 201:
-                    return query_params["student_id"]
+
+                     enrollment_data = build_enrollment_data(data["form_data"])
+
+                     if len(enrollment_data) > 0:
+                        enrollment_data["student_id"] = data["form_data"]["student_id"]
+                        print(enrollment_data)
+                        enrollment_response = requests.post(
+                            enrollment_record_db_url, data=enrollment_data
+                        )
+                        if enrollment_response.status_code == 200:
+                            return query_params["student_id"]
                 raise HTTPException(status_code=500, detail="User not created!")
+
     else:
         if data["user_type"] == "student":
             if (
@@ -198,21 +229,18 @@ async def create_user(request: Request):
 @router.post("/complete-profile-details")
 async def complete_profile_details(request: Request):
     data = await request.json()
-    student_data, user_data, enrollment_data = {}, {}, {}
+
     for key in data.keys():
-        if key in STUDENT_QUERY_PARAMS:
-            if key in ["has_internet_access"]:
-                student_data[key] = str(data[key] == "Yes").lower()
-            else:
-                student_data[key] = data[key]
-        elif key in USER_QUERY_PARAMS:
-            user_data[key] = data[key]
-        elif key in ENROLLMENT_RECORD_PARAMS:
-            enrollment_data[key] = data[key]
-        else:
+        if (
+            key not in STUDENT_QUERY_PARAMS
+            and key not in USER_QUERY_PARAMS
+            and key not in ENROLLMENT_RECORD_PARAMS
+        ):
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
+
+    user_data, student_data, enrollment_data = build_user_data(data), build_student_data(data), build_enrollment_data(data)
 
     if "first_name" in user_data:
         user_data["full_name"] = user_data["first_name"] + " "
@@ -220,8 +248,9 @@ async def complete_profile_details(request: Request):
         user_data["full_name"] = user_data["last_name"]
 
     response = requests.get(student_db_url, params={"student_id": data["student_id"]})
-    data = response.json()[0]
+
     if response.status_code == 200:
+        data = response.json()
         patched_data = requests.patch(
             student_db_url + "/" + str(data["id"]), data=student_data
         )
@@ -232,7 +261,8 @@ async def complete_profile_details(request: Request):
         raise HTTPException(status_code=404, detail="Student not found!")
 
     if len(user_data) > 0:
-        print(user_data, data)
+
+        data = response.json()[0]
         patched_data = requests.patch(
             user_db_url + "/" + str(data["user"]["id"]), data=user_data
         )
@@ -240,6 +270,8 @@ async def complete_profile_details(request: Request):
             raise HTTPException(status_code=500, detail="User data not patched!")
 
     if len(enrollment_data) > 0:
+        print(enrollment_data)
+        data = response.json()[0]
         enrollment_response = requests.get(
             enrollment_record_db_url, params={"student_id": data["student_id"]}
         )
