@@ -178,19 +178,23 @@ async def create_user(request: Request):
                 return query_params["student_id"]
             else:
                 if "first_name" in data["form_data"]:
-                    data["form_data"]["full_name"] = data["form_data"]["first_name"] + " "
+                    data["form_data"]["full_name"] = (
+                        data["form_data"]["first_name"] + " "
+                    )
                 if "last_name" in data["form_data"]:
                     data["form_data"]["full_name"] = data["form_data"]["last_name"]
                 response = requests.post(
                     student_db_url + "/register", data=data["form_data"]
                 )
                 if response.status_code == 201:
-                    school_response = requests.get(school_db_url, params={'name': data["form_data"]["school_name"]})
-                    data["form_data"]["school_id"] = school_response.json()[0]['id']
+                    school_response = requests.get(
+                        school_db_url, params={"name": data["form_data"]["school_name"]}
+                    )
+                    data["form_data"]["school_id"] = school_response.json()[0]["id"]
                     enrollment_data = build_enrollment_data(data["form_data"])
 
                     if len(enrollment_data) > 0:
-                        enrollment_data["student_id"] = response.json()['id']
+                        enrollment_data["student_id"] = response.json()["id"]
 
                         print(enrollment_data)
                         enrollment_response = requests.post(
