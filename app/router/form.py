@@ -56,6 +56,27 @@ def is_response_empty(response_data, error_message):
         return response_data
     raise HTTPException(status_code=404, detail=error_message)
 
+def school_data(form_attributes, priority,enrollment_record_data, student_response,returned_form_schema, total_number_of_fields, number_of_fields_left ):
+    if form_attributes[str(priority)]["key"] == "school_name":
+
+        if enrollment_record_data["school_id"] is None:
+            if student_response["user"]["district"] is None:
+                if student_response["user"]["state"] is None:
+                    returned_form_schema[total_number_of_fields - number_of_fields_left] = form_attributes["state"]
+                    number_of_fields_left -= 1
+
+                else:
+                    returned_form_schema[
+                                                    total_number_of_fields - number_of_fields_left
+                                                ] = form_attributes["district"]
+                    number_of_fields_left -= 1
+            else:
+                returned_form_schema[
+                                                    total_number_of_fields - number_of_fields_left
+                                                ] = form_attributes["school_name"]
+                number_of_fields_left -= 1
+
+    return returned_form_schema
 
 @router.get("/form-schema")
 def get_form_schema(request: Request):
@@ -155,50 +176,37 @@ def get_student_fields(request: Request):
                             number_of_fields_left -= 1
 
                     # if the form field is a enrollment record table attribute, we check in the enrollement record table
-                    # elif (
-                    #     form_attributes[str(priority)]["key"]
-                    #     in ENROLLMENT_RECORD_PARAMS
-                    # ):
+                    elif (
+                        form_attributes[str(priority)]["key"]
+                        in ENROLLMENT_RECORD_PARAMS
+                    ):
+                        enrollment_record_data = enrollment_record_response.json()
+                        # check if enrollment record exists for this student
 
-                    # # check if enrollment record exists for this student
-                    # if(len(enrollment_record_response) > 0):
+                        if enrollment_record_data != []:
+                            # if the form field is school name, we check if school id exists in the enrollment record
+                            if form_attributes[str(priority)]["key"] == "school_name":
+                                returned_form_schema = school_data(form_attributes, priority, enrollment_record_data, student_response, returned_form_schema, total_number_of_fields, number_of_fields_left)
 
-                    #     # if the form field is school name, we check if school id exists in the enrollment record
-                    #     if form_attributes[str(priority)]["key"] != "school_name":
-                    #         if enrollment_record_response["school_id"] is None:
-                    #             if student_response["user"]["district"] is None:
-                    #                 if student_response["user"]["state"] is None:
-                    #                     returned_form_schema[
-                    #                 total_number_of_fields - number_of_fields_left
-                    #             ] = form_attributes["state"]
-                    #                     number_of_fields_left -= 1
-                    #                 else:
+                        else:
+                            if form_attributes[str(priority)]["key"] == "school_name":
+                                returned_form_schema[total_number_of_fields - number_of_fields_left] = [x for x in list(form_attributes.values()) if x['key'] == 'state'][0]
+                                number_of_fields_left -= 1
 
-                    #             returned_form_schema[
-                    #                 total_number_of_fields - number_of_fields_left
-                    #             ] = form_attributes[str(priority)]
-                    #             number_of_fields_left -= 1
-                    #     else:
-                    #         returned_form_schema[
-                    #             total_number_of_fields - number_of_fields_left
-                    #         ] = form_attributes[str(priority)]
-                    #         number_of_fields_left -= 1
+                            else:
+                                returned_form_schema[
+                                        total_number_of_fields - number_of_fields_left
+                                        ] = form_attributes[str(priority)]
+                                number_of_fields_left -= 1
 
-                    # # if enrollment record is empty
-                    # else:
-
-                    #     returned_form_schema[
-                    #             total_number_of_fields - number_of_fields
-                    #         ] = form_attributes[str(priority)]
-                    #     number_of_fields -= 1
                     else:
                         if (
                             student_response[form_attributes[str(priority)]["key"]]
                             is None
                         ):
                             returned_form_schema[
-                                total_number_of_fields - number_of_fields
+                                total_number_of_fields - number_of_fields_left
                             ] = form_attributes[str(priority)]
-                            number_of_fields -= 1
+                            number_of_fields_left -= 1
 
             return returned_form_schema
