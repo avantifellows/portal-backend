@@ -28,6 +28,7 @@ class SessionResponse(BaseModel):
     id_generation: Optional[str] = None
     redirection: Optional[str] = None
     pop_up_form: Optional[str] = None
+    form_schema_id: Optional[str] = None
 
 
 class GroupResponse(BaseModel):
