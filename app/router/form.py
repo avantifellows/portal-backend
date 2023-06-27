@@ -86,7 +86,6 @@ def get_student_fields(request: Request):
                 params={"student_id": query_params["student_id"]},
             ).json()
 
-
             priority_order = sorted([eval(i) for i in form[0]["attributes"].keys()])
             form_attributes = form[0]["attributes"]
 
@@ -108,19 +107,25 @@ def get_student_fields(request: Request):
                             ] = form_attributes[priority]
                             number_of_fields -= 1
                     elif form_attributes[str(priority)]["key"] in USER_QUERY_PARAMS:
-                        if response["user"][form_attributes[str(priority)]["key"]] is None:
+                        if (
+                            response["user"][form_attributes[str(priority)]["key"]]
+                            is None
+                        ):
                             returned_form_schema[
                                 total_number_of_fields - number_of_fields
                             ] = form_attributes[str(priority)]
                             number_of_fields -= 1
-                    elif form_attributes[str(priority)]["key"] in ENROLLMENT_RECORD_PARAMS:
+                    elif (
+                        form_attributes[str(priority)]["key"]
+                        in ENROLLMENT_RECORD_PARAMS
+                    ):
                         if (
                             len(enrollment_record_response) > 0
                             and enrollment_record_response[
                                 form_attributes[str(priority)]["key"]
                             ]
                             is None
-                        ) or ( len(enrollment_record_response) == 0):
+                        ) or (len(enrollment_record_response) == 0):
                             returned_form_schema[
                                 total_number_of_fields - number_of_fields
                             ] = form_attributes[str(priority)]

@@ -48,6 +48,7 @@ USER_QUERY_PARAMS = [
 
 ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_code", "school_name"]
 
+
 def is_response_valid(response):
     if response.status_code == 200:
         if len(response.json()) == 0:
@@ -55,14 +56,16 @@ def is_response_valid(response):
         return response.json()
     raise HTTPException(status_code=404, detail="No user found!")
 
+
 def build_enrollment_data(data):
     print(data)
-    enrollment_data ={}
+    enrollment_data = {}
     for key in data.keys():
         print(key)
         if key in ENROLLMENT_RECORD_PARAMS:
             enrollment_data[key] = data[key]
     return enrollment_data
+
 
 def build_student_data(data):
     student_data = {}
@@ -74,12 +77,14 @@ def build_student_data(data):
                 student_data[key] = data[key]
     return student_data
 
+
 def build_user_data(data):
     user_data = {}
     for key in data.keys():
-       if key in USER_QUERY_PARAMS:
+        if key in USER_QUERY_PARAMS:
             user_data[key] = data[key]
     return user_data
+
 
 @router.get("/")
 def get_users(request: Request):
@@ -179,9 +184,9 @@ async def create_user(request: Request):
                 )
                 if response.status_code == 201:
 
-                     enrollment_data = build_enrollment_data(data["form_data"])
+                    enrollment_data = build_enrollment_data(data["form_data"])
 
-                     if len(enrollment_data) > 0:
+                    if len(enrollment_data) > 0:
                         enrollment_data["student_id"] = data["form_data"]["student_id"]
                         print(enrollment_data)
                         enrollment_response = requests.post(
@@ -240,7 +245,11 @@ async def complete_profile_details(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
 
-    user_data, student_data, enrollment_data = build_user_data(data), build_student_data(data), build_enrollment_data(data)
+    user_data, student_data, enrollment_data = (
+        build_user_data(data),
+        build_student_data(data),
+        build_enrollment_data(data),
+    )
 
     if "first_name" in user_data:
         user_data["full_name"] = user_data["first_name"] + " "

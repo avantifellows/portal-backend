@@ -5,7 +5,7 @@ from datetime import datetime
 from models import SessionResponse
 import pytz
 
-IST = pytz.timezone('Asia/Kolkata')
+IST = pytz.timezone("Asia/Kolkata")
 router = APIRouter(prefix="/session-occurrence", tags=["Session Occurrence"])
 session_db_url = settings.db_url + "/session/"
 session_occurrence_db_url = settings.db_url + "/session-occurrence/"
