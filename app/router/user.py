@@ -9,6 +9,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 user_db_url = settings.db_url + "/user"
 student_db_url = settings.db_url + "/student"
 enrollment_record_db_url = settings.db_url + "/enrollment-record"
+school_db_url = settings.db_url + "/school"
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
@@ -46,7 +47,7 @@ USER_QUERY_PARAMS = [
     "consent_check",
 ]
 
-ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_code", "school_name"]
+ENROLLMENT_RECORD_PARAMS = ["grade", "board_medium", "school_id", "school_name"]
 
 
 def is_response_valid(response):
@@ -58,10 +59,8 @@ def is_response_valid(response):
 
 
 def build_enrollment_data(data):
-    print(data)
     enrollment_data = {}
     for key in data.keys():
-        print(key)
         if key in ENROLLMENT_RECORD_PARAMS:
             enrollment_data[key] = data[key]
     return enrollment_data
@@ -178,21 +177,26 @@ async def create_user(request: Request):
             if does_student_already_exist:
                 return query_params["student_id"]
             else:
-                print(data["form_data"])
+                if "first_name" in data["form_data"]:
+                    data["form_data"]["full_name"] = data["form_data"]["first_name"] + " "
+                if "last_name" in data["form_data"]:
+                    data["form_data"]["full_name"] = data["form_data"]["last_name"]
                 response = requests.post(
                     student_db_url + "/register", data=data["form_data"]
                 )
                 if response.status_code == 201:
-
+                    school_response = requests.get(school_db_url, params={'name': data["form_data"]["school_name"]})
+                    data["form_data"]["school_id"] = school_response.json()[0]['id']
                     enrollment_data = build_enrollment_data(data["form_data"])
 
                     if len(enrollment_data) > 0:
-                        enrollment_data["student_id"] = data["form_data"]["student_id"]
+                        enrollment_data["student_id"] = response.json()['id']
+
                         print(enrollment_data)
                         enrollment_response = requests.post(
                             enrollment_record_db_url, data=enrollment_data
                         )
-                        if enrollment_response.status_code == 200:
+                        if enrollment_response.status_code == 201:
                             return query_params["student_id"]
                 raise HTTPException(status_code=500, detail="User not created!")
 

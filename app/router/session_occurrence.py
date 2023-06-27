@@ -25,7 +25,7 @@ def get_current_datetime():
     Returns current datetime
     """
     current_datetime = datetime.now(IST)
-    print(current_datetime)
+
     return build_date_and_time(current_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
@@ -36,8 +36,10 @@ def has_session_started(start_time: str):
     - Otherwise, returns False
     """
     if start_time is not None:
+
         session_start_date, session_start_time = build_date_and_time(start_time)
         current_date, current_time = get_current_datetime()
+
         return session_start_date == current_date and session_start_time <= current_time
     return True
 
@@ -51,6 +53,7 @@ def has_session_ended(end_time: str):
     if end_time is not None:
         session_end_date, session_end_time = build_date_and_time(end_time)
         current_date, current_time = get_current_datetime()
+
         return session_end_date == current_date and session_end_time >= current_time
     return True
 
