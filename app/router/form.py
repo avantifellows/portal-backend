@@ -190,16 +190,18 @@ def get_student_fields(request: Request):
                         form_attributes[str(priority)]["key"]
                         in ENROLLMENT_RECORD_PARAMS
                     ):
-                        enrollment_record_data = enrollment_record_response.json()[0]
+                        enrollment_record = enrollment_record_response.json()
+                        print(enrollment_record)
                         # check if enrollment record exists for this student
-                        if enrollment_record_data != []:
+                        if enrollment_record != []:
+                            enrollment_record_data = enrollment_record[0]
                             # if the form field is school name, we check if school id exists in the enrollment record
                             if form_attributes[str(priority)]["key"] == "school_name":
                                 if enrollment_record_data["school_id"] is None:
                                     returned_form_schema = school_data(
                                         form_attributes,
                                         priority,
-                                        enrollment_record_data[0],
+                                        enrollment_record_data,
                                         student_response,
                                         returned_form_schema,
                                         total_number_of_fields,
