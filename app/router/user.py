@@ -267,10 +267,16 @@ async def complete_profile_details(request: Request):
     response = requests.get(student_db_url, params={"student_id": data["student_id"]})
 
     if response.status_code == 200:
-        data = response.json()
-        patched_data = requests.patch(
-            student_db_url + "/" + str(data["id"]), data=student_data
-        )
+        data = response.json()[0]
+        print(data)
+        if data != []:
+            patched_data = requests.patch(
+                student_db_url + "/" + str(data["id"]), data=student_data
+            )
+        else:
+            patched_data = requests.post(
+                student_db_url, data=student_data
+            )
 
         if patched_data.status_code != 200:
             raise HTTPException(status_code=500, detail="Student data not patched!")
@@ -294,13 +300,18 @@ async def complete_profile_details(request: Request):
         )
         if enrollment_response.status_code == 200:
             data = enrollment_response.json()[0]
-            patched_data = requests.patch(
-                enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
-            )
-
-            if patched_data.status_code != 200:
-                raise HTTPException(
-                    status_code=500, detail="Enrollment data not patched!"
+            if data != []:
+                patched_data = requests.patch(
+                    enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
                 )
+                if patched_data.status_code != 200:
+                    raise HTTPException(
+                        status_code=500, detail="Enrollment data not patched!"
+                    )
+            else:
+                patched_data = requests.post(
+                    enrollment_record_db_url, data=enrollment_data)
+
+
         else:
             raise HTTPException(status_code=404, detail="Enrollment not found!")
