@@ -78,13 +78,14 @@ def get_student_fields(request: Request):
     if response.status_code == 200:
         if len(response.json()) != 0:
             form = response.json()
-            response = student.get_students(
+            student_response = student.get_students(
                 build_request(query_params={"student_id": query_params["student_id"]})
             )[0]
+
             enrollment_record_response = requests.get(
                 enrollment_record_db_url,
-                params={"student_id": response['id']},
-            ).json()[0]
+                params={"student_id": student_response['id']},
+            ).json()
 
             priority_order = sorted([eval(i) for i in form[0]["attributes"].keys()])
             form_attributes = form[0]["attributes"]
@@ -96,11 +97,12 @@ def get_student_fields(request: Request):
             for priority in priority_order:
 
                 if number_of_fields > 0:
+                    print(form_attributes[str(priority)]["key"], student_response)
                     if (
                         form_attributes[str(priority)]["key"] == "first_name"
                         or form_attributes[str(priority)]["key"] == "last_name"
                     ):
-                        if response["user"]["full_name"] is None:
+                        if student_response["user"]["full_name"] is None:
                             returned_form_schema[
                                 total_number_of_fields - number_of_fields
                             ] = form_attributes[str(priority)]
@@ -108,39 +110,38 @@ def get_student_fields(request: Request):
 
                     elif form_attributes[str(priority)]["key"] in USER_QUERY_PARAMS:
                         if (
-                            response["user"][form_attributes[str(priority)]["key"]]
+                            student_response["user"][form_attributes[str(priority)]["key"]]
                             is None
                         ):
                             returned_form_schema[
                                 total_number_of_fields - number_of_fields
                             ] = form_attributes[str(priority)]
                             number_of_fields -= 1
-                    elif (
-                        form_attributes[str(priority)]["key"] == "school_name"
 
-                    ):
-                        if enrollment_record_response["school_id"] is None:
-                            returned_form_schema[
-                                total_number_of_fields - number_of_fields
-                            ] = form_attributes[str(priority)]
-                            number_of_fields -= 1
                     elif (
                         form_attributes[str(priority)]["key"]
                         in ENROLLMENT_RECORD_PARAMS
                     ):
-                        if (
-                            len(enrollment_record_response) > 0
-                            and enrollment_record_response[
-                                form_attributes[str(priority)]["key"]
-                            ]
-                            is None
-                        ) or (len(enrollment_record_response) == 0):
+                        if(len(enrollment_record_response) > 0):
+                            if form_attributes[str(priority)]["key"] == "school_name":
+                                if enrollment_record_response["school_id"] is None:
+                                    returned_form_schema[
+                                        total_number_of_fields - number_of_fields
+                                    ] = form_attributes[str(priority)]
+                                    number_of_fields -= 1
+                            else:
+                                returned_form_schema[
+                                    total_number_of_fields - number_of_fields
+                                ] = form_attributes[str(priority)]
+                                number_of_fields -= 1
+                        else:
+
                             returned_form_schema[
-                                total_number_of_fields - number_of_fields
-                            ] = form_attributes[str(priority)]
+                                    total_number_of_fields - number_of_fields
+                                ] = form_attributes[str(priority)]
                             number_of_fields -= 1
                     else:
-                        if response[form_attributes[str(priority)]["key"]] is None:
+                        if student_response[form_attributes[str(priority)]["key"]] is None:
                             returned_form_schema[
                                 total_number_of_fields - number_of_fields
                             ] = form_attributes[str(priority)]
