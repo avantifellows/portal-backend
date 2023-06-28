@@ -12,7 +12,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 def build_enrollment_data(data):
     enrollment_data = {}
     for key in data.keys():
-        if key in mapping.ENROLLMENT_RECORD_PARAMS:
+        if key in mapping.ENROLLMENT_RECORD_PARAMS and key != "student_id":
             enrollment_data[key] = data[key]
     return enrollment_data
 
@@ -137,6 +137,7 @@ async def create_user(request: Request):
                     school_response = requests.get(
                         routes.school_db_url, params={"name": data["form_data"]["school_name"]}
                     )
+
                     data["form_data"]["school_id"] = school_response.json()[0]["id"]
                     enrollment_data = build_enrollment_data(data["form_data"])
 
@@ -214,7 +215,7 @@ async def complete_profile_details(request: Request):
     response = requests.get(routes.student_db_url, params={"student_id": data["student_id"]})
 
     if response.status_code == 200:
-        data = response.json()
+        data = response.json()[0]
         patched_data = requests.patch(
             routes.student_db_url + "/" + str(data["id"]), data=student_data
         )
@@ -240,7 +241,9 @@ async def complete_profile_details(request: Request):
             routes.enrollment_record_db_url, params={"student_id": data["student_id"]}
         )
         if enrollment_response.status_code == 200:
-            data = enrollment_response.json()[0]
+            data = enrollment_response.json()
+            if len(data) > 0:
+                data = data[0]
             patched_data = requests.patch(
                 routes.enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
             )

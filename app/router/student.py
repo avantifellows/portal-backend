@@ -96,6 +96,7 @@ async def verify_student(request: Request, student_id: str):
 
     if helpers.is_response_valid(response):
         data = helpers.is_response_empty(response.json(), False)
+        print(data)
         if data:
             data = data[0]
             if len(query_params) != 0:
