@@ -29,17 +29,17 @@ USER_QUERY_PARAMS = [
     "full_name",
     "email",
     "phone",
-     "whatsapp_phone",
-     "gender",
-     "address",
-     "city",
-     "district",
-     "state",
-     "pincode",
-     "role",
+    "whatsapp_phone",
+    "gender",
+    "address",
+    "city",
+    "district",
+    "state",
+    "pincode",
+    "role",
     "date_of_birth",
     "country",
-    "consent_check"
+    "consent_check",
 ]
 
 ENROLLMENT_RECORD_PARAMS = [

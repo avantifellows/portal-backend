@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 
+
 def is_response_valid(response, error_message=""):
     if response.status_code == 200:
         return True
@@ -8,7 +9,7 @@ def is_response_valid(response, error_message=""):
     return False
 
 
-def is_response_empty(response_data, return_boolean, error_message="" ):
+def is_response_empty(response_data, return_boolean, error_message=""):
     if len(response_data) != 0:
         return response_data
     if return_boolean:
@@ -17,6 +18,7 @@ def is_response_empty(response_data, return_boolean, error_message="" ):
         else:
             return False
     return []
+
 
 def validate_and_build_query_params(request, valid_query_params):
     query_params = {}

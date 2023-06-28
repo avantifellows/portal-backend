@@ -6,6 +6,7 @@ import mapping
 
 router = APIRouter(prefix="/enrollment-record", tags=["Enrollment Record"])
 
+
 @router.get("/")
 def get_enrollment_record(request: Request):
     """
@@ -25,9 +26,13 @@ def get_enrollment_record(request: Request):
     returns [enrollment_data_of_school_123]
 
     """
-    query_params = helpers.validate_and_build_query_params(request, mapping.ENROLLMENT_RECORD_PARAMS)
+    query_params = helpers.validate_and_build_query_params(
+        request, mapping.ENROLLMENT_RECORD_PARAMS
+    )
     print(query_params)
     response = requests.get(routes.enrollment_record_db_url, params=query_params)
     print(response.json())
-    if helpers.is_response_valid(response,"Enrollment API could not fetch the data!"):
-        return helpers.is_response_empty(response.json(), False, "Enrollment record does not exist")
+    if helpers.is_response_valid(response, "Enrollment API could not fetch the data!"):
+        return helpers.is_response_empty(
+            response.json(), False, "Enrollment record does not exist"
+        )

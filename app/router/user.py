@@ -9,6 +9,7 @@ import helpers
 
 router = APIRouter(prefix="/user", tags=["User"])
 
+
 def build_enrollment_data(data):
     enrollment_data = {}
     for key in data.keys():
@@ -66,10 +67,12 @@ def get_users(request: Request):
     }
 
     """
-    query_params = helpers.validate_and_build_query_params(request, mapping.USER_QUERY_PARAMS)
+    query_params = helpers.validate_and_build_query_params(
+        request, mapping.USER_QUERY_PARAMS
+    )
 
     response = requests.get(routes.user_db_url, params=query_params)
-    if helpers.is_response_valid(response,"User API could not fetch the data!"):
+    if helpers.is_response_valid(response, "User API could not fetch the data!"):
         return helpers.is_response_empty(response.json(), False, "User does not exist!")
 
 
@@ -135,7 +138,8 @@ async def create_user(request: Request):
                 )
                 if response.status_code == 201:
                     school_response = requests.get(
-                        routes.school_db_url, params={"name": data["form_data"]["school_name"]}
+                        routes.school_db_url,
+                        params={"name": data["form_data"]["school_name"]},
                     )
 
                     data["form_data"]["school_id"] = school_response.json()[0]["id"]
@@ -143,7 +147,6 @@ async def create_user(request: Request):
 
                     if len(enrollment_data) > 0:
                         enrollment_data["student_id"] = response.json()["id"]
-
 
                         enrollment_response = requests.post(
                             routes.enrollment_record_db_url, data=enrollment_data
@@ -176,7 +179,7 @@ async def create_user(request: Request):
                     id = id_generation(data)
                     does_student_already_exist = student.verify_student(student_id=id)
                     if not does_student_already_exist:
-                        response = requests.post(user_db_url, params=query_params)
+                        response = requests.post(routes.user_db_url, params=query_params)
                         if response.status_code == 201:
                             return query_params["student_id"]
                         raise HTTPException(status_code=500, detail="User not created!")
@@ -213,7 +216,9 @@ async def complete_profile_details(request: Request):
     if "last_name" in user_data:
         user_data["full_name"] = user_data["last_name"]
 
-    response = requests.get(routes.student_db_url, params={"student_id": data["student_id"]})
+    response = requests.get(
+        routes.student_db_url, params={"student_id": data["student_id"]}
+    )
 
     if response.status_code == 200:
         data = response.json()[0]
@@ -246,7 +251,8 @@ async def complete_profile_details(request: Request):
             if len(data) > 0:
                 data = data[0]
             patched_data = requests.patch(
-                routes.enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
+                routes.enrollment_record_db_url + "/" + str(data["id"]),
+                data=enrollment_data,
             )
 
             if patched_data.status_code != 200:
