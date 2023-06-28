@@ -1,33 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
+import helpers
+import mapping
+from router import routes
 
 router = APIRouter(prefix="/student", tags=["Student"])
-student_db_url = settings.db_url + "/student"
-group_db_url = settings.db_url + "/group"
-
-STUDENT_QUERY_PARAMS = [
-    "student_id",
-    "father_name",
-    "father_phone_number",
-    "mother_name",
-    "mother_phone_number",
-    "category",
-    "stream",
-    "physically_handicapped",
-    "family_income",
-    "father_profession",
-    "father_educational_level",
-    "mother_profession",
-    "mother_educational_level",
-    "time_of_device_availability",
-    "has_internet_access",
-    "contact_hours_per_week",
-    "is_dropper",
-    "group",
-]
-
-USER_QUERY_PARAMS = ["date_of_birth", "phone", "id"]
 
 
 @router.get("/")
@@ -61,20 +39,15 @@ def get_students(request: Request):
     }
 
     """
-    query_params = {}
-    for key in request.query_params.keys():
-        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS:
-            raise HTTPException(
-                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
-            )
-        query_params[key] = request.query_params[key]
+    query_params = helpers.validate_and_build_query_params(
+        request, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
+    )
 
-    response = requests.get(student_db_url, params=query_params)
-    if response.status_code == 200:
-        if len(response.json()) == 0:
-            return HTTPException(status_code=404, detail="No student found!")
-        return response.json()
-    raise HTTPException(status_code=404, detail="No student found!")
+    response = requests.get(routes.student_db_url, params=query_params)
+    if helpers.is_response_valid(response, "Student API could not fetch the student!"):
+        return helpers.is_response_empty(
+            response.json(), True, "Student does not exist"
+        )
 
 
 @router.get("/verify")
@@ -114,34 +87,30 @@ async def verify_student(request: Request, student_id: str):
     }
 
     """
-    query_params = {}
-    for key in request.query_params.keys():
-        if key not in STUDENT_QUERY_PARAMS and key not in USER_QUERY_PARAMS:
-            raise HTTPException(
-                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
-            )
-        if key != "student_id" or key != "group":
-            query_params[key] = request.query_params[key]
 
-    response = requests.get(student_db_url, params={"student_id": student_id})
+    query_params = helpers.validate_and_build_query_params(
+        request, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
+    )
 
-    if response.status_code == 200:
-        if len(response.json()) == 0:
-            return False
-        if len(query_params) != 0:
-            data = response.json()[0]
+    response = requests.get(routes.student_db_url, params={"student_id": student_id})
 
-            for key in query_params.keys():
+    if helpers.is_response_valid(response):
+        data = helpers.is_response_empty(response.json(), False)
+        print(data)
+        if data:
+            data = data[0]
+            if len(query_params) != 0:
 
-                if key in USER_QUERY_PARAMS:
-                    if data["user"][key] != "":
-                        if data["user"][key] != query_params[key]:
-                            return False
+                for key in query_params.keys():
 
-                if key in STUDENT_QUERY_PARAMS:
-                    if data[key] != "":
-                        if data[key] != query_params[key]:
-                            return False
+                    if key in mapping.USER_QUERY_PARAMS:
+                        if data["user"][key] != "":
+                            if data["user"][key] != query_params[key]:
+                                return False
 
-        return True
-    return False
+                    if key in mapping.STUDENT_QUERY_PARAMS:
+                        if data[key] != "":
+                            if data[key] != query_params[key]:
+                                return False
+            return True
+        return False
