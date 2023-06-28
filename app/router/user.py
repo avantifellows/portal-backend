@@ -144,10 +144,11 @@ async def create_user(request: Request):
                     if len(enrollment_data) > 0:
                         enrollment_data["student_id"] = response.json()["id"]
 
-                        print(enrollment_data)
+
                         enrollment_response = requests.post(
                             routes.enrollment_record_db_url, data=enrollment_data
                         )
+
                         if enrollment_response.status_code == 201:
                             return query_params["student_id"]
                 raise HTTPException(status_code=500, detail="User not created!")
@@ -235,7 +236,7 @@ async def complete_profile_details(request: Request):
             raise HTTPException(status_code=500, detail="User data not patched!")
 
     if len(enrollment_data) > 0:
-        print(enrollment_data)
+
         data = response.json()[0]
         enrollment_response = requests.get(
             routes.enrollment_record_db_url, params={"student_id": data["student_id"]}

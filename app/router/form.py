@@ -74,7 +74,7 @@ def get_student_fields(request: Request):
             enrollment_record_data = enrollment_record.get_enrollment_record(
                 build_request(query_params={"student_id": student_data["user"]["id"]})
             )
-
+            print(enrollment_record_data)
             # get the priorities for all fields and sort them
             priority_order = sorted([eval(i) for i in form["attributes"].keys()])
 
@@ -133,6 +133,7 @@ def get_student_fields(request: Request):
 
                             if (form_attributes[str(priority)]["key"]== "school_name"):
 
+                                print(enrollment_record_data)
                                 if enrollment_record_data == [] or enrollment_record_data[0]["school_id"] is None:
                                     if enrollment_record_data == [] or student_data["user"]["district"] is None:
                                         if enrollment_record_data == []  or student_data["user"]["state"] is None:
