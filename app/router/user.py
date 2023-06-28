@@ -247,12 +247,7 @@ async def complete_profile_details(request: Request):
             routes.enrollment_record_db_url, params={"student_id": data["student_id"]}
         )
         if enrollment_response.status_code == 200:
-<<<<<<< HEAD
-            data = enrollment_response.json()[0]
-            if data != []:
-                patched_data = requests.patch(
-                    enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
-=======
+
             data = enrollment_response.json()
             if len(data) > 0:
                 data = data[0]
@@ -264,7 +259,7 @@ async def complete_profile_details(request: Request):
             if patched_data.status_code != 200:
                 raise HTTPException(
                     status_code=500, detail="Enrollment data not patched!"
->>>>>>> main
+
                 )
                 if patched_data.status_code != 200:
                     raise HTTPException(
