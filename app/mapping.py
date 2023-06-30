@@ -53,8 +53,4 @@ ENROLLMENT_RECORD_PARAMS = [
     "date_of_enrollment",
 ]
 
-SCHOOL_QUERY_PARAMS = [
-    "id",
-    "name",
-    "code"
-]
+SCHOOL_QUERY_PARAMS = ["id", "name", "code"]

@@ -37,12 +37,13 @@ def get_enrollment_record(request: Request):
             response.json(), False, "Enrollment record does not exist"
         )
 
+
 @router.post("/")
 async def create_enrollment_record(request: Request):
     data = await request.body()
     print(data)
-    response = requests.post(
-                    routes.enrollment_record_db_url, data=data
-                )
+    response = requests.post(routes.enrollment_record_db_url, data=data)
     if helpers.is_response_valid(response, "Enrollment API could not post the data!"):
-        return helpers.is_response_empty(response.json(), "Enrollment API could not fetch the created record!")
+        return helpers.is_response_empty(
+            response.json(), "Enrollment API could not fetch the created record!"
+        )

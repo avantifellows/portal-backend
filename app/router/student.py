@@ -119,8 +119,8 @@ async def verify_student(request: Request, student_id: str):
 @router.post("/")
 async def create_student(request: Request):
     data = await request.body()
-    response = requests.post(
-                    routes.student_db_url + "/register", data=data
-                )
+    response = requests.post(routes.student_db_url + "/register", data=data)
     if helpers.is_response_valid(response, "Student API could not post the data!"):
-        return helpers.is_response_empty(response.json(), "Student API could fetch the created student")
+        return helpers.is_response_empty(
+            response.json(), "Student API could fetch the created student"
+        )

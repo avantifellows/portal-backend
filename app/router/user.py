@@ -103,7 +103,8 @@ async def create_user(request: Request):
             key not in mapping.STUDENT_QUERY_PARAMS
             and key not in mapping.USER_QUERY_PARAMS
             and key not in mapping.ENROLLMENT_RECORD_PARAMS
-            and key != "last_name" and key != "first_name"
+            and key != "last_name"
+            and key != "first_name"
         ):
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
@@ -134,18 +135,25 @@ async def create_user(request: Request):
                 if "last_name" in data["form_data"]:
                     data["form_data"]["full_name"] = data["form_data"]["last_name"]
 
-                created_student_data = await student.create_student(build_request(body=data['form_data']))
+                created_student_data = await student.create_student(
+                    build_request(body=data["form_data"])
+                )
                 print()
-                school_id_response = school.get_school(build_request(query_params={"name": data["form_data"]["school_name"]}))
+                school_id_response = school.get_school(
+                    build_request(
+                        query_params={"name": data["form_data"]["school_name"]}
+                    )
+                )
 
                 data["form_data"]["school_id"] = school_id_response[0]["user_id"]
 
                 enrollment_data = build_enrollment_data(data["form_data"])
                 enrollment_data["student_id"] = created_student_data["id"]
                 print(enrollment_data)
-                await enrollment_record.create_enrollment_record(build_request(body=enrollment_data))
+                await enrollment_record.create_enrollment_record(
+                    build_request(body=enrollment_data)
+                )
                 return query_params["student_id"]
-
 
     else:
         if data["user_type"] == "student":
@@ -170,7 +178,9 @@ async def create_user(request: Request):
                     id = id_generation(data)
                     does_student_already_exist = student.verify_student(student_id=id)
                     if not does_student_already_exist:
-                        response = requests.post(routes.user_db_url, params=query_params)
+                        response = requests.post(
+                            routes.user_db_url, params=query_params
+                        )
                         if response.status_code == 201:
                             return query_params["student_id"]
                         raise HTTPException(status_code=500, detail="User not created!")
@@ -250,7 +260,6 @@ async def complete_profile_details(request: Request):
                 raise HTTPException(
                     status_code=500, detail="Enrollment data not patched!"
                 )
-
 
         else:
             raise HTTPException(status_code=404, detail="Enrollment not found!")

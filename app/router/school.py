@@ -19,5 +19,3 @@ def get_school(request: Request):
         return helpers.is_response_empty(
             response.json(), False, "School does not exist"
         )
-
-
