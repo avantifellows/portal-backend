@@ -39,7 +39,7 @@ def get_form_schema(form_schema_id: str):
 
     response = requests.get(routes.form_db_url, params={"id": form_schema_id})
     if helpers.is_response_valid(response, "Form API could not fetch the data!"):
-        return helpers.is_response_empty(response.json(), "Form does not exist")
+        return response.json()
 
 
 @router.get("/student")
