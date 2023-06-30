@@ -57,7 +57,7 @@ async def get_student_fields(request: Request):
     student_data = student.get_students(
         build_request(query_params={"student_id": query_params["student_id"]})
     )
-
+    print(student_data)
     if student_data:
 
         student_data = student_data[0]
