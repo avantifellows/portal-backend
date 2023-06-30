@@ -1,4 +1,4 @@
-FORM_GROUP_MAPPING = {"HaryanaStudents": 37}
+FORM_GROUP_MAPPING = {"HaryanaStudents": 1}
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
