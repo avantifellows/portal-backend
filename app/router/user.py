@@ -224,7 +224,7 @@ async def complete_profile_details(request: Request):
     if response.status_code == 200:
         data = response.json()[0]
         patched_data = requests.patch(
-            routes.student_db_url + "/" + str(data["id"]), data=student_data
+            routes.student_db_url + "/" + str(data["student_id"]), data=student_data
         )
 
         if patched_data.status_code != 201:
@@ -236,7 +236,7 @@ async def complete_profile_details(request: Request):
 
         data = response.json()[0]
         patched_data = requests.patch(
-            routes.user_db_url + "/" + str(data["user"]["id"]), data=user_data
+            routes.user_db_url + "/" + str(data["user"]["user_id"]), data=user_data
         )
         if patched_data.status_code != 201:
             raise HTTPException(status_code=500, detail="User data not patched!")
