@@ -227,7 +227,7 @@ async def complete_profile_details(request: Request):
             routes.student_db_url + "/" + str(data["id"]), data=student_data
         )
 
-        if patched_data.status_code != 200:
+        if patched_data.status_code != 201:
             raise HTTPException(status_code=500, detail="Student data not patched!")
     else:
         raise HTTPException(status_code=404, detail="Student not found!")
@@ -238,7 +238,7 @@ async def complete_profile_details(request: Request):
         patched_data = requests.patch(
             routes.user_db_url + "/" + str(data["user"]["id"]), data=user_data
         )
-        if patched_data.status_code != 200:
+        if patched_data.status_code != 201:
             raise HTTPException(status_code=500, detail="User data not patched!")
 
     if len(enrollment_data) > 0:
@@ -256,7 +256,7 @@ async def complete_profile_details(request: Request):
                 data=enrollment_data,
             )
 
-            if patched_data.status_code != 200:
+            if patched_data.status_code != 201:
                 raise HTTPException(
                     status_code=500, detail="Enrollment data not patched!"
                 )
