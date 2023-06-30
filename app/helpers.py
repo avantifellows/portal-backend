@@ -4,6 +4,8 @@ from fastapi import HTTPException
 def is_response_valid(response, error_message=""):
     if response.status_code == 200:
         return True
+    elif response.status_code == 201:
+        return True
     if error_message:
         raise HTTPException(status_code=500, detail=error_message)
     return False

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
-from router import student, routes
+from router import student, routes, school, enrollment_record
 from id_generation import JNVIDGeneration
 from request import build_request
 import mapping
@@ -103,6 +103,7 @@ async def create_user(request: Request):
             key not in mapping.STUDENT_QUERY_PARAMS
             and key not in mapping.USER_QUERY_PARAMS
             and key not in mapping.ENROLLMENT_RECORD_PARAMS
+            and key != "last_name" and key != "first_name"
         ):
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
@@ -133,28 +134,18 @@ async def create_user(request: Request):
                 if "last_name" in data["form_data"]:
                     data["form_data"]["full_name"] = data["form_data"]["last_name"]
 
-                response = requests.post(
-                    routes.student_db_url + "/register", data=data["form_data"]
-                )
-                if response.status_code == 201:
-                    school_response = requests.get(
-                        routes.school_db_url,
-                        params={"name": data["form_data"]["school_name"]},
-                    )
+                created_student_data = await student.create_student(build_request(body=data['form_data']))
+                print()
+                school_id_response = school.get_school(build_request(query_params={"name": data["form_data"]["school_name"]}))
 
-                    data["form_data"]["school_id"] = school_response.json()[0]["id"]
-                    enrollment_data = build_enrollment_data(data["form_data"])
+                data["form_data"]["school_id"] = school_id_response[0]["user_id"]
 
-                    if len(enrollment_data) > 0:
-                        enrollment_data["student_id"] = response.json()["id"]
+                enrollment_data = build_enrollment_data(data["form_data"])
+                enrollment_data["student_id"] = created_student_data["id"]
+                print(enrollment_data)
+                await enrollment_record.create_enrollment_record(build_request(body=enrollment_data))
+                return query_params["student_id"]
 
-                        enrollment_response = requests.post(
-                            routes.enrollment_record_db_url, data=enrollment_data
-                        )
-
-                        if enrollment_response.status_code == 201:
-                            return query_params["student_id"]
-                raise HTTPException(status_code=500, detail="User not created!")
 
     else:
         if data["user_type"] == "student":
@@ -247,12 +238,6 @@ async def complete_profile_details(request: Request):
             routes.enrollment_record_db_url, params={"student_id": data["student_id"]}
         )
         if enrollment_response.status_code == 200:
-<<<<<<< HEAD
-            data = enrollment_response.json()[0]
-            if data != []:
-                patched_data = requests.patch(
-                    enrollment_record_db_url + "/" + str(data["id"]), data=enrollment_data
-=======
             data = enrollment_response.json()
             if len(data) > 0:
                 data = data[0]
@@ -264,15 +249,7 @@ async def complete_profile_details(request: Request):
             if patched_data.status_code != 200:
                 raise HTTPException(
                     status_code=500, detail="Enrollment data not patched!"
->>>>>>> main
                 )
-                if patched_data.status_code != 200:
-                    raise HTTPException(
-                        status_code=500, detail="Enrollment data not patched!"
-                    )
-            else:
-                patched_data = requests.post(
-                    enrollment_record_db_url, data=enrollment_data)
 
 
         else:

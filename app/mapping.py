@@ -1,4 +1,4 @@
-FORM_GROUP_MAPPING = {"HaryanaStudents": "Haryana_Student_Details"}
+FORM_GROUP_MAPPING = {"HaryanaStudents": 37}
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
@@ -25,8 +25,8 @@ STUDENT_QUERY_PARAMS = [
 USER_QUERY_PARAMS = [
     "id",
     "first_name",
-    "last_name",
-    "full_name",
+    # "last_name",
+    # "full_name",
     "email",
     "phone",
     "whatsapp_phone",
@@ -51,4 +51,10 @@ ENROLLMENT_RECORD_PARAMS = [
     "is_current",
     "board_medium",
     "date_of_enrollment",
+]
+
+SCHOOL_QUERY_PARAMS = [
+    "id",
+    "name",
+    "code"
 ]

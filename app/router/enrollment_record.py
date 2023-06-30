@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 import requests
 from router import routes
 import helpers
@@ -29,10 +29,20 @@ def get_enrollment_record(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request, mapping.ENROLLMENT_RECORD_PARAMS
     )
-    print(query_params)
     response = requests.get(routes.enrollment_record_db_url, params=query_params)
-    print(response.json())
+
     if helpers.is_response_valid(response, "Enrollment API could not fetch the data!"):
+
         return helpers.is_response_empty(
             response.json(), False, "Enrollment record does not exist"
         )
+
+@router.post("/")
+async def create_enrollment_record(request: Request):
+    data = await request.body()
+    print(data)
+    response = requests.post(
+                    routes.enrollment_record_db_url, data=data
+                )
+    if helpers.is_response_valid(response, "Enrollment API could not post the data!"):
+        return helpers.is_response_empty(response.json(), "Enrollment API could not fetch the created record!")

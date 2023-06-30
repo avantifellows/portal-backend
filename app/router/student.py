@@ -42,8 +42,9 @@ def get_students(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
     )
-
+    print(query_params)
     response = requests.get(routes.student_db_url, params=query_params)
+    print(response)
     if helpers.is_response_valid(response, "Student API could not fetch the student!"):
         return helpers.is_response_empty(
             response.json(), True, "Student does not exist"
@@ -96,7 +97,6 @@ async def verify_student(request: Request, student_id: str):
 
     if helpers.is_response_valid(response):
         data = helpers.is_response_empty(response.json(), False)
-        print(data)
         if data:
             data = data[0]
             if len(query_params) != 0:
@@ -114,3 +114,13 @@ async def verify_student(request: Request, student_id: str):
                                 return False
             return True
         return False
+
+
+@router.post("/")
+async def create_student(request: Request):
+    data = await request.body()
+    response = requests.post(
+                    routes.student_db_url + "/register", data=data
+                )
+    if helpers.is_response_valid(response, "Student API could not post the data!"):
+        return helpers.is_response_empty(response.json(), "Student API could fetch the created student")
