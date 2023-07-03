@@ -47,6 +47,7 @@ async def create_enrollment_record(request: Request):
             response.json(), "Enrollment API could not fetch the created record!"
         )
 
+
 @router.patch("/")
 async def update_enrollment_record(request: Request):
     data = await request.body()

@@ -127,9 +127,9 @@ async def create_student(request: Request):
 
 
 @router.patch("/")
-async def update_student(request:Request):
+async def update_student(request: Request):
     data = await request.body()
-    response = requests.patch(routes.student_db_url + "/"+ str(data["id"]), data=data)
+    response = requests.patch(routes.student_db_url + "/" + str(data["id"]), data=data)
     if helpers.is_response_valid(response, "Student API could not post the data!"):
         return helpers.is_response_empty(
             response.json(), "Student API could fetch the created student"

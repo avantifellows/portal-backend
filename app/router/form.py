@@ -36,9 +36,7 @@ def get_form_schema(request: Request):
     returns [{form_schema_data_of_id_1234}]
 
     """
-    query_params = helpers.validate_and_build_query_params(
-        request, ["id", "name"]
-    )
+    query_params = helpers.validate_and_build_query_params(request, ["id", "name"])
     response = requests.get(routes.form_db_url, params=query_params)
     if helpers.is_response_valid(response, "Form API could not fetch the data!"):
         return response.json()
@@ -51,7 +49,11 @@ async def get_student_fields(request: Request):
     )
 
     # get the field ordering for a particular group
-    form = get_form_schema(build_request(query_params={"name":mapping.FORM_GROUP_MAPPING[query_params["group"]]}))
+    form = get_form_schema(
+        build_request(
+            query_params={"name": mapping.FORM_GROUP_MAPPING[query_params["group"]]}
+        )
+    )
     form = form[0]
 
     # get student and user data for the student ID that is requesting for profile completion
@@ -89,8 +91,10 @@ async def get_student_fields(request: Request):
                 # if the form field is first name of last name, we check if full name exists in the database
                 if (
                     (
-                        (form_attributes[str(priority)]["key"] == "first_name"
-                        or form_attributes[str(priority)]["key"] == "last_name")
+                        (
+                            form_attributes[str(priority)]["key"] == "first_name"
+                            or form_attributes[str(priority)]["key"] == "last_name"
+                        )
                         and student_data["user"]["full_name"] is None
                     )
                     or (
@@ -123,10 +127,18 @@ async def get_student_fields(request: Request):
                     and form_attributes[str(priority)]["key"] != "student_id"
                 ):
 
-
                     if form_attributes[str(priority)]["key"] != "school_name":
-                        print(form_attributes[str(priority)]["key"], enrollment_record_data)
-                        if enrollment_record_data == [] or enrollment_record_data[form_attributes[str(priority)]["key"]] is None:
+                        print(
+                            form_attributes[str(priority)]["key"],
+                            enrollment_record_data,
+                        )
+                        if (
+                            enrollment_record_data == []
+                            or enrollment_record_data[
+                                form_attributes[str(priority)]["key"]
+                            ]
+                            is None
+                        ):
                             build_returned_form_schema_data(
                                 returned_form_schema,
                                 total_number_of_fields,

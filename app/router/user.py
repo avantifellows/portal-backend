@@ -193,7 +193,7 @@ async def create_user(request: Request):
 
 
 @router.patch("/")
-async def update_user(request:Request):
+async def update_user(request: Request):
     data = await request.body()
     query_params = {}
 
@@ -208,7 +208,9 @@ async def update_user(request:Request):
             )
         query_params[key] = data[key]
 
-    response = requests.patch(routes.user_db_url + "/"+ str(data["id"]), data=query_params)
+    response = requests.patch(
+        routes.user_db_url + "/" + str(data["id"]), data=query_params
+    )
     if helpers.is_response_valid(response, "User API could not patch the data!"):
         return helpers.is_response_empty(
             response.json(), "User API could fetch the patched user"
@@ -240,22 +242,23 @@ async def complete_profile_details(request: Request):
     if "last_name" in user_data:
         user_data["full_name"] = user_data["last_name"]
 
-
-    student_response = student.get_students(build_request(query_params={"student_id": data["student_id"]}))
+    student_response = student.get_students(
+        build_request(query_params={"student_id": data["student_id"]})
+    )
 
     student_data["id"] = student_response[0]["id"]
 
     await student.update_student(build_request(body=student_data))
 
-
     if len(user_data) > 0:
         await update_user(build_request(body=user_data))
 
-
     if len(enrollment_data) > 0:
 
-    #     data = response.json()[0]
-        enrollment_record_response = enrollment_record.get_enrollment_record(build_request(query_params={"student_id": data["student_id"]}))
+        #     data = response.json()[0]
+        enrollment_record_response = enrollment_record.get_enrollment_record(
+            build_request(query_params={"student_id": data["student_id"]})
+        )
         print(enrollment_record_response)
     #     if enrollment_response.status_code == 200:
     #         data = enrollment_response.json()
