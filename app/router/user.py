@@ -37,6 +37,20 @@ def build_user_data(data):
     return user_data
 
 
+def id_generation(data):
+    if data["group"] == "JNVStudents":
+        counter = settings.JNV_counter
+        if counter > 0:
+            JNV_Id = JNVIDGeneration(
+                data["region"], data["school_name"], data["grade"]
+            ).get_id
+            counter -= 1
+            return JNV_Id
+        raise HTTPException(
+            status_code=400, detail="Student ID could not be generated. Max loops hit!"
+        )
+
+
 @router.get("/")
 def get_users(request: Request):
     """
@@ -74,20 +88,6 @@ def get_users(request: Request):
     response = requests.get(routes.user_db_url, params=query_params)
     if helpers.is_response_valid(response, "User API could not fetch the data!"):
         return helpers.is_response_empty(response.json(), False, "User does not exist!")
-
-
-def id_generation(data):
-    if data["group"] == "JNVStudents":
-        counter = settings.JNV_counter
-        if counter > 0:
-            JNV_Id = JNVIDGeneration(
-                data["region"], data["school_name"], data["grade"]
-            ).get_id
-            counter -= 1
-            return JNV_Id
-        raise HTTPException(
-            status_code=400, detail="Student ID could not be generated. Max loops hit!"
-        )
 
 
 @router.post("/")
@@ -138,18 +138,18 @@ async def create_user(request: Request):
                 created_student_data = await student.create_student(
                     build_request(body=data["form_data"])
                 )
-                print()
+
                 school_id_response = school.get_school(
                     build_request(
                         query_params={"name": data["form_data"]["school_name"]}
                     )
                 )
 
-                data["form_data"]["school_id"] = school_id_response[0]["user_id"]
+                data["form_data"]["school_id"] = school_id_response[0]["id"]
 
                 enrollment_data = build_enrollment_data(data["form_data"])
                 enrollment_data["student_id"] = created_student_data["id"]
-                print(enrollment_data)
+
                 await enrollment_record.create_enrollment_record(
                     build_request(body=enrollment_data)
                 )
@@ -192,6 +192,29 @@ async def create_user(request: Request):
                 raise HTTPException(status_code=500, detail="User not created!")
 
 
+@router.patch("/")
+async def update_user(request:Request):
+    data = await request.body()
+    query_params = {}
+
+    for key in data.keys():
+        if (
+            key not in mapping.USER_QUERY_PARAMS
+            and key != "last_name"
+            and key != "first_name"
+        ):
+            raise HTTPException(
+                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
+            )
+        query_params[key] = data[key]
+
+    response = requests.patch(routes.user_db_url + "/"+ str(data["id"]), data=query_params)
+    if helpers.is_response_valid(response, "User API could not patch the data!"):
+        return helpers.is_response_empty(
+            response.json(), "User API could fetch the patched user"
+        )
+
+
 @router.post("/complete-profile-details")
 async def complete_profile_details(request: Request):
     data = await request.json()
@@ -217,49 +240,36 @@ async def complete_profile_details(request: Request):
     if "last_name" in user_data:
         user_data["full_name"] = user_data["last_name"]
 
-    response = requests.get(
-        routes.student_db_url, params={"student_id": data["student_id"]}
-    )
 
-    if response.status_code == 200:
-        data = response.json()[0]
-        patched_data = requests.patch(
-            routes.student_db_url + "/" + str(data["student_id"]), data=student_data
-        )
+    student_response = student.get_students(build_request(query_params={"student_id": data["student_id"]}))
 
-        if patched_data.status_code != 201:
-            raise HTTPException(status_code=500, detail="Student data not patched!")
-    else:
-        raise HTTPException(status_code=404, detail="Student not found!")
+    student_data["id"] = student_response[0]["id"]
+
+    await student.update_student(build_request(body=student_data))
+
 
     if len(user_data) > 0:
+        await update_user(build_request(body=user_data))
 
-        data = response.json()[0]
-        patched_data = requests.patch(
-            routes.user_db_url + "/" + str(data["user"]["user_id"]), data=user_data
-        )
-        if patched_data.status_code != 201:
-            raise HTTPException(status_code=500, detail="User data not patched!")
 
     if len(enrollment_data) > 0:
 
-        data = response.json()[0]
-        enrollment_response = requests.get(
-            routes.enrollment_record_db_url, params={"student_id": data["student_id"]}
-        )
-        if enrollment_response.status_code == 200:
-            data = enrollment_response.json()
-            if len(data) > 0:
-                data = data[0]
-            patched_data = requests.patch(
-                routes.enrollment_record_db_url + "/" + str(data["id"]),
-                data=enrollment_data,
-            )
+    #     data = response.json()[0]
+        enrollment_record_response = enrollment_record.get_enrollment_record(build_request(query_params={"student_id": data["student_id"]}))
+        print(enrollment_record_response)
+    #     if enrollment_response.status_code == 200:
+    #         data = enrollment_response.json()
+    #         if len(data) > 0:
+    #             data = data[0]
+    #         patched_data = requests.patch(
+    #             routes.enrollment_record_db_url + "/" + str(data["id"]),
+    #             data=enrollment_data,
+    #         )
 
-            if patched_data.status_code != 201:
-                raise HTTPException(
-                    status_code=500, detail="Enrollment data not patched!"
-                )
+    #         if patched_data.status_code != 201:
+    #             raise HTTPException(
+    #                 status_code=500, detail="Enrollment data not patched!"
+    #             )
 
-        else:
-            raise HTTPException(status_code=404, detail="Enrollment not found!")
+    #     else:
+    #         raise HTTPException(status_code=404, detail="Enrollment not found!")
