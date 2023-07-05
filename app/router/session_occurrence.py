@@ -104,7 +104,7 @@ async def get_session_occurrence_data(request: Request):
                 if has_session_started(session_occurrence["start_time"])
                 and has_session_ended(session_occurrence["end_time"])
             ]
-            print(matched_session_occurrences)
+
             if len(matched_session_occurrences) > 0:
                 response = requests.get(session_db_url, params=query_params)
 

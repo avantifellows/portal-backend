@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 import requests
-from settings import settings
+from router import routes
+import helpers
+import mapping
 
 router = APIRouter(prefix="/group-type", tags=["GroupType"])
-group_type_db_url = settings.db_url + "/group-type/"
 
 
 @router.get("/")
-def get_group_type_data(request: Request):
+def get_group_type(request: Request):
     """
     This API returns details of a group-type based on the provided ID, if it exists in the database. The group-type is identified by a combination of type and child_id, where the child_id corresponds to the ID of either the program, group, or batch table, depending on the type of the group.
 
@@ -30,17 +31,81 @@ def get_group_type_data(request: Request):
         "headers": null
     }
     """
-    query_params = {}
-    for key in request.query_params.keys():
-        if key not in ["id", "type", "child_id"]:
-            raise HTTPException(
-                status_code=400, detail="Query Parameter {} is not allowed!".format(key)
-            )
-        query_params[key] = request.query_params[key]
+    query_params = helpers.validate_and_build_query_params(
+        request, mapping.GROUP_TYPE_QUERY_PARAMS
+    )
+    response = requests.get(routes.group_type_db_url, params=query_params)
+    if helpers.is_response_valid(response, "Group-type API could not fetch the data!"):
+        return helpers.is_response_empty(
+            response.json(), False, "Group-type record does not exist!"
+        )
 
-    response = requests.get(group_type_db_url, params=query_params)
-    if response.status_code == 200:
-        if len(response.json()) != 0:
-            return response.json()
-        raise HTTPException(status_code=404, detail="GroupType does not exist!")
-    raise HTTPException(status_code=404, detail="GroupType does not exist!")
+
+@router.post("/")
+async def create_group_type(request: Request):
+    """
+    This API creates a new group type based on the provided data.
+
+    Parameters:
+    request (Request): The request object containing the data for creating the group type.
+
+    Returns:
+    dict: Returns the created group type record if the creation is successful. If the creation fails, an error message is returned.
+
+    Example:
+
+    POST $BASE_URL/create_group_type
+    Request Body:
+    {
+        "id": "123",
+        "type": "group",
+        "child_id": 1
+    }
+    Response:
+    {
+        "id": "123",
+        "type": "group",
+        "child_id": 1
+    }
+    """
+    data = await request.body()
+    response = requests.post(routes.group_type_db_url, data=data)
+    if helpers.is_response_valid(response, "Group-type API could not post the data!"):
+        return helpers.is_response_empty(
+            response.json(), "Group-type API could not fetch the created record!"
+        )
+
+
+@router.patch("/")
+async def update_group_type(request: Request):
+    """
+    This API updates an existing group type based on the provided data.
+
+    Parameters:
+    request (Request): The request object containing the data for updating the group type.
+
+    Returns:
+    dict: Returns the updated group type record if the update is successful. If the update fails, an error message is returned.
+
+    Example:
+    PATCH $BASE_URL/update_group_type
+    Request Body:
+    {
+        "id": 123,
+        "type": "program",
+    }
+    Response:
+    {
+        "id": 123,
+        "type": "program",
+        "child_id": 1
+    }
+    """
+    data = await request.body()
+    response = requests.patch(
+        routes.group_type_db_url + "/" + str(data["id"]), data=data
+    )
+    if helpers.is_response_valid(response, "Group-type API could not patch the data!"):
+        return helpers.is_response_empty(
+            response.json(), "Group-type API could not fetch the patched record!"
+        )

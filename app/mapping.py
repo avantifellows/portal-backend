@@ -25,8 +25,8 @@ STUDENT_QUERY_PARAMS = [
 USER_QUERY_PARAMS = [
     "id",
     "first_name",
+    "middle_name",
     "last_name",
-    "full_name",
     "email",
     "phone",
     "whatsapp_phone",
@@ -54,3 +54,5 @@ ENROLLMENT_RECORD_PARAMS = [
 ]
 
 SCHOOL_QUERY_PARAMS = ["id", "name", "code"]
+GROUP_TYPE_QUERY_PARAMS = ["id", "type", "child_id"]
+GROUP_QUERY_PARAMS = ["name", "id", "locale"]
