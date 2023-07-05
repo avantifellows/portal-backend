@@ -22,13 +22,13 @@ def is_response_empty(response_data, return_boolean, error_message=""):
     return []
 
 
-def validate_and_build_query_params(request, valid_query_params):
+def validate_and_build_query_params(data, valid_query_params):
     query_params = {}
-    for key in request.query_params.keys():
+    for key in data.keys():
         if key not in valid_query_params:
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
-        query_params[key] = request.query_params[key]
+        query_params[key] = data[key]
 
     return query_params
