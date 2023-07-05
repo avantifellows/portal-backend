@@ -24,10 +24,7 @@ def is_student_attribute_empty(form_attributes, priority, student_data):
 
 
 def state_in_returned_form_schema_data(
-    returned_form_schema,
-    total_number_of_fields,
-    number_of_fields_left,
-    form_attributes
+    returned_form_schema, total_number_of_fields, number_of_fields_left, form_attributes
 ):
     returned_form_schema[total_number_of_fields - number_of_fields_left] = [
         x for x in list(form_attributes.values()) if x["key"] == "state"
@@ -40,15 +37,20 @@ def district_in_returned_form_schema_data(
     returned_form_schema,
     total_number_of_fields,
     number_of_fields_left,
-    form_attributes,student_data
+    form_attributes,
+    student_data,
 ):
     district_form_field = [
         x for x in list(form_attributes.values()) if x["key"] == "district"
     ][0]
-    district_form_field["options"] =  district_form_field["dependantFieldMapping"][student_data["user"]["state"]]
+    district_form_field["options"] = district_form_field["dependantFieldMapping"][
+        student_data["user"]["state"]
+    ]
     district_form_field["dependant"] = False
 
-    returned_form_schema[total_number_of_fields - number_of_fields_left] = district_form_field
+    returned_form_schema[
+        total_number_of_fields - number_of_fields_left
+    ] = district_form_field
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -58,15 +60,19 @@ def school_name_in_returned_form_schema_data(
     total_number_of_fields,
     number_of_fields_left,
     form_attributes,
-    student_data
+    student_data,
 ):
     school_form_field = [
         x for x in list(form_attributes.values()) if x["key"] == "school_name"
     ][0]
-    school_form_field["options"] =  school_form_field["dependantFieldMapping"][student_data["user"]["district"]]
+    school_form_field["options"] = school_form_field["dependantFieldMapping"][
+        student_data["user"]["district"]
+    ]
     school_form_field["dependant"] = False
 
-    returned_form_schema[total_number_of_fields - number_of_fields_left] = school_form_field
+    returned_form_schema[
+        total_number_of_fields - number_of_fields_left
+    ] = school_form_field
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -98,7 +104,9 @@ def get_form_schema(request: Request):
     returns [{form_schema_data_of_id_1234}]
 
     """
-    query_params = helpers.validate_and_build_query_params(request.query_params, ["id", "name"])
+    query_params = helpers.validate_and_build_query_params(
+        request.query_params, ["id", "name"]
+    )
     response = requests.get(routes.form_db_url, params=query_params)
     if helpers.is_response_valid(response, "Form API could not fetch the data!"):
         return helpers.is_response_empty(response.json(), "Form does not exist!")
@@ -109,7 +117,6 @@ async def get_student_fields(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, ["number_of_fields", "group", "student_id"]
     )
-
 
     # get the field ordering for a particular group
     form = get_form_schema(
@@ -151,9 +158,10 @@ async def get_student_fields(request: Request):
 
             if number_of_fields_left > 0:
 
-                if (
-                    is_user_attribute_empty(form_attributes, priority, student_data)
-                    or is_student_attribute_empty(form_attributes, priority, student_data)
+                if is_user_attribute_empty(
+                    form_attributes, priority, student_data
+                ) or is_student_attribute_empty(
+                    form_attributes, priority, student_data
                 ):
 
                     (
@@ -167,14 +175,11 @@ async def get_student_fields(request: Request):
                         priority,
                     )
 
-
-
                 elif (
                     form_attributes[str(priority)]["key"]
                     in mapping.ENROLLMENT_RECORD_PARAMS
                     and form_attributes[str(priority)]["key"] != "student_id"
                 ):
-
 
                     if form_attributes[str(priority)]["key"] != "school_name":
                         if (
@@ -199,54 +204,73 @@ async def get_student_fields(request: Request):
                             if student_data["user"]["state"]:
                                 if student_data["user"]["district"]:
 
-                                    (returned_form_schema, number_of_fields_left) = school_name_in_returned_form_schema_data(
+                                    (
+                                        returned_form_schema,
+                                        number_of_fields_left,
+                                    ) = school_name_in_returned_form_schema_data(
                                         returned_form_schema,
                                         total_number_of_fields,
                                         number_of_fields_left,
-                                        form_attributes,student_data
+                                        form_attributes,
+                                        student_data,
                                     )
 
                                 else:
-                                    (returned_form_schema, number_of_fields_left) = district_in_returned_form_schema_data(
+                                    (
+                                        returned_form_schema,
+                                        number_of_fields_left,
+                                    ) = district_in_returned_form_schema_data(
                                         returned_form_schema,
                                         total_number_of_fields,
                                         number_of_fields_left,
-                                        form_attributes
+                                        form_attributes,
+                                        student_data,
                                     )
                             else:
-                                (returned_form_schema, number_of_fields_left) = state_in_returned_form_schema_data(
+                                (
+                                    returned_form_schema,
+                                    number_of_fields_left,
+                                ) = state_in_returned_form_schema_data(
                                     returned_form_schema,
                                     total_number_of_fields,
                                     number_of_fields_left,
-                                    form_attributes
+                                    form_attributes,
                                 )
                         else:
                             enrollment_record_data = enrollment_record_data[0]
                             if enrollment_record_data["school_id"] is None:
                                 if student_data["user"]["district"] is None:
                                     if student_data["user"]["state"] is None:
-                                        (returned_form_schema, number_of_fields_left) = field_in_returned_form_schema_data(
+                                        (
+                                            returned_form_schema,
+                                            number_of_fields_left,
+                                        ) = state_in_returned_form_schema_data(
                                             returned_form_schema,
                                             total_number_of_fields,
                                             number_of_fields_left,
                                             form_attributes,
-                                            "state",
                                         )
                                     else:
-                                       (returned_form_schema, number_of_fields_left) =  field_in_returned_form_schema_data(
+                                        (
+                                            returned_form_schema,
+                                            number_of_fields_left,
+                                        ) = district_in_returned_form_schema_data(
                                             returned_form_schema,
                                             total_number_of_fields,
                                             number_of_fields_left,
                                             form_attributes,
-                                            "district",
+                                            student_data,
                                         )
                                 else:
-                                    (returned_form_schema, number_of_fields_left) = school_name_in_returned_form_schema_data(
+                                    (
+                                        returned_form_schema,
+                                        number_of_fields_left,
+                                    ) = school_name_in_returned_form_schema_data(
                                         returned_form_schema,
                                         total_number_of_fields,
                                         number_of_fields_left,
                                         form_attributes,
-                                        student_data
+                                        student_data,
                                     )
 
         return returned_form_schema

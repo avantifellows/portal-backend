@@ -7,6 +7,7 @@ import mapping
 
 router = APIRouter(prefix="/group", tags=["Group"])
 
+
 @router.get("/", response_model=GroupResponse)
 def get_group_data(request: Request):
     """
@@ -37,6 +38,7 @@ def get_group_data(request: Request):
         return helpers.is_response_empty(
             response.json(), False, "Group record does not exist!"
         )
+
 
 @router.post("/")
 async def create_group(request: Request):
@@ -73,7 +75,7 @@ async def create_group(request: Request):
 
 
 @router.patch("/")
-async def update_group(request:Request):
+async def update_group(request: Request):
     """
     This API updates an existing group based on the provided data.
 
@@ -98,9 +100,7 @@ async def update_group(request:Request):
     }
     """
     data = await request.body()
-    response = requests.patch(
-        routes.group_db_url + "/" + str(data["id"]), data=data
-    )
+    response = requests.patch(routes.group_db_url + "/" + str(data["id"]), data=data)
     if helpers.is_response_valid(response, "Group API could not patch the data!"):
         return helpers.is_response_empty(
             response.json(), "Group API could not fetch the patched record!"

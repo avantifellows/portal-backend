@@ -7,6 +7,7 @@ import helpers
 
 router = APIRouter(prefix="/user", tags=["User"])
 
+
 @router.get("/")
 def get_users(request: Request):
     """
@@ -37,7 +38,9 @@ def get_users(request: Request):
     }
 
     """
-    query_params = helpers.validate_and_build_query_params(request.query_params, mapping.USER_QUERY_PARAMS)
+    query_params = helpers.validate_and_build_query_params(
+        request.query_params, mapping.USER_QUERY_PARAMS
+    )
     response = requests.get(routes.user_db_url, params=query_params)
     if helpers.is_response_valid(response, "User API could not fetch the data!"):
         return helpers.is_response_empty(response.json(), "User does not exist!")
@@ -71,10 +74,24 @@ async def create_user(request: Request):
     }
     """
     data = await request.json()
-    helpers.validate_and_build_query_params(data["form_data"], mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + mapping.ENROLLMENT_RECORD_PARAMS + ["id_generation"] + ["user_type"])
+    helpers.validate_and_build_query_params(
+        data["form_data"],
+        mapping.STUDENT_QUERY_PARAMS
+        + mapping.USER_QUERY_PARAMS
+        + mapping.ENROLLMENT_RECORD_PARAMS
+        + ["id_generation"]
+        + ["user_type"],
+    )
 
     if data["user_type"] == "student":
-        create_student_response = await student.create_student(build_request(body={"form_data": data["form_data"], "id_generation": data["id_generation"]}))
+        create_student_response = await student.create_student(
+            build_request(
+                body={
+                    "form_data": data["form_data"],
+                    "id_generation": data["id_generation"],
+                }
+            )
+        )
         return create_student_response
 
 
@@ -106,9 +123,14 @@ async def update_user(request: Request):
     }
     """
     data = await request.body()
-    query_params = helpers.validate_and_build_query_params(data, mapping.USER_QUERY_PARAMS)
+    query_params = helpers.validate_and_build_query_params(
+        data, mapping.USER_QUERY_PARAMS
+    )
 
-    response = requests.patch(routes.user_db_url + "/" + str(query_params["id"]), data=query_params)
+    response = requests.patch(
+        routes.user_db_url + "/" + str(query_params["id"]), data=query_params
+    )
     if helpers.is_response_valid(response, "User API could not patch the data!"):
-        return helpers.is_response_empty(response.json(), "User API could fetch the patched user!")
-
+        return helpers.is_response_empty(
+            response.json(), "User API could fetch the patched user!"
+        )

@@ -9,6 +9,7 @@ from request import build_request
 
 router = APIRouter(prefix="/student", tags=["Student"])
 
+
 def build_enrollment_data(data):
     enrollment_data = {}
     for key in data.keys():
@@ -132,7 +133,6 @@ async def verify_student(request: Request, student_id: str):
         request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
     )
 
-
     response = requests.get(routes.student_db_url, params={"student_id": student_id})
     if helpers.is_response_valid(response):
         data = helpers.is_response_empty(response.json(), False)
@@ -161,55 +161,89 @@ async def verify_student(request: Request, student_id: str):
 async def create_student(request: Request):
     data = await request.body()
 
-    query_params = helpers.validate_and_build_query_params(data["form_data"], mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + mapping.ENROLLMENT_RECORD_PARAMS + ["id_generation"])
-
+    query_params = helpers.validate_and_build_query_params(
+        data["form_data"],
+        mapping.STUDENT_QUERY_PARAMS
+        + mapping.USER_QUERY_PARAMS
+        + mapping.ENROLLMENT_RECORD_PARAMS
+        + ["id_generation"],
+    )
 
     if data["id_generation"] == "false":
         if (
             "student_id" not in query_params
             or query_params["student_id"] == ""
             or query_params["student_id"] is None
-            ):
-                raise HTTPException(status_code=400, detail="Student ID is not part of the request data")
+        ):
+            raise HTTPException(
+                status_code=400, detail="Student ID is not part of the request data"
+            )
 
         # check if student is already part of the ID. If yes, just return the student ID
-        does_student_already_exist = await verify_student(build_request(), query_params["student_id"])
+        does_student_already_exist = await verify_student(
+            build_request(), query_params["student_id"]
+        )
         if does_student_already_exist:
             return query_params["student_id"]
 
         else:
             # if student ID is not part of the database, create a new student record
-            response = requests.post(routes.student_db_url + "/register", data=data["form_data"])
+            response = requests.post(
+                routes.student_db_url + "/register", data=data["form_data"]
+            )
 
-            if helpers.is_response_valid(response, "Student API could not post the data!"):
+            if helpers.is_response_valid(
+                response, "Student API could not post the data!"
+            ):
                 created_student_data = helpers.is_response_empty(
                     response.json(), "Student API could fetch the created student"
                 )
 
-
             # based on the school name, retrieve the school ID
-            school_id_response = school.get_school(build_request(query_params={"name": data["form_data"]["school_name"]}))
+            school_id_response = school.get_school(
+                build_request(query_params={"name": data["form_data"]["school_name"]})
+            )
             data["form_data"]["school_id"] = school_id_response[0]["id"]
             print("here")
             # create a new enrollment record for the student, based on the student ID and school ID
             enrollment_data = build_enrollment_data(data["form_data"])
             enrollment_data["student_id"] = created_student_data["id"]
             print(enrollment_data)
-            await enrollment_record.create_enrollment_record(build_request(body=enrollment_data))
+            await enrollment_record.create_enrollment_record(
+                build_request(body=enrollment_data)
+            )
 
             return query_params["student_id"]
 
-
     else:
-        if ("email" not in query_params or query_params["email"] == "" or query_params["email"] is None) or ( "phone" not in query_params or query_params["phone"] == "" or query_params["phone"] is None):
-            raise HTTPException(status_code=400,detail="Email/Phone is not part of the request data")
+        if (
+            "email" not in query_params
+            or query_params["email"] == ""
+            or query_params["email"] is None
+        ) or (
+            "phone" not in query_params
+            or query_params["phone"] == ""
+            or query_params["phone"] is None
+        ):
+            raise HTTPException(
+                status_code=400, detail="Email/Phone is not part of the request data"
+            )
 
-        does_user_already_exist = user.get_users(build_request(query_params={"email":query_params["email"], "phone":query_params["phone"]}))
+        does_user_already_exist = user.get_users(
+            build_request(
+                query_params={
+                    "email": query_params["email"],
+                    "phone": query_params["phone"],
+                }
+            )
+        )
 
         if not does_user_already_exist:
             while True:
                 id = id_generation(data)
-                does_student_already_exist = verify_student(build_request(),student_id=id)
+                does_student_already_exist = verify_student(
+                    build_request(), student_id=id
+                )
                 if not does_student_already_exist:
                     response = requests.post(routes.user_db_url, params=query_params)
                     if response.status_code == 201:
@@ -217,10 +251,16 @@ async def create_student(request: Request):
                     raise HTTPException(status_code=500, detail="User not created!")
 
         else:
-            response = get_students(build_request(query_params={"user_id":does_user_already_exist["user_id"]}))
+            response = get_students(
+                build_request(
+                    query_params={"user_id": does_user_already_exist["user_id"]}
+                )
+            )
             if response.status_code == 200:
                 return response["student_id"]
-            raise HTTPException(status_code=404, detail="User and student details do not match!")
+            raise HTTPException(
+                status_code=404, detail="User and student details do not match!"
+            )
 
 
 @router.patch("/")
@@ -237,7 +277,12 @@ async def update_student(request: Request):
 async def complete_profile_details(request: Request):
     data = await request.json()
 
-    helpers.validate_and_build_query_params(data, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + mapping.ENROLLMENT_RECORD_PARAMS)
+    helpers.validate_and_build_query_params(
+        data,
+        mapping.STUDENT_QUERY_PARAMS
+        + mapping.USER_QUERY_PARAMS
+        + mapping.ENROLLMENT_RECORD_PARAMS,
+    )
 
     user_data, student_data, enrollment_data = (
         build_user_data(data),
@@ -263,32 +308,28 @@ async def complete_profile_details(request: Request):
 
     # get the enrollment record of the student
     enrollment_record_response = enrollment_record.get_enrollment_record(
-            build_request(
-                query_params={"student_id": student_response[0]["id"]}
-            )
-        )
+        build_request(query_params={"student_id": student_response[0]["id"]})
+    )
 
     # if school name was entered by the student, get the school ID from the school table
     if "school_name" in data:
-        school_response = school.get_school(build_request(query_params={"name": data["school_name"]}))
+        school_response = school.get_school(
+            build_request(query_params={"name": data["school_name"]})
+        )
         enrollment_data["school_id"] = school_response[0]["id"]
 
     # if enrollment record already exists, update with new details
     if enrollment_record_response != []:
         enrollment_data["id"] = enrollment_record_response[0]["id"]
 
-        enrollment_record_response = (
-                await enrollment_record.update_enrollment_record(
-                    build_request(body=enrollment_data)
-                )
-            )
+        enrollment_record_response = await enrollment_record.update_enrollment_record(
+            build_request(body=enrollment_data)
+        )
 
     # else, create a new enrollment record for the student
     else:
         enrollment_data["student_id"] = student_response[0]["id"]
 
-        enrollment_record_response = (
-                await enrollment_record.create_enrollment_record(
-                    build_request(body=enrollment_data)
-                )
-            )
+        enrollment_record_response = await enrollment_record.create_enrollment_record(
+            build_request(body=enrollment_data)
+        )

@@ -6,6 +6,7 @@ import mapping
 
 router = APIRouter(prefix="/group-type", tags=["GroupType"])
 
+
 @router.get("/")
 def get_group_type(request: Request):
     """
@@ -38,6 +39,7 @@ def get_group_type(request: Request):
         return helpers.is_response_empty(
             response.json(), False, "Group-type record does not exist!"
         )
+
 
 @router.post("/")
 async def create_group_type(request: Request):
@@ -75,7 +77,7 @@ async def create_group_type(request: Request):
 
 
 @router.patch("/")
-async def update_group_type(request:Request):
+async def update_group_type(request: Request):
     """
     This API updates an existing group type based on the provided data.
 

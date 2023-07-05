@@ -5,6 +5,7 @@ import helpers
 
 router = APIRouter(prefix="/batch", tags=["Batch"])
 
+
 @router.get("/")
 def get_batch(request: Request):
     """
@@ -46,7 +47,7 @@ def get_batch(request: Request):
 
 
 @router.post("/")
-async def create_batch(request:Request):
+async def create_batch(request: Request):
     """
     This API creates a new batch in the database.
 
@@ -87,7 +88,7 @@ async def create_batch(request:Request):
 
 
 @router.patch("/")
-async def update_batch(request:Request):
+async def update_batch(request: Request):
     """
     This API updates an existing batch record in the database.
 
@@ -119,9 +120,7 @@ async def update_batch(request:Request):
         }
     """
     data = await request.body()
-    response = requests.patch(
-        routes.batch_db_url + "/" + str(data["id"]), data=data
-    )
+    response = requests.patch(routes.batch_db_url + "/" + str(data["id"]), data=data)
     if helpers.is_response_valid(response, "Batch API could not patch the data!"):
         return helpers.is_response_empty(
             response.json(), "Batch API could not fetch the patched record!"
