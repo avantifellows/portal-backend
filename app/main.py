@@ -27,6 +27,7 @@ logger = setup_logger()
 
 app = FastAPI()
 
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """
@@ -49,6 +50,7 @@ async def log_requests(request: Request, call_next):
     )
 
     return response
+
 
 origins = [
     "http://localhost:8080",

@@ -3,6 +3,7 @@ from logger_config import get_logger
 
 logger = get_logger()
 
+
 def is_response_valid(response, error_message=""):
     if response.status_code == 200:
         return True

@@ -11,6 +11,7 @@ from logger_config import get_logger
 router = APIRouter(prefix="/student", tags=["Student"])
 logger = get_logger()
 
+
 def build_enrollment_data(data):
     enrollment_data = {}
     for key in data.keys():
