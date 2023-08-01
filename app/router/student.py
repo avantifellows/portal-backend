@@ -6,9 +6,10 @@ import mapping
 from router import routes, school, enrollment_record, user
 from id_generation import JNVIDGeneration
 from request import build_request
+from logger_config import get_logger
 
 router = APIRouter(prefix="/student", tags=["Student"])
-
+logger = get_logger()
 
 def build_enrollment_data(data):
     enrollment_data = {}
@@ -132,6 +133,8 @@ async def verify_student(request: Request, student_id: str):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
     )
+
+    logger.info(f"Verifying student: {student_id}")
 
     response = requests.get(routes.student_db_url, params={"student_id": student_id})
     if helpers.is_response_valid(response):
