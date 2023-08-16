@@ -19,4 +19,3 @@ def get_group_user(request: Request):
         return helpers.is_response_empty(
             response.json()[0], False, "Group record does not exist!"
         )
-

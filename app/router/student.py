@@ -203,13 +203,18 @@ async def create_student(request: Request):
 
             data = build_group_user_object(obj)
             group_user.get_group_user
-            group_user_response = requests.get(DB_URL + "/group-user", params={"user_id": str(data['user_id'])})
+            group_user_response = requests.get(
+                DB_URL + "/group-user", params={"user_id": str(data["user_id"])}
+            )
             if len(group_user_response.json()) == 0:
                 post_group_user_data = requests.post(DB_URL + "/group-user", data=data)
-                print("group user data posted:",post_group_user_data)
+                print("group user data posted:", post_group_user_data)
             else:
-                patch_group_user_data = requests.patch(DB_URL + "/group-user/" + str(group_user_response.json()[0]["id"]), data=data)
-                print("group user data patched:",patch_group_user_data)
+                patch_group_user_data = requests.patch(
+                    DB_URL + "/group-user/" + str(group_user_response.json()[0]["id"]),
+                    data=data,
+                )
+                print("group user data patched:", patch_group_user_data)
 
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
