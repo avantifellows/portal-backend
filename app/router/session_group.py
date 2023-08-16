@@ -29,13 +29,14 @@ def get_group_for_session(session_id: str):
         "headers": null
     }
     """
-    response = requests.get(session_group_db_url + session_id)
+    response = requests.get(session_group_db_url, params={"session_id": session_id})
     if response.status_code == 200:
         if len(response.json()) != 0:
-            data = response.json()
+            data = response.json()[0]
+            print(data)
             group_type_response = requests.get(
                 group_type_db_url,
-                params={"type": "group", "child_id": data["group_type_id"]},
+                params={"type": "group", "id": data["group_type_id"]},
             )
             if group_type_response.status_code == 200:
                 if len(group_type_response.json()) != 0:

@@ -3,7 +3,7 @@ import requests
 from settings import settings
 import helpers
 import mapping
-from router import routes, school, enrollment_record, user
+from router import routes, school, enrollment_record, user, group_user
 from id_generation import JNVIDGeneration
 from request import build_request
 
@@ -187,17 +187,29 @@ async def create_student(request: Request):
             return query_params["student_id"]
 
         else:
+
             # if student ID is not part of the database, create a new student record
             response = requests.post(
                 routes.student_db_url + "/register", data=data["form_data"]
             )
-
+            print(routes.student_db_url)
+            print(response)
             if helpers.is_response_valid(
                 response, "Student API could not post the data!"
             ):
                 created_student_data = helpers.is_response_empty(
                     response.json(), "Student API could fetch the created student"
                 )
+
+            data = build_group_user_object(obj)
+            group_user.get_group_user
+            group_user_response = requests.get(DB_URL + "/group-user", params={"user_id": str(data['user_id'])})
+            if len(group_user_response.json()) == 0:
+                post_group_user_data = requests.post(DB_URL + "/group-user", data=data)
+                print("group user data posted:",post_group_user_data)
+            else:
+                patch_group_user_data = requests.patch(DB_URL + "/group-user/" + str(group_user_response.json()[0]["id"]), data=data)
+                print("group user data patched:",patch_group_user_data)
 
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
