@@ -91,9 +91,9 @@ async def get_session_occurrence_data(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
-
+    print(query_params)
     response = requests.get(session_occurrence_db_url, params=query_params)
-
+    print(response)
     if response.status_code == 200:
         if len(response.json()) != 0:
 
