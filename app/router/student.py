@@ -192,8 +192,6 @@ async def create_student(request: Request):
             response = requests.post(
                 routes.student_db_url + "/register", data=data["form_data"]
             )
-            print(routes.student_db_url)
-            print(response)
             if helpers.is_response_valid(
                 response, "Student API could not post the data!"
             ):
@@ -201,31 +199,14 @@ async def create_student(request: Request):
                     response.json(), "Student API could fetch the created student"
                 )
 
-            data = build_group_user_object(obj)
-            group_user.get_group_user
-            group_user_response = requests.get(
-                DB_URL + "/group-user", params={"user_id": str(data["user_id"])}
-            )
-            if len(group_user_response.json()) == 0:
-                post_group_user_data = requests.post(DB_URL + "/group-user", data=data)
-                print("group user data posted:", post_group_user_data)
-            else:
-                patch_group_user_data = requests.patch(
-                    DB_URL + "/group-user/" + str(group_user_response.json()[0]["id"]),
-                    data=data,
-                )
-                print("group user data patched:", patch_group_user_data)
-
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
                 build_request(query_params={"name": data["form_data"]["school_name"]})
             )
             data["form_data"]["school_id"] = school_id_response[0]["id"]
-            print("here")
             # create a new enrollment record for the student, based on the student ID and school ID
             enrollment_data = build_enrollment_data(data["form_data"])
             enrollment_data["student_id"] = created_student_data["id"]
-            print(enrollment_data)
             await enrollment_record.create_enrollment_record(
                 build_request(body=enrollment_data)
             )

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 import requests
-from router import student, routes
+from router import student, routes, group_user, group_type, group
 from request import build_request
 import mapping
 import helpers
@@ -79,8 +79,7 @@ async def create_user(request: Request):
         mapping.STUDENT_QUERY_PARAMS
         + mapping.USER_QUERY_PARAMS
         + mapping.ENROLLMENT_RECORD_PARAMS
-        + ["id_generation"]
-        + ["user_type"],
+        + ["id_generation", "user_type", "group"],
     )
 
     if data["user_type"] == "student":
@@ -89,6 +88,25 @@ async def create_user(request: Request):
                 body={
                     "form_data": data["form_data"],
                     "id_generation": data["id_generation"],
+                }
+            )
+        )
+        get_user_id_for_student = student.get_students(
+            build_request(query_params={"student_id": create_student_response})
+        )
+        get_group_id = group.get_group_data(
+            build_request(query_params={"name": data["group"]})
+        )
+        get_group_type_id = group_type.get_group_type(
+            build_request(
+                query_params={"type": "group", "child_id": get_group_id["id"]}
+            )
+        )
+        await group_user.create_group_user(
+            build_request(
+                body={
+                    "user_id": get_user_id_for_student[0]["user"]["id"],
+                    "group_type_id": get_group_type_id[0]["id"],
                 }
             )
         )

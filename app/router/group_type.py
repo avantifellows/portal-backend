@@ -32,8 +32,9 @@ def get_group_type(request: Request):
     }
     """
     query_params = helpers.validate_and_build_query_params(
-        request, mapping.GROUP_TYPE_QUERY_PARAMS
+        request.query_params, mapping.GROUP_TYPE_QUERY_PARAMS
     )
+
     response = requests.get(routes.group_type_db_url, params=query_params)
     if helpers.is_response_valid(response, "Group-type API could not fetch the data!"):
         return helpers.is_response_empty(

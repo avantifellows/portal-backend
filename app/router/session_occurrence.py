@@ -113,6 +113,7 @@ async def get_session_occurrence_data(request: Request):
 
                     if session_data["is_active"]:
                         session_data["is_session_open"] = True
+                        print(session_data)
 
                         return session_data
                     return {"is_session_open": False}

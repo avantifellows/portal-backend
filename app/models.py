@@ -29,6 +29,7 @@ class SessionResponse(BaseModel):
     redirection: Optional[str] = None
     pop_up_form: Optional[str] = None
     form_schema_id: Optional[str] = None
+    number_of_fields_in_pop_form: Optional[str] = None
 
 
 class GroupResponse(BaseModel):
@@ -37,6 +38,12 @@ class GroupResponse(BaseModel):
     input_schema: Optional[Dict] = {}
     locale: Optional[str] = ""
     locale_data: Optional[Dict] = {}
+
+
+class GroupUserResponse(BaseModel):
+    id: str
+    user_id: str
+    group_type_id: str
 
 
 class UserSession(BaseModel):
