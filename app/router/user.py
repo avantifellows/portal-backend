@@ -4,6 +4,7 @@ from router import student, routes
 from request import build_request
 import mapping
 import helpers
+from helpers import db_request_token
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -41,7 +42,9 @@ def get_users(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, mapping.USER_QUERY_PARAMS
     )
-    response = requests.get(routes.user_db_url, params=query_params)
+    response = requests.get(
+        routes.user_db_url, params=query_params, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "User API could not fetch the data!"):
         return helpers.is_response_empty(response.json(), "User does not exist!")
 
@@ -128,7 +131,9 @@ async def update_user(request: Request):
     )
 
     response = requests.patch(
-        routes.user_db_url + "/" + str(query_params["id"]), data=query_params
+        routes.user_db_url + "/" + str(query_params["id"]),
+        data=query_params,
+        headers=db_request_token(),
     )
     if helpers.is_response_valid(response, "User API could not patch the data!"):
         return helpers.is_response_empty(

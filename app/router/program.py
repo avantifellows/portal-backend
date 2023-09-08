@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
+from helpers import db_request_token
 
 router = APIRouter(prefix="/program", tags=["Program"])
 program_db_url = settings.db_url + "/program/"
@@ -51,7 +52,9 @@ def get_program_data(request: Request):
             )
         query_params[key] = request.query_params[key]
 
-    response = requests.get(program_db_url, params=query_params)
+    response = requests.get(
+        program_db_url, params=query_params, headers=db_request_token()
+    )
     if response.status_code == 200:
         if len(response.json()) != 0:
             return response.json()

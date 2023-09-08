@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
 from models import SessionResponse
+from helpers import db_request_token
 
 router = APIRouter(prefix="/session", tags=["Session"])
 session_db_url = settings.db_url + "/session/"
@@ -37,7 +38,9 @@ async def get_session_data(request: Request):
             )
         query_params[key] = request.query_params[key]
 
-    response = requests.get(session_db_url, params=query_params)
+    response = requests.get(
+        session_db_url, params=query_params, headers=db_request_token()
+    )
 
     if response.status_code == 200:
         if len(response.json()) != 0:

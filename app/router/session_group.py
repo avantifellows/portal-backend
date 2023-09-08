@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import requests
 from settings import settings
+from helpers import db_request_token
 
 router = APIRouter(prefix="/session-group", tags=["Session-Group"])
 session_group_db_url = settings.db_url + "/group-session/"
@@ -29,13 +30,16 @@ def get_group_for_session(session_id: str):
         "headers": null
     }
     """
-    response = requests.get(session_group_db_url + session_id)
+    response = requests.get(
+        session_group_db_url + session_id, headers=db_request_token()
+    )
     if response.status_code == 200:
         if len(response.json()) != 0:
             data = response.json()
             group_type_response = requests.get(
                 group_type_db_url,
                 params={"type": "group", "child_id": data["group_type_id"]},
+                headers=db_request_token(),
             )
             if group_type_response.status_code == 200:
                 if len(group_type_response.json()) != 0:

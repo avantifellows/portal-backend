@@ -6,6 +6,7 @@ import mapping
 from router import routes, school, enrollment_record, user
 from id_generation import JNVIDGeneration
 from request import build_request
+from helpers import db_request_token
 
 router = APIRouter(prefix="/student", tags=["Student"])
 
@@ -83,7 +84,9 @@ def get_students(request: Request):
         request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
     )
 
-    response = requests.get(routes.student_db_url, params=query_params)
+    response = requests.get(
+        routes.student_db_url, params=query_params, headers=db_request_token()
+    )
 
     if helpers.is_response_valid(response, "Student API could not fetch the student!"):
         return helpers.is_response_empty(
@@ -133,7 +136,11 @@ async def verify_student(request: Request, student_id: str):
         request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
     )
 
-    response = requests.get(routes.student_db_url, params={"student_id": student_id})
+    response = requests.get(
+        routes.student_db_url,
+        params={"student_id": student_id},
+        headers=db_request_token(),
+    )
     if helpers.is_response_valid(response):
         data = helpers.is_response_empty(response.json(), False)
 
@@ -189,7 +196,9 @@ async def create_student(request: Request):
         else:
             # if student ID is not part of the database, create a new student record
             response = requests.post(
-                routes.student_db_url + "/register", data=data["form_data"]
+                routes.student_db_url + "/register",
+                data=data["form_data"],
+                headers=db_request_token(),
             )
 
             if helpers.is_response_valid(
@@ -245,7 +254,11 @@ async def create_student(request: Request):
                     build_request(), student_id=id
                 )
                 if not does_student_already_exist:
-                    response = requests.post(routes.user_db_url, params=query_params)
+                    response = requests.post(
+                        routes.user_db_url,
+                        params=query_params,
+                        headers=db_request_token(),
+                    )
                     if response.status_code == 201:
                         return query_params["student_id"]
                     raise HTTPException(status_code=500, detail="User not created!")
@@ -266,7 +279,11 @@ async def create_student(request: Request):
 @router.patch("/")
 async def update_student(request: Request):
     data = await request.body()
-    response = requests.patch(routes.student_db_url + "/" + str(data["id"]), data=data)
+    response = requests.patch(
+        routes.student_db_url + "/" + str(data["id"]),
+        data=data,
+        headers=db_request_token(),
+    )
     if helpers.is_response_valid(response, "Student API could not post the data!"):
         return helpers.is_response_empty(
             response.json(), "Student API could fetch the created student"

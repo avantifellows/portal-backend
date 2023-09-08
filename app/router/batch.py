@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 import requests
 from router import routes
 import helpers
+from helpers import db_request_token
 
 router = APIRouter(prefix="/batch", tags=["Batch"])
 
@@ -39,7 +40,9 @@ def get_batch(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, ["id", "name", "contact_hours_per_week"]
     )
-    response = requests.get(routes.batch_db_url, params=query_params)
+    response = requests.get(
+        routes.batch_db_url, params=query_params, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "Batch API could not fetch the data!"):
         return helpers.is_response_empty(
             response.json(), False, "Batch does not exist!"
@@ -80,7 +83,7 @@ async def create_batch(request: Request):
     """
 
     data = await request.body()
-    response = requests.post(routes.batch_db_url, data=data)
+    response = requests.post(routes.batch_db_url, data=data, headers=db_request_token())
     if helpers.is_response_valid(response, "Batch API could not post the data!"):
         return helpers.is_response_empty(
             response.json(), "Batch API could not fetch the created record!"
@@ -120,7 +123,11 @@ async def update_batch(request: Request):
         }
     """
     data = await request.body()
-    response = requests.patch(routes.batch_db_url + "/" + str(data["id"]), data=data)
+    response = requests.patch(
+        routes.batch_db_url + "/" + str(data["id"]),
+        data=data,
+        headers=db_request_token(),
+    )
     if helpers.is_response_valid(response, "Batch API could not patch the data!"):
         return helpers.is_response_empty(
             response.json(), "Batch API could not fetch the patched record!"
