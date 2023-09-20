@@ -4,6 +4,7 @@ from settings import settings
 from datetime import datetime
 from models import SessionResponse
 import pytz
+from helpers import db_request_token
 
 IST = pytz.timezone("Asia/Kolkata")
 router = APIRouter(prefix="/session-occurrence", tags=["Session Occurrence"])
@@ -92,7 +93,9 @@ async def get_session_occurrence_data(request: Request):
             )
         query_params[key] = request.query_params[key]
 
-    response = requests.get(session_occurrence_db_url, params=query_params)
+    response = requests.get(
+        session_occurrence_db_url, params=query_params, headers=db_request_token()
+    )
 
     if response.status_code == 200:
         if len(response.json()) != 0:
@@ -106,7 +109,9 @@ async def get_session_occurrence_data(request: Request):
             ]
 
             if len(matched_session_occurrences) > 0:
-                response = requests.get(session_db_url, params=query_params)
+                response = requests.get(
+                    session_db_url, params=query_params, headers=db_request_token()
+                )
 
                 if response.status_code == 200:
                     session_data = response.json()[0]

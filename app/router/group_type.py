@@ -3,6 +3,7 @@ import requests
 from router import routes
 import helpers
 import mapping
+from helpers import db_request_token
 
 router = APIRouter(prefix="/group-type", tags=["GroupType"])
 
@@ -34,7 +35,9 @@ def get_group_type(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request, mapping.GROUP_TYPE_QUERY_PARAMS
     )
-    response = requests.get(routes.group_type_db_url, params=query_params)
+    response = requests.get(
+        routes.group_type_db_url, params=query_params, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "Group-type API could not fetch the data!"):
         return helpers.is_response_empty(
             response.json(), False, "Group-type record does not exist!"
@@ -69,7 +72,9 @@ async def create_group_type(request: Request):
     }
     """
     data = await request.body()
-    response = requests.post(routes.group_type_db_url, data=data)
+    response = requests.post(
+        routes.group_type_db_url, data=data, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "Group-type API could not post the data!"):
         return helpers.is_response_empty(
             response.json(), "Group-type API could not fetch the created record!"
@@ -103,7 +108,9 @@ async def update_group_type(request: Request):
     """
     data = await request.body()
     response = requests.patch(
-        routes.group_type_db_url + "/" + str(data["id"]), data=data
+        routes.group_type_db_url + "/" + str(data["id"]),
+        data=data,
+        headers=db_request_token(),
     )
     if helpers.is_response_valid(response, "Group-type API could not patch the data!"):
         return helpers.is_response_empty(

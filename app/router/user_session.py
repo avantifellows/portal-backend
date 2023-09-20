@@ -4,6 +4,7 @@ from models import UserSession
 from datetime import datetime
 from router import routes
 import helpers
+from helpers import db_request_token
 
 router = APIRouter(prefix="/user-session", tags=["User-Session"])
 
@@ -36,7 +37,9 @@ def user_session_data(user_session: UserSession):
     """
     query_params = user_session.dict()
     query_params["start_time"] = datetime.now().isoformat()
-    response = requests.post(routes.user_session_db_url, json=query_params)
+    response = requests.post(
+        routes.user_session_db_url, json=query_params, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "User-session API could not post the data!"):
         helpers.is_response_empty(
             response.json(), "User-session API could not fetch the created record!"

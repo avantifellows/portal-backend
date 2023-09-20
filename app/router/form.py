@@ -5,6 +5,7 @@ from router import student, routes, enrollment_record
 from request import build_request
 import helpers
 import mapping
+from helpers import db_request_token
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
 
@@ -107,7 +108,9 @@ def get_form_schema(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, ["id", "name"]
     )
-    response = requests.get(routes.form_db_url, params=query_params)
+    response = requests.get(
+        routes.form_db_url, params=query_params, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "Form API could not fetch the data!"):
         return helpers.is_response_empty(response.json(), "Form does not exist!")
 

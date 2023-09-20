@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from settings import settings
 
 
 def is_response_valid(response, error_message=""):
@@ -32,3 +33,7 @@ def validate_and_build_query_params(data, valid_query_params):
         query_params[key] = data[key]
 
     return query_params
+
+
+def db_request_token():
+    return {"Authorization": f"Bearer {settings.token}"}
