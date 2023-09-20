@@ -118,7 +118,7 @@ def get_form_schema(request: Request):
 @router.get("/student")
 async def get_student_fields(request: Request):
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, ["number_of_fields", "group", "student_id"]
+        request.query_params, ["number_of_fields_in_pop_form", "group", "student_id"]
     )
 
     # get the field ordering for a particular group
@@ -152,7 +152,7 @@ async def get_student_fields(request: Request):
 
         # number of fields to sent back to the student
         total_number_of_fields = number_of_fields_left = int(
-            query_params["number_of_fields"]
+            query_params["number_of_fields_in_pop_form"]
         )
 
         returned_form_schema = {}
