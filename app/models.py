@@ -31,6 +31,7 @@ class SessionResponse(BaseModel):
     form_schema_id: Optional[str] = None
     number_of_fields_in_pop_form: Optional[str] = None
 
+
 class GroupResponse(BaseModel):
     id: str
     name: str
