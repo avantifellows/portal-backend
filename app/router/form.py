@@ -108,7 +108,7 @@ def get_form_schema(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, ["id", "name"]
     )
-    print("token:", db_request_token())
+
     response = requests.get(
         routes.form_db_url, params=query_params, headers=db_request_token()
     )
