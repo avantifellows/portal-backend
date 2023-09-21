@@ -92,6 +92,7 @@ async def create_user(request: Request):
                 body={
                     "form_data": data["form_data"],
                     "id_generation": data["id_generation"],
+                    "group": data["group"],
                 }
             )
         )
