@@ -176,7 +176,7 @@ async def create_student(request: Request):
         + ["id_generation"],
     )
 
-    if data["id_generation"] == "false":
+    if data["id_generation"] == "False":
         if (
             "student_id" not in query_params
             or query_params["student_id"] == ""
