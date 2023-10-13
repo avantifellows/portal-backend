@@ -24,6 +24,7 @@ Resources:
         Variables:
           JWT_SECRET_KEY: !Ref JwtSecretKey
           DB_SERVICE_URL: !Ref DbServiceUrl
+          DB_SERVICE_TOKEN: !Ref DbServiceToken
       Events:
         Api:
           Type: HttpApi
