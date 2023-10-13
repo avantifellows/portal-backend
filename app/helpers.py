@@ -36,4 +36,5 @@ def validate_and_build_query_params(data, valid_query_params):
 
 
 def db_request_token():
+    print("here":settings.token)
     return {"Authorization": f"Bearer {settings.token}"}
