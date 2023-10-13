@@ -51,4 +51,3 @@ jobs:
           --parameter-overrides
           JwtSecretKey=$JWT_SECRET_KEY
           DbServiceUrl=$DB_SERVICE_URL
-          DbServiceToken=$DB_SERVICE_TOKEN
