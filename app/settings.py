@@ -21,7 +21,6 @@ class Settings(BaseModel):
     # DB service base URL
     db_url: str = os.environ.get("DB_SERVICE_URL")
     token: str = os.environ.get("DB_SERVICE_TOKEN")
-    print("here":token)
 
 
 # callback to get the configuration
