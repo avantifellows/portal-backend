@@ -39,4 +39,4 @@ jobs:
           DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
           DB_SERVICE_TOKEN: ${{ secrets.DB_SERVICE_TOKEN }}
 
-        run: sam deploy --stack-name PortalBackendProd --s3-bucket af-portal-backend --s3-prefix staging --no-confirm-changeset --no-fail-on-empty-changeset --region ap-south-1 --capabilities CAPABILITY_IAM --parameter-overrides 'JwtSecretKey=$JWT_SECRET_KEY DbServiceUrl=$DB_SERVICE_URL DbServiceToken=$DB_SERVICE_TOKEN'
+        run: sam deploy --stack-name PortalBackendProd --s3-bucket af-portal-backend --s3-prefix staging --no-confirm-changeset --no-fail-on-empty-changeset --region ap-south-1 --capabilities CAPABILITY_IAM --parameter-overrides 'JwtSecretKey=$JWT_SECRET_KEY DbServiceUrl=$DB_SERVICE_URL'
