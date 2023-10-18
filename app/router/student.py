@@ -167,7 +167,7 @@ async def verify_student(request: Request, student_id: str):
 @router.post("/")
 async def create_student(request: Request):
     data = await request.body()
-
+    print("student:", data)
     query_params = helpers.validate_and_build_query_params(
         data["form_data"],
         mapping.STUDENT_QUERY_PARAMS
