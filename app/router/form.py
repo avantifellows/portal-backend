@@ -188,10 +188,10 @@ async def get_student_fields(request: Request):
                     if form_attributes[str(priority)]["key"] != "school_name":
                         if (
                             enrollment_record_data == []
-                            or enrollment_record_data[0][
+                            or (enrollment_record_data != [] and enrollment_record_data[0][
                                 form_attributes[str(priority)]["key"]
                             ]
-                            is None
+                            is None)
                         ):
                             (
                                 returned_form_schema,
