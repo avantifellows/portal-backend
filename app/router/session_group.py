@@ -31,7 +31,9 @@ def get_group_for_session(session_id: str):
     }
     """
     response = requests.get(
-        session_group_db_url, params={"session_id": session_id}, headers=db_request_token()
+        session_group_db_url,
+        params={"session_id": session_id},
+        headers=db_request_token(),
     )
     if response.status_code == 200:
         if len(response.json()) != 0:
