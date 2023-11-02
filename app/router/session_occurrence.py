@@ -109,7 +109,7 @@ async def get_session_occurrence_data(request: Request):
             ]
 
             if len(matched_session_occurrences) > 0:
-                
+
                 response = requests.get(
                     session_db_url, params=query_params, headers=db_request_token()
                 )
