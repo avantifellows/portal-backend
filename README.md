@@ -34,7 +34,7 @@ pip install pre-commit
 pre-commit install
 ```
 
-- Copy `.env.example` to `.env` and set all the environment variables as mentioned in `docs/ENV.md`.
+- Copy `.env.example` to `.env` and set all the environment variables as mentioned in [`docs/ENV.md`](docs/ENV.md).
 
 ## Running locally
 
