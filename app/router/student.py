@@ -133,7 +133,8 @@ async def verify_student(request: Request, student_id: str):
     """
 
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ['group_id']
+        request.query_params,
+        mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["group_id"],
     )
 
     response = requests.get(
@@ -161,21 +162,36 @@ async def verify_student(request: Request, student_id: str):
                             if student_data[key] != query_params[key]:
                                 return False
 
-                    if key == 'group_id':
-                        response = requests.get(routes.group_type_db_url, params={"child_id": query_params['group_id'], "type": "group"}, headers=db_request_token())
+                    if key == "group_id":
+                        response = requests.get(
+                            routes.group_type_db_url,
+                            params={
+                                "child_id": query_params["group_id"],
+                                "type": "group",
+                            },
+                            headers=db_request_token(),
+                        )
 
                         if helpers.is_response_valid(response):
                             data = helpers.is_response_empty(response.json()[0], False)
 
-                            response = requests.get(routes.group_user_db_url, params={"group_type_id": data['id'], "user_id": student_data["user"]["id"]}, headers=db_request_token())
+                            response = requests.get(
+                                routes.group_user_db_url,
+                                params={
+                                    "group_type_id": data["id"],
+                                    "user_id": student_data["user"]["id"],
+                                },
+                                headers=db_request_token(),
+                            )
                             if helpers.is_response_valid(response):
                                 return len(response.json()) != 0
                             return False
 
                         raise HTTPException(
-                status_code=400, detail="Group Type ID could not be retrieved"
-            )
-                        #compare it with the user
+                            status_code=400,
+                            detail="Group Type ID could not be retrieved",
+                        )
+                        # compare it with the user
             return True
         return False
     return False

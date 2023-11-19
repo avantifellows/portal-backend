@@ -40,7 +40,7 @@ def get_group_for_session(session_id: str):
             data = response.json()
             group_type_response = requests.get(
                 group_type_db_url,
-                params={ "id": data[0]["group_type_id"]},
+                params={"id": data[0]["group_type_id"]},
                 headers=db_request_token(),
             )
 
