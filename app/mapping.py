@@ -1,4 +1,4 @@
-FORM_GROUP_MAPPING = {"HaryanaStudents": "Haryana Student Profile"}
+FORM_GROUP_MAPPING = {"HaryanaStudents": "Haryana Student Profile", "EnableStudents": "Enable Student Profile"}
 
 STUDENT_QUERY_PARAMS = [
     "student_id",

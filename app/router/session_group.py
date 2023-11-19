@@ -38,15 +38,15 @@ def get_group_for_session(session_id: str):
     if response.status_code == 200:
         if len(response.json()) != 0:
             data = response.json()
-            print(data)
             group_type_response = requests.get(
                 group_type_db_url,
-                params={"type": "group", "child_id": data[0]["group_type_id"]},
+                params={ "id": data[0]["group_type_id"]},
                 headers=db_request_token(),
             )
+
             if group_type_response.status_code == 200:
                 if len(group_type_response.json()) != 0:
                     group_data = group_type_response.json()
-                    return group_data[0]["child_id"]
+                    return group_data[0]
         raise HTTPException(status_code=404, detail="Session ID does not exist!")
     raise HTTPException(status_code=404, detail="Session ID does not exist!")

@@ -129,7 +129,7 @@ async def get_student_fields(request: Request):
         )
     )
     form = form[0]
-
+    print(form)
     # get student and user data for the student ID that is requesting for profile completion
     # ASSUMPTION : student_id is valid and exists because only valid students will reach profile completion
     student_data = student.get_students(
@@ -184,14 +184,14 @@ async def get_student_fields(request: Request):
                     in mapping.ENROLLMENT_RECORD_PARAMS
                     and form_attributes[str(priority)]["key"] != "student_id"
                 ):
-                    
+
                     if form_attributes[str(priority)]["key"] != "school_name":
-                        if (
-                            enrollment_record_data == []
-                            or (enrollment_record_data != [] and enrollment_record_data[
+                        if enrollment_record_data == [] or (
+                            enrollment_record_data != []
+                            and enrollment_record_data[
                                 form_attributes[str(priority)]["key"]
                             ]
-                            is None)
+                            is None
                         ):
                             (
                                 returned_form_schema,
