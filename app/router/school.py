@@ -3,6 +3,7 @@ import requests
 from router import routes
 import helpers
 import mapping
+from helpers import db_request_token
 
 router = APIRouter(prefix="/school", tags=["School"])
 
@@ -12,7 +13,9 @@ def get_school(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, mapping.SCHOOL_QUERY_PARAMS
     )
-    response = requests.get(routes.school_db_url, params=query_params)
+    response = requests.get(
+        routes.school_db_url, params=query_params, headers=db_request_token()
+    )
 
     if helpers.is_response_valid(response, "School API could not fetch the data!"):
 

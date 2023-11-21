@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from logger_config import get_logger
+from settings import settings
 
 logger = get_logger()
-
 
 def is_response_valid(response, error_message=""):
     if response.status_code == 200:
@@ -38,3 +38,7 @@ def validate_and_build_query_params(data, valid_query_params):
         query_params[key] = data[key]
 
     return query_params
+
+
+def db_request_token():
+    return {"Authorization": f"Bearer {settings.token}"}

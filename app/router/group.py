@@ -4,6 +4,7 @@ from models import GroupResponse
 from router import routes
 import helpers
 import mapping
+from helpers import db_request_token
 
 router = APIRouter(prefix="/group", tags=["Group"])
 
@@ -33,7 +34,9 @@ def get_group_data(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request, mapping.GROUP_QUERY_PARAMS
     )
-    response = requests.get(routes.group_type_db_url, params=query_params)
+    response = requests.get(
+        routes.group_type_db_url, params=query_params, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "Group API could not fetch the data!"):
         return helpers.is_response_empty(
             response.json(), False, "Group record does not exist!"
@@ -67,7 +70,7 @@ async def create_group(request: Request):
     }
     """
     data = await request.body()
-    response = requests.post(routes.group_db_url, data=data)
+    response = requests.post(routes.group_db_url, data=data, headers=db_request_token())
     if helpers.is_response_valid(response, "Group API could not post the data!"):
         return helpers.is_response_empty(
             response.json(), "Group API could not fetch the created record!"
@@ -100,7 +103,11 @@ async def update_group(request: Request):
     }
     """
     data = await request.body()
-    response = requests.patch(routes.group_db_url + "/" + str(data["id"]), data=data)
+    response = requests.patch(
+        routes.group_db_url + "/" + str(data["id"]),
+        data=data,
+        headers=db_request_token(),
+    )
     if helpers.is_response_valid(response, "Group API could not patch the data!"):
         return helpers.is_response_empty(
             response.json(), "Group API could not fetch the patched record!"

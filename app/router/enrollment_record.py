@@ -3,6 +3,7 @@ import requests
 from router import routes
 import helpers
 import mapping
+from helpers import db_request_token
 
 router = APIRouter(prefix="/enrollment-record", tags=["Enrollment Record"])
 
@@ -40,7 +41,9 @@ def get_enrollment_record(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, mapping.ENROLLMENT_RECORD_PARAMS
     )
-    response = requests.get(routes.enrollment_record_db_url, params=query_params)
+    response = requests.get(
+        routes.enrollment_record_db_url, params=query_params, headers=db_request_token()
+    )
 
     if helpers.is_response_valid(response, "Enrollment API could not fetch the data!"):
         return helpers.is_response_empty(
@@ -93,7 +96,9 @@ async def create_enrollment_record(request: Request):
         }
     """
     data = await request.body()
-    response = requests.post(routes.enrollment_record_db_url, data=data)
+    response = requests.post(
+        routes.enrollment_record_db_url, data=data, headers=db_request_token()
+    )
     if helpers.is_response_valid(response, "Enrollment API could not post the data!"):
         return helpers.is_response_empty(
             response.json(), "Enrollment API could not fetch the created record!"
@@ -144,7 +149,9 @@ async def update_enrollment_record(request: Request):
     """
     data = await request.body()
     response = requests.patch(
-        routes.enrollment_record_db_url + "/" + str(data["id"]), data=data
+        routes.enrollment_record_db_url + "/" + str(data["id"]),
+        data=data,
+        headers=db_request_token(),
     )
     if helpers.is_response_valid(response, "Enrollment API could not patch the data!"):
         return helpers.is_response_empty(
