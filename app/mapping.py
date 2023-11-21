@@ -59,7 +59,7 @@ ENROLLMENT_RECORD_PARAMS = [
     "date_of_enrollment",
 ]
 
-SCHOOL_QUERY_PARAMS = ["id", "name", "code"]
+SCHOOL_QUERY_PARAMS = ["id", "name", "code", "state", "district"]
 GROUP_TYPE_QUERY_PARAMS = ["id", "type", "child_id"]
 GROUP_QUERY_PARAMS = ["name", "id", "locale"]
 STUDENT_EXAM_RECORD_QUERY_PARAMS = [
@@ -67,5 +67,7 @@ STUDENT_EXAM_RECORD_QUERY_PARAMS = [
     "exam_id",
     "application_number",
     "application_password",
-    "exam_name",
+    "date",
+    "score",
+    "rank",
 ]

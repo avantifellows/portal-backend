@@ -140,5 +140,5 @@ async def update_user(request: Request):
     )
     if helpers.is_response_valid(response, "User API could not patch the data!"):
         return helpers.is_response_empty(
-            response.json(), "User API could fetch the patched user!"
+            response.json(), False, "User API could fetch the patched user!"
         )

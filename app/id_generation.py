@@ -16,6 +16,7 @@ school_db_url = settings.db_url + "/school"
 
 async def JNV_ID_generation(parameters):
     record_already_exist, ID = dedupe_for_users(parameters)
+
     if record_already_exist:
         return ID
     else:
@@ -72,7 +73,7 @@ def dedupe_for_users(parameters):
                     }
                 )
             )
-            print("student:", does_student_already_exist)
+
             if len(does_student_already_exist) == 0:
                 # if user is found, but a matching student is not found, then go ahead with ID generation
                 return [False, ""]
@@ -80,30 +81,33 @@ def dedupe_for_users(parameters):
             else:
                 # first, get the school ID based on the school name given in the request
                 school_id_response = school.get_school(
-                    build_request(query_params={"name": parameters["school_name"]})
+                    build_request(
+                        query_params={
+                            "name": parameters["school_name"],
+                            "state": parameters["state"],
+                            "district": parameters["district"],
+                        }
+                    )
                 )
-                if is_response_valid(
-                    school_id_response, "School ID could not be retrieved"
-                ):
-                    school_id = is_response_empty(school_id_response.json())[0]
 
-                    # check if any of the found students study in the school
-                    for student in does_student_already_exist:
-                        does_enrollment_record_exist = (
-                            enrollment_record.get_enrollment_record(
-                                build_request(
-                                    query_params={
-                                        "school_id": school_id,
-                                        "student_id": student["id"],
-                                        "grade": parameters["grade"],
-                                    }
-                                )
+                # check if any of the found students study in the school
+                for student in does_student_already_exist:
+                    does_enrollment_record_exist = (
+                        enrollment_record.get_enrollment_record(
+                            build_request(
+                                query_params={
+                                    "school_id": school_id_response[0]["id"],
+                                    "student_id": student["id"],
+                                    "grade": parameters["grade"],
+                                }
                             )
                         )
-                        if len(does_enrollment_record_exist) == 0:
-                            return [False, ""]
-                        else:
-                            return [True, student["student_id"]]
+                    )
+
+                    if len(does_enrollment_record_exist) == 0:
+                        return [False, ""]
+                    else:
+                        return [True, student["student_id"]]
 
 
 def get_class_code(grade):
