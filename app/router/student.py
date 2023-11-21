@@ -3,13 +3,12 @@ import requests
 from settings import settings
 import helpers
 import mapping
-from router import routes, school, enrollment_record, user, exam, student_exam_record
+from router import routes, school, enrollment_record, user, exam as exam_router, student_exam_record
 from id_generation import JNVIDGeneration
 from request import build_request
 from helpers import db_request_token
 
 router = APIRouter(prefix="/student", tags=["Student"])
-
 
 def build_student_exam_data(data):
     # this function builds the student-exam record object
@@ -19,25 +18,19 @@ def build_student_exam_data(data):
 
             # the key 'student_id' is the ID entered by the user but the 'student_id' being stored in the student-exam table is the PK of a row in the student table.
             # Hence, we retreive the PK of a student based on their 'student_id' and that is stored in the student-exam record table.
-            if key == "student_id":
-                student_response = get_students(
-                    build_request(query_params={"student_id": data["student_id"]})
-                )
-                student_exam_data["student_id"] = int(student_response[0]["id"])
+            if key == 'student_id':
+                student_response = get_students(build_request(query_params={'student_id': data['student_id']}))
+                student_exam_data['student_id'] = int(student_response[0]['id'])
 
             # for the key 'exam_name', we have to retrieve the respective exam PK to store in the student-exam record table
-            elif key == "exam_name":
-                exam_response = exam.get_exam(
-                    build_request(query_params={"name": data[key]})
-                )
-                if len(exam_response) != 0:
-                    student_exam_data["exam_id"] = int(exam_response[0]["id"])
+            elif key == 'exam_name':
+                exam_response = exam_router.get_exam(build_request(query_params= {'name': data[key]}))
+                if len(exam_response) != 0: student_exam_data['exam_id'] = int(exam_response[0]['id'])
 
             # for any other key, we store the value as the user entered
             else:
                 student_exam_data[key] = data[key]
     return student_exam_data
-
 
 def build_enrollment_data(data):
     # this function builds the enrollment data object of a student
@@ -47,7 +40,6 @@ def build_enrollment_data(data):
             enrollment_data[key] = data[key]
     return enrollment_data
 
-
 async def build_student_data(data):
     # this function builds the student data object
     student_data = {}
@@ -55,12 +47,10 @@ async def build_student_data(data):
         if key in mapping.STUDENT_QUERY_PARAMS:
 
             # the key 'planned_competitive_exams' contains an array of exam names. Each exam PK is retrieved and stored in the student table.
-            if key == "planned_competitive_exams":
+            if key == 'planned_competitive_exams':
                 exam_ids = []
                 for exam in data[key]:
-                    exam_response = exam.get_exam(
-                        build_request(query_params={"name": exam})
-                    )
+                    exam_response = exam_router.get_exam(build_request(query_params= {'name': exam}))
                     if exam_response != []:
                         exam_ids.append(exam_response[0]["id"])
 
@@ -70,7 +60,6 @@ async def build_student_data(data):
             else:
                 student_data[key] = data[key]
     return student_data
-
 
 def build_user_data(data):
     # this function builds the user data object
@@ -124,7 +113,6 @@ def get_students(request: Request):
         return helpers.is_response_empty(
             response.json(), True, "Student does not exist"
         )
-
 
 @router.get("/verify")
 async def verify_student(request: Request, student_id: str):
@@ -228,7 +216,6 @@ async def verify_student(request: Request, student_id: str):
         return False
     return False
 
-
 @router.post("/")
 async def create_student(request: Request):
     """
@@ -300,42 +287,38 @@ async def create_student(request: Request):
 
     else:
         # if ID generation is true, each group has their respective logic of generating IDs
-        if data["group"] == "EnableStudents":
+        if data['group'] == 'EnableStudents':
 
-            id = JNVIDGeneration(query_params).get_id()
+            id = JNVIDGeneration(
+                query_params
+            ).get_id()
+
 
         # create a student with the generated ID
-        query_params["student_id"] = id
+        query_params['student_id'] = id
 
-        response = requests.post(
-            routes.student_db_url, params=query_params, headers=db_request_token()
-        )
-
+        response = requests.post(routes.student_db_url,params=query_params,headers=db_request_token())
         if response.status_code == 201:
 
-            # based on the school name, retrieve the school ID
-            school_id_response = school.get_school(
-                build_request(query_params={"name": data["school_name"]})
-            )
+                # based on the school name, retrieve the school ID
+                school_id_response = school.get_school(build_request(query_params={"name": data["school_name"]}))
 
-            data["form_data"]["school_id"] = school_id_response[0]["id"]
+                data["form_data"]["school_id"] = school_id_response[0]["id"]
 
-            # create a new enrollment record for the student, based on the student ID and school ID
-            enrollment_data = build_enrollment_data(data["form_data"])
-            enrollment_data["student_id"] = created_student_data["id"]
+                # create a new enrollment record for the student, based on the student ID and school ID
+                enrollment_data = build_enrollment_data(data["form_data"])
+                enrollment_data["student_id"] = created_student_data["id"]
 
-            await enrollment_record.create_enrollment_record(
-                build_request(body=enrollment_data)
-            )
-            return id
+                await enrollment_record.create_enrollment_record(build_request(body=enrollment_data))
+                return id
 
         raise HTTPException(status_code=500, detail="Student not created!")
+
 
 
 @router.patch("/")
 async def update_student(request: Request):
     data = await request.body()
-
     response = requests.patch(
         routes.student_db_url + "/" + str(data["id"]),
         data=data,
@@ -346,7 +329,6 @@ async def update_student(request: Request):
             response.json(), "Student API could fetch the created student"
         )
 
-
 @router.post("/complete-profile-details")
 async def complete_profile_details(request: Request):
     data = await request.json()
@@ -355,15 +337,14 @@ async def complete_profile_details(request: Request):
         data,
         mapping.STUDENT_QUERY_PARAMS
         + mapping.USER_QUERY_PARAMS
-        + mapping.ENROLLMENT_RECORD_PARAMS
-        + mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS,
+        + mapping.ENROLLMENT_RECORD_PARAMS + mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS
     )
 
     user_data, student_data, enrollment_data, student_exam_data = (
         build_user_data(data),
         await build_student_data(data),
         build_enrollment_data(data),
-        build_student_exam_data(data),
+        build_student_exam_data(data)
     )
 
     # get the PK of the student whose profile is being completed
@@ -379,18 +360,12 @@ async def complete_profile_details(request: Request):
     user_data["id"] = student_response[0]["user"]["id"]
 
     if len(student_exam_data) > 0:
-        does_student_exam_record_exist = student_exam_record.get_student_exam_record(
-            build_request(query_params={"student_id": student_response[0]["id"]})
-        )
+        does_student_exam_record_exist = student_exam_record.get_student_exam_record(build_request(query_params={'student_id':student_response[0]["id"]}))
         print(does_student_exam_record_exist)
         if len(does_student_exam_record_exist) == 0:
-            await student_exam_record.create_student_exam_record(
-                build_request(body=student_exam_data)
-            )
+            await student_exam_record.create_student_exam_record(build_request(body=student_exam_data))
         else:
-            await student_exam_record.update_student_exam_record(
-                build_request(body=student_exam_data)
-            )
+            await student_exam_record.update_student_exam_record(build_request(body=student_exam_data))
 
     if len(user_data) > 0:
         # update the student with the entered user details

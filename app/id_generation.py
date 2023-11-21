@@ -140,4 +140,4 @@ class JNVIDGeneration:
         return code
 
     async def check_for_duplicate_ID(self, id):
-        return await student.verify_student(build_request(), student_id=id)
+        return await student_router.verify_student(build_request(), student_id=id)
