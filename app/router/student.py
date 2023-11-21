@@ -87,7 +87,7 @@ def build_user_data(data):
     user_data = {}
     for key in data.keys():
         if key in mapping.USER_QUERY_PARAMS:
-            if key == 'date_of_birth':
+            if key == "date_of_birth":
                 user_data[key] = str(data[key])
 
             else:
@@ -135,9 +135,7 @@ def get_students(request: Request):
     )
 
     if helpers.is_response_valid(response, "Student API could not fetch the student!"):
-        return helpers.is_response_empty(
-            response.json(), False
-        )
+        return helpers.is_response_empty(response.json(), False)
 
 
 @router.get("/verify")
@@ -320,18 +318,26 @@ async def create_student(request: Request):
 
         print(id)
 
-        student_data =  build_student_data(query_params)
+        student_data = build_student_data(query_params)
         user_data = build_user_data(query_params)
         complete_student_data = {**student_data, **user_data}
         complete_student_data["student_id"] = id
         # create a student with the generated ID
         created_student_response = requests.post(
-            routes.student_db_url + '/register', data=complete_student_data, headers=db_request_token()
+            routes.student_db_url + "/register",
+            data=complete_student_data,
+            headers=db_request_token(),
         )
         if created_student_response.status_code == 201:
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
-                build_request(query_params={"name": query_params["school_name"], "state": query_params["state"], "district":query_params["district"]})
+                build_request(
+                    query_params={
+                        "name": query_params["school_name"],
+                        "state": query_params["state"],
+                        "district": query_params["district"],
+                    }
+                )
             )
 
             query_params["school_id"] = school_id_response[0]["id"]

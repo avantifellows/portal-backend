@@ -14,8 +14,6 @@ from router import (
 school_db_url = settings.db_url + "/school"
 
 
-
-
 async def JNV_ID_generation(parameters):
     record_already_exist, ID = dedupe_for_users(parameters)
     if record_already_exist:
@@ -24,10 +22,10 @@ async def JNV_ID_generation(parameters):
         counter = 1000
         while counter > 0:
             id = (
-                    get_class_code(parameters["grade"])
-                    + get_jnv_code(parameters["region"], parameters["school_name"])
-                    + generate_three_digit_code()
-                )
+                get_class_code(parameters["grade"])
+                + get_jnv_code(parameters["region"], parameters["school_name"])
+                + generate_three_digit_code()
+            )
 
             duplicate_id = await check_for_duplicate_ID(id)
             if not duplicate_id:
@@ -36,113 +34,107 @@ async def JNV_ID_generation(parameters):
             else:
                 counter -= 1
     raise HTTPException(
-                    status_code=500, detail="ID could not be generated, max loops hit!"
-                )
+        status_code=500, detail="ID could not be generated, max loops hit!"
+    )
+
 
 def dedupe_for_users(parameters):
 
-        # check if the keys used for deduping exist in the request data
-        for key in ["grade", "date_of_birth", "school_name", "gender", "category"]:
-            if (
-                key not in parameters
-                or parameters[key] == ""
-                or parameters[key] is None
-            ):
-                raise HTTPException(
-                    status_code=400,
-                    detail="{} is not part of the request data".format(key),
-                )
-
-
-        does_user_already_exist = user_router.get_users(
-            build_request(
-                query_params={
-                    "date_of_birth": parameters["date_of_birth"],
-                    "gender": parameters["gender"],
-                }
+    # check if the keys used for deduping exist in the request data
+    for key in ["grade", "date_of_birth", "school_name", "gender", "category"]:
+        if key not in parameters or parameters[key] == "" or parameters[key] is None:
+            raise HTTPException(
+                status_code=400,
+                detail="{} is not part of the request data".format(key),
             )
+
+    does_user_already_exist = user_router.get_users(
+        build_request(
+            query_params={
+                "date_of_birth": parameters["date_of_birth"],
+                "gender": parameters["gender"],
+            }
         )
+    )
 
-        if len(does_user_already_exist) == 0:
-            # if user does not exist, go ahead with ID generation
-            return [False, ""]
+    if len(does_user_already_exist) == 0:
+        # if user does not exist, go ahead with ID generation
+        return [False, ""]
 
-        else:
-            # if user does exist, check corresponding student attributes
-            for user in does_user_already_exist:
-                does_student_already_exist = student_router.get_students(
-                    build_request(
-                        query_params={
-                            "user_id": user["id"],
-                            "category": parameters["category"],
-                        }
-                    )
+    else:
+        # if user does exist, check corresponding student attributes
+        for user in does_user_already_exist:
+            does_student_already_exist = student_router.get_students(
+                build_request(
+                    query_params={
+                        "user_id": user["id"],
+                        "category": parameters["category"],
+                    }
                 )
-                print("student:", does_student_already_exist)
-                if len(does_student_already_exist) == 0:
-                    # if user is found, but a matching student is not found, then go ahead with ID generation
-                    return [False, ""]
+            )
+            print("student:", does_student_already_exist)
+            if len(does_student_already_exist) == 0:
+                # if user is found, but a matching student is not found, then go ahead with ID generation
+                return [False, ""]
 
-                else:
-                    # first, get the school ID based on the school name given in the request
-                    school_id_response = school.get_school(
-                        build_request(
-                            query_params={"name": parameters["school_name"]}
-                        )
-                    )
-                    if is_response_valid(
-                        school_id_response, "School ID could not be retrieved"
-                    ):
-                        school_id = is_response_empty(school_id_response.json())[0]
+            else:
+                # first, get the school ID based on the school name given in the request
+                school_id_response = school.get_school(
+                    build_request(query_params={"name": parameters["school_name"]})
+                )
+                if is_response_valid(
+                    school_id_response, "School ID could not be retrieved"
+                ):
+                    school_id = is_response_empty(school_id_response.json())[0]
 
-                        # check if any of the found students study in the school
-                        for student in does_student_already_exist:
-                            does_enrollment_record_exist = (
-                                enrollment_record.get_enrollment_record(
-                                    build_request(
-                                        query_params={
-                                            "school_id": school_id,
-                                            "student_id": student["id"],
-                                            "grade": parameters["grade"],
-                                        }
-                                    )
+                    # check if any of the found students study in the school
+                    for student in does_student_already_exist:
+                        does_enrollment_record_exist = (
+                            enrollment_record.get_enrollment_record(
+                                build_request(
+                                    query_params={
+                                        "school_id": school_id,
+                                        "student_id": student["id"],
+                                        "grade": parameters["grade"],
+                                    }
                                 )
                             )
-                            if len(does_enrollment_record_exist) == 0:
-                                return [False, ""]
-                            else:
-                                return [True, student["student_id"]]
-
+                        )
+                        if len(does_enrollment_record_exist) == 0:
+                            return [False, ""]
+                        else:
+                            return [True, student["student_id"]]
 
 
 def get_class_code(grade):
     class_codes = {"9": "26", "10": "25", "11": "24", "12": "23"}
     return class_codes[grade]
 
+
 def get_jnv_code(region, school_name):
     response = requests.get(
         school_db_url,
-            params={
-                "region": region,
-                "name": school_name,
-            },
-            headers=db_request_token(),
-        )
+        params={
+            "region": region,
+            "name": school_name,
+        },
+        headers=db_request_token(),
+    )
 
     if response.status_code == 200:
         if len(response.json()) == 0:
-            raise HTTPException(
-                    status_code=404, detail="JNV or region does not exist!"
-                )
+            raise HTTPException(status_code=404, detail="JNV or region does not exist!")
         return response.json()[0]["code"]
 
     return HTTPException(status_code=response.status_code, detail=response.errors)
+
 
 def generate_three_digit_code():
     code = ""
     for _ in range(3):
         code += str(random.randint(0, 9))
     return code
+
 
 async def check_for_duplicate_ID(id):
     return await student_router.verify_student(build_request(), student_id=id)
