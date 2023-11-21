@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
-from router import student, routes, enrollment_record
+from router import student, routes, enrollment_record, student_exam_record
 from request import build_request
 import helpers
 import mapping
@@ -20,7 +20,7 @@ def is_user_attribute_empty(form_attributes, priority, student_data):
 def is_student_attribute_empty(form_attributes, priority, student_data):
     return (
         form_attributes[str(priority)]["key"] in mapping.STUDENT_QUERY_PARAMS
-        and student_data[form_attributes[str(priority)]["key"]] is None
+        and (form_attributes[str(priority)]["key"] not in student_data or student_data[form_attributes[str(priority)]["key"]] is None)
     )
 
 
@@ -129,7 +129,6 @@ async def get_student_fields(request: Request):
         )
     )
     form = form[0]
-    print(form)
     # get student and user data for the student ID that is requesting for profile completion
     # ASSUMPTION : student_id is valid and exists because only valid students will reach profile completion
     student_data = student.get_students(
@@ -145,6 +144,11 @@ async def get_student_fields(request: Request):
             build_request(query_params={"student_id": student_data["id"]})
         )
 
+        #get exam data for the student
+        student_exam_record_data = student_exam_record.get_student_exam_record(
+            build_request(query_params={"student_id": student_data["id"]})
+        )[0]
+
         # get the priorities for all fields and sort them
         priority_order = sorted([eval(i) for i in form["attributes"].keys()])
 
@@ -159,9 +163,8 @@ async def get_student_fields(request: Request):
         returned_form_schema = {}
 
         for priority in priority_order:
-
             if number_of_fields_left > 0:
-
+                print(student_exam_record_data, form_attributes[str(priority)])
                 if is_user_attribute_empty(
                     form_attributes, priority, student_data
                 ) or is_student_attribute_empty(
@@ -277,6 +280,23 @@ async def get_student_fields(request: Request):
                                         student_data,
                                     )
 
+                elif (
+                    form_attributes[str(priority)]["key"]
+                    in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS
+                    and form_attributes[str(priority)]["key"] != "student_id" and form_attributes[str(priority)]["key"] != "exam_name" and (len(student_exam_record_data) == 0 or student_exam_record_data[form_attributes[str(priority)]["key"]] == ''
+                )):
+                    print(form_attributes[str(priority)]["key"],form_attributes[str(priority)]["key"]
+                    in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS, student_exam_record_data )
+                    (
+                                returned_form_schema,
+                                number_of_fields_left,
+                            ) = build_returned_form_schema_data(
+                                returned_form_schema,
+                                total_number_of_fields,
+                                number_of_fields_left,
+                                form_attributes,
+                                priority,
+                            )
         return returned_form_schema
 
     raise HTTPException(status_code=404, detail="Student does not exist!")

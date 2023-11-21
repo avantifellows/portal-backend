@@ -10,3 +10,5 @@ user_db_url = settings.db_url + "/user"
 school_db_url = settings.db_url + "/school"
 batch_db_url = settings.db_url + "/batch/"
 user_session_db_url = settings.db_url + "/user-session/"
+exam_db_url = settings.db_url + "/exam"
+student_exam_record_db_url = settings.db_url + '/student-exam-record'
