@@ -25,7 +25,7 @@ STUDENT_QUERY_PARAMS = [
     "group",
     "planned_competitive_exams",
     "region",
-    "user_id"
+    "user_id",
 ]
 
 USER_QUERY_PARAMS = [
@@ -62,4 +62,10 @@ ENROLLMENT_RECORD_PARAMS = [
 SCHOOL_QUERY_PARAMS = ["id", "name", "code"]
 GROUP_TYPE_QUERY_PARAMS = ["id", "type", "child_id"]
 GROUP_QUERY_PARAMS = ["name", "id", "locale"]
-STUDENT_EXAM_RECORD_QUERY_PARAMS = ["student_id","exam_id","application_number", "application_password","exam_name"]
+STUDENT_EXAM_RECORD_QUERY_PARAMS = [
+    "student_id",
+    "exam_id",
+    "application_number",
+    "application_password",
+    "exam_name",
+]
