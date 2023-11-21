@@ -11,9 +11,10 @@ from router import (
     exam as exam_router,
     student_exam_record,
 )
-from id_generation import JNVIDGeneration
+from id_generation import JNV_ID_generation
 from request import build_request
 from helpers import db_request_token
+from datetime import datetime
 
 router = APIRouter(prefix="/student", tags=["Student"])
 
@@ -55,7 +56,7 @@ def build_enrollment_data(data):
     return enrollment_data
 
 
-async def build_student_data(data):
+def build_student_data(data):
     # this function builds the student data object
     student_data = {}
     for key in data.keys():
@@ -73,9 +74,11 @@ async def build_student_data(data):
 
                 student_data[key] = exam_ids
 
+            elif key == "physically_handicapped":
+                continue
             # for any other key, we store the value as the user entered
             else:
-                student_data[key] = data[key]
+                student_data[key] = str(data[key])
     return student_data
 
 
@@ -84,7 +87,11 @@ def build_user_data(data):
     user_data = {}
     for key in data.keys():
         if key in mapping.USER_QUERY_PARAMS:
-            user_data[key] = data[key]
+            if key == 'date_of_birth':
+                user_data[key] = str(data[key])
+
+            else:
+                user_data[key] = str(data[key])
     return user_data
 
 
@@ -129,7 +136,7 @@ def get_students(request: Request):
 
     if helpers.is_response_valid(response, "Student API could not fetch the student!"):
         return helpers.is_response_empty(
-            response.json(), True, "Student does not exist"
+            response.json(), False
         )
 
 
@@ -309,26 +316,30 @@ async def create_student(request: Request):
         # if ID generation is true, each group has their respective logic of generating IDs
         if data["group"] == "EnableStudents":
 
-            id = JNVIDGeneration(query_params).get_id()
+            id = await JNV_ID_generation(query_params)
 
+        print(id)
+
+        student_data =  build_student_data(query_params)
+        user_data = build_user_data(query_params)
+        complete_student_data = {**student_data, **user_data}
+        complete_student_data["student_id"] = id
         # create a student with the generated ID
-        query_params["student_id"] = id
-
-        response = requests.post(
-            routes.student_db_url, params=query_params, headers=db_request_token()
+        created_student_response = requests.post(
+            routes.student_db_url + '/register', data=complete_student_data, headers=db_request_token()
         )
-        if response.status_code == 201:
-
+        if created_student_response.status_code == 201:
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
-                build_request(query_params={"name": data["school_name"]})
+                build_request(query_params={"name": query_params["school_name"], "state": query_params["state"], "district":query_params["district"]})
             )
 
-            data["form_data"]["school_id"] = school_id_response[0]["id"]
+            query_params["school_id"] = school_id_response[0]["id"]
 
             # create a new enrollment record for the student, based on the student ID and school ID
-            enrollment_data = build_enrollment_data(data["form_data"])
-            enrollment_data["student_id"] = created_student_data["id"]
+            enrollment_data = build_enrollment_data(query_params)
+            enrollment_data["student_id"] = created_student_response.json()["id"]
+            enrollment_data["is_current"] = True
 
             await enrollment_record.create_enrollment_record(
                 build_request(body=enrollment_data)
@@ -366,7 +377,7 @@ async def complete_profile_details(request: Request):
 
     user_data, student_data, enrollment_data, student_exam_data = (
         build_user_data(data),
-        await build_student_data(data),
+        build_student_data(data),
         build_enrollment_data(data),
         build_student_exam_data(data),
     )

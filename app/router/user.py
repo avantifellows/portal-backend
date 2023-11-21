@@ -42,11 +42,13 @@ def get_users(request: Request):
     query_params = helpers.validate_and_build_query_params(
         request.query_params, mapping.USER_QUERY_PARAMS
     )
+
     response = requests.get(
         routes.user_db_url, params=query_params, headers=db_request_token()
     )
+
     if helpers.is_response_valid(response, "User API could not fetch the data!"):
-        return helpers.is_response_empty(response.json(), "User does not exist!")
+        return helpers.is_response_empty(response.json(), False, "User does not exist!")
 
 
 @router.post("/")

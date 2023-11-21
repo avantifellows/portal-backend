@@ -14,50 +14,55 @@ from router import (
 school_db_url = settings.db_url + "/school"
 
 
-class JNVIDGeneration:
-    def __init__(self, parameters):
-        self.parameters = parameters
 
-        record_already_exist, ID = self.dedupe_for_users()
-        if record_already_exist:
-            self.id = ID
 
-        else:
-            counter = 1000
-            while counter > 0:
-                id = (
-                    self.get_class_code()
-                    + self.get_jnv_code()
-                    + self.generate_three_digit_code()
+async def JNV_ID_generation(parameters):
+    record_already_exist, ID = dedupe_for_users(parameters)
+    if record_already_exist:
+        return ID
+    else:
+        counter = 1000
+        while counter > 0:
+            id = (
+                    get_class_code(parameters["grade"])
+                    + get_jnv_code(parameters["region"], parameters["school_name"])
+                    + generate_three_digit_code()
                 )
 
-                if not self.check_for_duplicate_ID(id):
-                    self.id = id
-                    break
+            duplicate_id = await check_for_duplicate_ID(id)
+            if not duplicate_id:
+                return id
+                break
+            else:
                 counter -= 1
+    raise HTTPException(
+                    status_code=500, detail="ID could not be generated, max loops hit!"
+                )
 
-    def dedupe_for_users(self):
+def dedupe_for_users(parameters):
 
         # check if the keys used for deduping exist in the request data
         for key in ["grade", "date_of_birth", "school_name", "gender", "category"]:
             if (
-                key not in self.parameters
-                or self.parameters[key] == ""
-                or self.parameters[key] is None
+                key not in parameters
+                or parameters[key] == ""
+                or parameters[key] is None
             ):
                 raise HTTPException(
                     status_code=400,
                     detail="{} is not part of the request data".format(key),
                 )
 
+
         does_user_already_exist = user_router.get_users(
             build_request(
                 query_params={
-                    "date_of_birth": self.parameters["date_of_birth"],
-                    "gender": self.parameters["gender"],
+                    "date_of_birth": parameters["date_of_birth"],
+                    "gender": parameters["gender"],
                 }
             )
         )
+
         if len(does_user_already_exist) == 0:
             # if user does not exist, go ahead with ID generation
             return [False, ""]
@@ -69,12 +74,11 @@ class JNVIDGeneration:
                     build_request(
                         query_params={
                             "user_id": user["id"],
-                            "category": self.parameters["category"],
-                            "grade": self.parameters["grade"],
+                            "category": parameters["category"],
                         }
                     )
                 )
-
+                print("student:", does_student_already_exist)
                 if len(does_student_already_exist) == 0:
                     # if user is found, but a matching student is not found, then go ahead with ID generation
                     return [False, ""]
@@ -83,7 +87,7 @@ class JNVIDGeneration:
                     # first, get the school ID based on the school name given in the request
                     school_id_response = school.get_school(
                         build_request(
-                            query_params={"name": self.parameters["school_name"]}
+                            query_params={"name": parameters["school_name"]}
                         )
                     )
                     if is_response_valid(
@@ -99,6 +103,7 @@ class JNVIDGeneration:
                                         query_params={
                                             "school_id": school_id,
                                             "student_id": student["id"],
+                                            "grade": parameters["grade"],
                                         }
                                     )
                                 )
@@ -108,36 +113,36 @@ class JNVIDGeneration:
                             else:
                                 return [True, student["student_id"]]
 
-    def get_id(self):
-        return self.id
 
-    def get_class_code(self):
-        class_codes = {"9": "26", "10": "25", "11": "24", "12": "23"}
-        return class_codes[self.parameters["grade"]]
 
-    def get_jnv_code(self):
-        response = requests.get(
-            school_db_url,
+def get_class_code(grade):
+    class_codes = {"9": "26", "10": "25", "11": "24", "12": "23"}
+    return class_codes[grade]
+
+def get_jnv_code(region, school_name):
+    response = requests.get(
+        school_db_url,
             params={
-                "region": self.parameters["region"],
-                "name": self.parameters["school_name"],
+                "region": region,
+                "name": school_name,
             },
             headers=db_request_token(),
         )
-        if response.status_code == 200:
-            if len(response.json()) == 0:
-                return HTTPException(
+
+    if response.status_code == 200:
+        if len(response.json()) == 0:
+            raise HTTPException(
                     status_code=404, detail="JNV or region does not exist!"
                 )
-            return response.json()[0]["code"]
+        return response.json()[0]["code"]
 
-        return HTTPException(status_code=response.status_code, detail=response.errors)
+    return HTTPException(status_code=response.status_code, detail=response.errors)
 
-    def generate_three_digit_code(self):
-        code = ""
-        for _ in range(3):
-            code += str(random.randint(0, 9))
-        return code
+def generate_three_digit_code():
+    code = ""
+    for _ in range(3):
+        code += str(random.randint(0, 9))
+    return code
 
-    async def check_for_duplicate_ID(self, id):
-        return await student_router.verify_student(build_request(), student_id=id)
+async def check_for_duplicate_ID(id):
+    return await student_router.verify_student(build_request(), student_id=id)
