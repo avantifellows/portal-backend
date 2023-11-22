@@ -16,7 +16,7 @@ school_db_url = settings.db_url + "/school"
 
 async def JNV_ID_generation(parameters):
     record_already_exist, ID = dedupe_for_users(parameters)
-    print(record_already_exist)
+
     if record_already_exist:
         return [not record_already_exist, ID]
     else:
@@ -31,7 +31,7 @@ async def JNV_ID_generation(parameters):
             duplicate_id = await check_for_duplicate_ID(id)
             if not duplicate_id:
                 return [True, id]
-                break
+
             else:
                 counter -= 1
     raise HTTPException(

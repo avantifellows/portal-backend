@@ -85,11 +85,7 @@ def build_user_data(data):
     user_data = {}
     for key in data.keys():
         if key in mapping.USER_QUERY_PARAMS:
-            if key == "date_of_birth":
-                user_data[key] = str(data[key])
-
-            else:
-                user_data[key] = str(data[key])
+            user_data[key] = str(data[key])
     return user_data
 
 
@@ -407,7 +403,7 @@ async def update_student(request: Request):
     print(data)
     response = requests.patch(
         routes.student_db_url + "/" + str(data["id"]),
-        data=data,
+        json=data,
         headers=db_request_token(),
     )
     if helpers.is_response_valid(response, "Student API could not post the data!"):
