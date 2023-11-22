@@ -27,6 +27,11 @@ STUDENT_QUERY_PARAMS = [
     "region",
     "user_id",
     "primary_contact",
+    "guardian_name",
+    "guardian_relation",
+    "guardian_phone",
+    "guardian_education_level",
+    "guardian_profession",
 ]
 
 USER_QUERY_PARAMS = [

@@ -286,23 +286,35 @@ async def get_student_fields(request: Request):
                     in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS
                     and form_attributes[str(priority)]["key"] != "student_id"
                 ):
-                    for record in student_exam_record_data:
-                        if (
-                            form_attributes[str(priority)]["key"] not in record
-                            or record[form_attributes[str(priority)]["key"]] == ""
-                            or record[form_attributes[str(priority)]["key"]] is None
-                        ):
+                    if len(student_exam_record_data) == 0:
+                        (
+                            returned_form_schema,
+                            number_of_fields_left,
+                        ) = build_returned_form_schema_data(
+                            returned_form_schema,
+                            total_number_of_fields,
+                            number_of_fields_left,
+                            form_attributes,
+                            priority,
+                        )
+                    else:
+                        for record in student_exam_record_data:
+                            if (
+                                form_attributes[str(priority)]["key"] not in record
+                                or record[form_attributes[str(priority)]["key"]] == ""
+                                or record[form_attributes[str(priority)]["key"]] is None
+                            ):
 
-                            (
-                                returned_form_schema,
-                                number_of_fields_left,
-                            ) = build_returned_form_schema_data(
-                                returned_form_schema,
-                                total_number_of_fields,
-                                number_of_fields_left,
-                                form_attributes,
-                                priority,
-                            )
+                                (
+                                    returned_form_schema,
+                                    number_of_fields_left,
+                                ) = build_returned_form_schema_data(
+                                    returned_form_schema,
+                                    total_number_of_fields,
+                                    number_of_fields_left,
+                                    form_attributes,
+                                    priority,
+                                )
         return returned_form_schema
 
     raise HTTPException(status_code=404, detail="Student does not exist!")
