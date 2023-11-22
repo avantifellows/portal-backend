@@ -27,7 +27,7 @@ def build_student_exam_data(data):
         if key in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS and key != "student_id":
 
             # # for the key 'exam_name', we have to retrieve the respective exam PK to store in the student-exam record table
-            if key == "exam_name":
+            if key == "exam_id":
                 exam_response = exam_router.get_exam(
                     build_request(query_params={"name": data[key]})
                 )
@@ -320,79 +320,81 @@ async def create_student(request: Request):
     else:
         # if ID generation is true, each group has their respective logic of generating IDs
         if data["group"] == "EnableStudents":
-            id = await JNV_ID_generation(query_params)
+            add_Id, id = await JNV_ID_generation(query_params)
 
-        # build the complete profile object
-        student_data = build_student_data(query_params)
-        user_data = build_user_data(query_params)
+        if add_Id:
 
-        complete_profile_data = {**student_data, **user_data}
-        complete_profile_data["student_id"] = id
+            # build the complete profile object
+            student_data = build_student_data(query_params)
+            user_data = build_user_data(query_params)
 
-        # create a student and user with the generated ID
-        created_student_response = requests.post(
-            routes.student_db_url + "/register",
-            data=complete_profile_data,
-            headers=db_request_token(),
-        )
+            complete_profile_data = {**student_data, **user_data}
+            complete_profile_data["student_id"] = id
 
-        if created_student_response.status_code == 201:
-
-            created_student_data = created_student_response.json()
-
-            # get group ID
-            group_data = group.get_group_data(
-                build_request(query_params={"name": data["group"]})
-            )
-
-            # get group-type ID
-            response = requests.get(
-                routes.group_type_db_url,
-                params={
-                    "child_id": group_data[0]["id"],
-                    "type": "group",
-                },
+            # create a student and user with the generated ID
+            created_student_response = requests.post(
+                routes.student_db_url + "/register",
+                data=complete_profile_data,
                 headers=db_request_token(),
             )
 
-            if helpers.is_response_valid(response):
-                data = helpers.is_response_empty(response.json(), False)
-                data = data[0]
+            if created_student_response.status_code == 201:
 
-                # create a group-user record
-                created_user_group_response = requests.post(
-                    routes.group_user_db_url,
-                    data={
-                        "group_type_id": data["id"],
-                        "user_id": created_student_data["user"]["id"],
+                created_student_data = created_student_response.json()
+
+                # get group ID
+                group_data = group.get_group_data(
+                    build_request(query_params={"name": data["group"]})
+                )
+
+                # get group-type ID
+                response = requests.get(
+                    routes.group_type_db_url,
+                    params={
+                        "child_id": group_data[0]["id"],
+                        "type": "group",
                     },
                     headers=db_request_token(),
                 )
 
-            if created_user_group_response.status_code == 201:
+                if helpers.is_response_valid(response):
+                    data = helpers.is_response_empty(response.json(), False)
+                    data = data[0]
 
-                # based on the school name, retrieve the school ID
-                school_id_response = school.get_school(
-                    build_request(
-                        query_params={
-                            "name": query_params["school_name"],
-                            "state": query_params["state"],
-                            "district": query_params["district"],
-                        }
+                    # create a group-user record
+                    created_user_group_response = requests.post(
+                        routes.group_user_db_url,
+                        data={
+                            "group_type_id": data["id"],
+                            "user_id": created_student_data["user"]["id"],
+                        },
+                        headers=db_request_token(),
                     )
-                )
 
-                query_params["school_id"] = school_id_response[0]["id"]
+                if created_user_group_response.status_code == 201:
 
-                # create a new enrollment record for the student, based on the student ID and school ID
-                enrollment_data = build_enrollment_data(query_params)
-                enrollment_data["student_id"] = created_student_response.json()["id"]
-                enrollment_data["is_current"] = "true"
+                    # based on the school name, retrieve the school ID
+                    school_id_response = school.get_school(
+                        build_request(
+                            query_params={
+                                "name": query_params["school_name"],
+                                "state": query_params["state"],
+                                "district": query_params["district"],
+                            }
+                        )
+                    )
 
-                await enrollment_record.create_enrollment_record(
-                    build_request(body=enrollment_data)
-                )
-                return id
+                    query_params["school_id"] = school_id_response[0]["id"]
+
+                    # create a new enrollment record for the student, based on the student ID and school ID
+                    enrollment_data = build_enrollment_data(query_params)
+                    enrollment_data["student_id"] = created_student_response.json()["id"]
+                    enrollment_data["is_current"] = "true"
+
+                    await enrollment_record.create_enrollment_record(
+                        build_request(body=enrollment_data)
+                    )
+                    return id
 
         raise HTTPException(status_code=500, detail="Student not created!")
 
