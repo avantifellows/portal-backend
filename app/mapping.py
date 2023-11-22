@@ -32,6 +32,7 @@ STUDENT_QUERY_PARAMS = [
     "guardian_phone",
     "guardian_education_level",
     "guardian_profession",
+    "know_about_avanti"
 ]
 
 USER_QUERY_PARAMS = [
