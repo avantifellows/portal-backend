@@ -19,9 +19,34 @@ def is_user_attribute_empty(form_attributes, priority, student_data):
 
 def is_student_attribute_empty(form_attributes, priority, student_data):
     if form_attributes[str(priority)]["key"] == "primary_contact":
-        if all(key not in student_data or student_data[key] == "" or student_data[key] is None for key in [ "guardian_name", "guardian_relation", "guardian_phone", "guardian_education_level", "guardian_profession"]):
+        if all(
+            key not in student_data
+            or student_data[key] == ""
+            or student_data[key] is None
+            for key in [
+                "guardian_name",
+                "guardian_relation",
+                "guardian_phone",
+                "guardian_education_level",
+                "guardian_profession",
+            ]
+        ):
             print(student_data)
-            if all(key not in student_data or student_data[key] == "" or student_data[key] is None for key in ["father_name", "father_phone", "father_profession", "father_education_level", "mother_name", "mother_phone", "mother_profession", "mother_education_level"]):
+            if all(
+                key not in student_data
+                or student_data[key] == ""
+                or student_data[key] is None
+                for key in [
+                    "father_name",
+                    "father_phone",
+                    "father_profession",
+                    "father_education_level",
+                    "mother_name",
+                    "mother_phone",
+                    "mother_profession",
+                    "mother_education_level",
+                ]
+            ):
                 return True
             return False
         return False

@@ -388,7 +388,9 @@ async def create_student(request: Request):
 
                     # create a new enrollment record for the student, based on the student ID and school ID
                     enrollment_data = build_enrollment_data(query_params)
-                    enrollment_data["student_id"] = created_student_response.json()["id"]
+                    enrollment_data["student_id"] = created_student_response.json()[
+                        "id"
+                    ]
                     enrollment_data["is_current"] = "true"
 
                     await enrollment_record.create_enrollment_record(
