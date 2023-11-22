@@ -24,23 +24,17 @@ def build_student_exam_data(data):
     # this function builds the student-exam record object
     student_exam_data = {}
     for key in data.keys():
-        if key in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS:
+        if key in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS and key != 'student_id':
 
-            # the key 'student_id' is the ID entered by the user but the 'student_id' being stored in the student-exam table is the PK of a row in the student table.
-            # Hence, we retreive the PK of a student based on their 'student_id' and that is stored in the student-exam record table.
-            if key == "student_id":
-                student_response = get_students(
-                    build_request(query_params={"student_id": data["student_id"]})
-                )
-                student_exam_data["student_id"] = int(student_response[0]["id"])
-
-            # for the key 'exam_name', we have to retrieve the respective exam PK to store in the student-exam record table
-            elif key == "exam_name":
+            # # for the key 'exam_name', we have to retrieve the respective exam PK to store in the student-exam record table
+            if key == "exam_name":
                 exam_response = exam_router.get_exam(
                     build_request(query_params={"name": data[key]})
                 )
                 if len(exam_response) != 0:
                     student_exam_data["exam_id"] = int(exam_response[0]["id"])
+                else:
+                    return {}
 
             # for any other key, we store the value as the user entered
             else:
@@ -61,12 +55,12 @@ def build_student_data(data):
     # this function builds the student data object
     student_data = {}
     for key in data.keys():
-        if key in mapping.STUDENT_QUERY_PARAMS:
+        if key in mapping.STUDENT_QUERY_PARAMS and key != 'student_id':
 
             # the key 'planned_competitive_exams' contains an array of exam names. Each exam PK is retrieved and stored in the student table.
             if key == "planned_competitive_exams":
                 exam_ids = []
-                for exam in data[key]:
+                for exam in [data[key]]:
                     exam_response = exam_router.get_exam(
                         build_request(query_params={"name": exam})
                     )
@@ -406,6 +400,7 @@ async def create_student(request: Request):
 @router.patch("/")
 async def update_student(request: Request):
     data = await request.body()
+    print(data)
     response = requests.patch(
         routes.student_db_url + "/" + str(data["id"]),
         data=data,
@@ -446,7 +441,7 @@ async def complete_profile_details(request: Request):
     )
 
     student_data["id"] = student_response[0]["id"]
-
+    print(student_data)
     # update the student with the entered details
     await update_student(build_request(body=student_data))
 
@@ -457,7 +452,7 @@ async def complete_profile_details(request: Request):
         does_student_exam_record_exist = student_exam_record.get_student_exam_record(
             build_request(query_params={"student_id": student_data["id"]})
         )
-
+        print(student_exam_data)
         if len(does_student_exam_record_exist) == 0:
             # if record does not exist, create a new record
             await student_exam_record.create_student_exam_record(

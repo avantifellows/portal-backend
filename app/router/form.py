@@ -113,7 +113,7 @@ def get_form_schema(request: Request):
         routes.form_db_url, params=query_params, headers=db_request_token()
     )
     if helpers.is_response_valid(response, "Form API could not fetch the data!"):
-        return helpers.is_response_empty(response.json(), "Form does not exist!")
+        return helpers.is_response_empty(response.json(), False, "Form does not exist!")
 
 
 @router.get("/student")
@@ -129,8 +129,8 @@ async def get_student_fields(request: Request):
         )
     )
     form = form[0]
+
     # get student and user data for the student ID that is requesting for profile completion
-    # ASSUMPTION : student_id is valid and exists because only valid students will reach profile completion
     student_data = student.get_students(
         build_request(query_params={"student_id": query_params["student_id"]})
     )
@@ -144,10 +144,11 @@ async def get_student_fields(request: Request):
             build_request(query_params={"student_id": student_data["id"]})
         )
 
+
         # get exam data for the student
         student_exam_record_data = student_exam_record.get_student_exam_record(
             build_request(query_params={"student_id": student_data["id"]})
-        )[0]
+        )
 
         # get the priorities for all fields and sort them
         priority_order = sorted([eval(i) for i in form["attributes"].keys()])
@@ -163,8 +164,9 @@ async def get_student_fields(request: Request):
         returned_form_schema = {}
 
         for priority in priority_order:
+
             if number_of_fields_left > 0:
-                print(student_exam_record_data, form_attributes[str(priority)])
+
                 if is_user_attribute_empty(
                     form_attributes, priority, student_data
                 ) or is_student_attribute_empty(
@@ -283,32 +285,20 @@ async def get_student_fields(request: Request):
                 elif (
                     form_attributes[str(priority)]["key"]
                     in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS
-                    and form_attributes[str(priority)]["key"] != "student_id"
-                    and form_attributes[str(priority)]["key"] != "exam_name"
-                    and (
-                        len(student_exam_record_data) == 0
-                        or student_exam_record_data[
-                            form_attributes[str(priority)]["key"]
-                        ]
-                        == ""
-                    )
-                ):
-                    print(
-                        form_attributes[str(priority)]["key"],
-                        form_attributes[str(priority)]["key"]
-                        in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS,
-                        student_exam_record_data,
-                    )
-                    (
-                        returned_form_schema,
-                        number_of_fields_left,
-                    ) = build_returned_form_schema_data(
-                        returned_form_schema,
-                        total_number_of_fields,
-                        number_of_fields_left,
-                        form_attributes,
-                        priority,
-                    )
+                    and form_attributes[str(priority)]["key"] != "student_id"):
+                        for record in student_exam_record_data:
+                            if (form_attributes[str(priority)]["key"] not in record or record[form_attributes[str(priority)]["key"]] == "" or record[form_attributes[str(priority)]["key"]] is None):
+
+                                (
+                                    returned_form_schema,
+                                    number_of_fields_left,
+                                ) = build_returned_form_schema_data(
+                                    returned_form_schema,
+                                    total_number_of_fields,
+                                    number_of_fields_left,
+                                    form_attributes,
+                                    priority,
+                                )
         return returned_form_schema
 
     raise HTTPException(status_code=404, detail="Student does not exist!")

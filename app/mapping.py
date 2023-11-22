@@ -26,6 +26,7 @@ STUDENT_QUERY_PARAMS = [
     "planned_competitive_exams",
     "region",
     "user_id",
+    "primary_contact"
 ]
 
 USER_QUERY_PARAMS = [
@@ -69,5 +70,5 @@ STUDENT_EXAM_RECORD_QUERY_PARAMS = [
     "application_password",
     "date",
     "score",
-    "rank",
+    "rank"
 ]
