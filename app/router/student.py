@@ -24,7 +24,7 @@ def build_student_exam_data(data):
     # this function builds the student-exam record object
     student_exam_data = {}
     for key in data.keys():
-        if key in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS and key != 'student_id':
+        if key in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS and key != "student_id":
 
             # # for the key 'exam_name', we have to retrieve the respective exam PK to store in the student-exam record table
             if key == "exam_name":
@@ -55,7 +55,7 @@ def build_student_data(data):
     # this function builds the student data object
     student_data = {}
     for key in data.keys():
-        if key in mapping.STUDENT_QUERY_PARAMS and key != 'student_id':
+        if key in mapping.STUDENT_QUERY_PARAMS and key != "student_id":
 
             # the key 'planned_competitive_exams' contains an array of exam names. Each exam PK is retrieved and stored in the student table.
             if key == "planned_competitive_exams":
