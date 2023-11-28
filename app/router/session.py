@@ -9,6 +9,7 @@ router = APIRouter(prefix="/session", tags=["Session"])
 session_db_url = settings.db_url + "/session/"
 logger = get_logger()
 
+
 @router.get("/", response_model=SessionResponse)
 async def get_session_data(request: Request):
     """
@@ -38,7 +39,6 @@ async def get_session_data(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
-
 
     if "session_id" in query_params:
         logger.info("Searching for session {} ...".format(query_params["session_id"]))
