@@ -3,10 +3,11 @@ import requests
 from settings import settings
 from models import SessionResponse
 from helpers import db_request_token
+from logger_config import get_logger
 
 router = APIRouter(prefix="/session", tags=["Session"])
 session_db_url = settings.db_url + "/session/"
-
+logger = get_logger()
 
 @router.get("/", response_model=SessionResponse)
 async def get_session_data(request: Request):
@@ -37,6 +38,12 @@ async def get_session_data(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
+
+
+    if "session_id" in query_params:
+        logger.info("Searching for session {} ...".format(query_params["session_id"]))
+    else:
+        logger.info("Searching for session {} ...".format(query_params["name"]))
 
     response = requests.get(
         session_db_url, params=query_params, headers=db_request_token()
