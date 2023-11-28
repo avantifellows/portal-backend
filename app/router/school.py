@@ -18,7 +18,6 @@ def get_school(request: Request):
     )
 
     if helpers.is_response_valid(response, "School API could not fetch the data!"):
-
         return helpers.is_response_empty(
             response.json(), False, "School does not exist"
         )

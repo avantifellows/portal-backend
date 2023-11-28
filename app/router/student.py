@@ -152,9 +152,7 @@ async def verify_student(request: Request, student_id: str):
         if data:
             data = data[0]
             if len(query_params) != 0:
-
                 for key in query_params.keys():
-
                     if key in mapping.USER_QUERY_PARAMS:
                         if data["user"][key] != "":
                             if data["user"][key] != query_params[key]:
