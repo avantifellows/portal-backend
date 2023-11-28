@@ -184,14 +184,14 @@ async def get_student_fields(request: Request):
                     in mapping.ENROLLMENT_RECORD_PARAMS
                     and form_attributes[str(priority)]["key"] != "student_id"
                 ):
-                    
+
                     if form_attributes[str(priority)]["key"] != "school_name":
-                        if (
-                            enrollment_record_data == []
-                            or (enrollment_record_data != [] and enrollment_record_data[
+                        if enrollment_record_data == [] or (
+                            enrollment_record_data != []
+                            and enrollment_record_data[
                                 form_attributes[str(priority)]["key"]
                             ]
-                            is None)
+                            is None
                         ):
                             (
                                 returned_form_schema,
