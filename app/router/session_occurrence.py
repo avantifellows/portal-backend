@@ -13,6 +13,7 @@ session_db_url = settings.db_url + "/session/"
 session_occurrence_db_url = settings.db_url + "/session-occurrence/"
 logger = get_logger()
 
+
 def build_date_and_time(date_time: str):
     """
     Parses string into date and time strings
@@ -91,7 +92,6 @@ async def get_session_occurrence_data(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
-
 
     logger.info("Searching for session {} ...".format(query_params["session_id"]))
 
