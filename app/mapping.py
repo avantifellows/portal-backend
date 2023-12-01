@@ -22,6 +22,8 @@ STUDENT_QUERY_PARAMS = [
     "group",
 ]
 
+TEACHER_QUERY_PARAMS = ['teacher_id','grade','designation']
+
 USER_QUERY_PARAMS = [
     "id",
     "first_name",
