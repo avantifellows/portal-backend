@@ -11,7 +11,7 @@ from router import (
     group_type,
     form,
     user,
-    teacher
+    teacher,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -55,6 +55,7 @@ app.include_router(group_type.router)
 app.include_router(form.router)
 app.include_router(user.router)
 app.include_router(teacher.router)
+
 
 @app.get("/")
 def index():

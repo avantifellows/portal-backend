@@ -8,6 +8,7 @@ from helpers import db_request_token
 
 router = APIRouter(prefix="/teacher", tags=["Teacher"])
 
+
 @router.get("/")
 def get_teachers(request: Request):
     """
@@ -90,5 +91,3 @@ async def verify_teacher(request: Request, teacher_id: str):
             return True
         return False
     return False
-
-
