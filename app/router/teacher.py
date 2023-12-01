@@ -69,7 +69,7 @@ async def verify_teacher(request: Request, teacher_id: str):
         params={"uuid": teacher_id},
         headers=db_request_token(),
     )
-    print(response.json())
+
     if helpers.is_response_valid(response):
         data = helpers.is_response_empty(response.json(), False)
 
