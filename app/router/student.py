@@ -171,7 +171,8 @@ async def verify_student(request: Request, student_id: str):
     """
 
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["group_id"]
+        request.query_params,
+        mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["group_id"],
     )
 
     response = requests.get(
@@ -185,7 +186,6 @@ async def verify_student(request: Request, student_id: str):
         if student_data:
             student_data = student_data[0]
             if len(query_params) != 0:
-
                 for key in query_params.keys():
 
                     # if key is an user attribute, compare the value sent to the value stored in the user object of a student
@@ -201,7 +201,6 @@ async def verify_student(request: Request, student_id: str):
                                 return False
                     # check if the user belongs to the group that sent the validation request
                     if key == "group_id":
-
                         # get the group-type ID based on the group ID
                         response = requests.get(
                             routes.group_type_db_url,
