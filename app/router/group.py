@@ -41,7 +41,7 @@ def get_group_data(request: Request):
     )
     if helpers.is_response_valid(response, "Group API could not fetch the data!"):
         return helpers.is_response_empty(
-            response.json(), False, "Group record does not exist!"
+            response.json()[0], False, "Group record does not exist!"
         )
 
 
