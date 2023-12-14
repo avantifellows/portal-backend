@@ -35,6 +35,8 @@ STUDENT_QUERY_PARAMS = [
     "know_about_avanti",
 ]
 
+TEACHER_QUERY_PARAMS = ["grade", "designation"]
+
 USER_QUERY_PARAMS = [
     "id",
     "first_name",
