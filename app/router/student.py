@@ -25,7 +25,6 @@ def build_student_exam_data(data):
     student_exam_data = {}
     for key in data.keys():
         if key in mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS and key != "student_id":
-
             # # for the key 'exam_name', we have to retrieve the respective exam PK to store in the student-exam record table
             if key == "exam_id":
                 exam_response = exam_router.get_exam(
@@ -56,7 +55,6 @@ def build_student_data(data):
     student_data = {}
     for key in data.keys():
         if key in mapping.STUDENT_QUERY_PARAMS and key != "student_id":
-
             # the key 'planned_competitive_exams' contains an array of exam names. Each exam PK is retrieved and stored in the student table.
             if key == "planned_competitive_exams":
                 exam_ids = []
@@ -187,7 +185,6 @@ async def verify_student(request: Request, student_id: str):
             student_data = student_data[0]
             if len(query_params) != 0:
                 for key in query_params.keys():
-
                     # if key is an user attribute, compare the value sent to the value stored in the user object of a student
                     if key in mapping.USER_QUERY_PARAMS:
                         if student_data["user"][key] != "":
@@ -258,7 +255,6 @@ async def create_student(request: Request):
 
     # if ID generation is false, the user has provided with the ID
     if data["id_generation"] == "False":
-
         # check if ID is part of the request
         if (
             "student_id" not in query_params
@@ -312,7 +308,6 @@ async def create_student(request: Request):
             add_Id, id = await JNV_ID_generation(query_params)
 
         if add_Id:
-
             # build the complete profile object
             student_data = build_student_data(query_params)
             user_data = build_user_data(query_params)
@@ -328,7 +323,6 @@ async def create_student(request: Request):
             )
 
             if created_student_response.status_code == 201:
-
                 created_student_data = created_student_response.json()
 
                 # get group ID
@@ -361,7 +355,6 @@ async def create_student(request: Request):
                     )
 
                 if created_user_group_response.status_code == 201:
-
                     # based on the school name, retrieve the school ID
                     school_id_response = school.get_school(
                         build_request(

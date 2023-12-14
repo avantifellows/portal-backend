@@ -330,7 +330,6 @@ async def get_student_fields(request: Request):
                                 or record[form_attributes[str(priority)]["key"]] == ""
                                 or record[form_attributes[str(priority)]["key"]] is None
                             ):
-
                                 (
                                     returned_form_schema,
                                     number_of_fields_left,

@@ -40,7 +40,6 @@ async def JNV_ID_generation(parameters):
 
 
 def dedupe_for_users(parameters):
-
     # check if the keys used for deduping exist in the request data
     for key in ["grade", "date_of_birth", "school_name", "gender", "category"]:
         if key not in parameters or parameters[key] == "" or parameters[key] is None:
