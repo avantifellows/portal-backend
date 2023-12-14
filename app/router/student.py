@@ -133,7 +133,8 @@ async def verify_student(request: Request, student_id: str):
     """
 
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["group_id"]
+        request.query_params,
+        mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["group_id"],
     )
 
     response = requests.get(
