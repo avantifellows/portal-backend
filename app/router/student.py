@@ -148,9 +148,7 @@ async def verify_student(request: Request, student_id: str):
         if student_data:
             student_data = student_data[0]
             if len(query_params) != 0:
-
                 for key in query_params.keys():
-
                     if key in mapping.USER_QUERY_PARAMS:
                         if student_data["user"][key] != "":
                             if student_data["user"][key] != query_params[key]:
@@ -162,7 +160,6 @@ async def verify_student(request: Request, student_id: str):
                                 return False
                     # check if the user belongs to the group that sent the validation request
                     if key == "group_id":
-
                         # get the group-type ID based on the group ID
                         response = requests.get(
                             routes.group_type_db_url,
