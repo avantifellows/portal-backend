@@ -61,7 +61,8 @@ async def verify_teacher(request: Request, teacher_id: str):
     """
 
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.TEACHER_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ['teacher_id']
+        request.query_params,
+        mapping.TEACHER_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["teacher_id"],
     )
 
     response = requests.get(
