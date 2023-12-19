@@ -316,7 +316,6 @@ async def create_student(request: Request):
                         headers=db_request_token(),
                     )
 
-
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
                 build_request(query_params={"name": data["form_data"]["school_name"]})
