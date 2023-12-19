@@ -184,7 +184,6 @@ async def verify_student(request: Request, student_id: str):
         if student_data:
             student_data = student_data[0]
             if len(query_params) != 0:
-
                 for key in query_params.keys():
                     # if key is an user attribute, compare the value sent to the value stored in the user object of a student
                     if key in mapping.USER_QUERY_PARAMS:
