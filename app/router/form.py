@@ -173,8 +173,8 @@ async def get_student_fields(request: Request):
         # get enrollment data for the student
         enrollment_record_data = enrollment_record.get_enrollment_record(
             build_request(query_params={"student_id": student_data["id"]})
-        )
-
+        )[0]
+        print(enrollment_record_data)
         # get exam data for the student
         student_exam_record_data = student_exam_record.get_student_exam_record(
             build_request(query_params={"student_id": student_data["id"]})
