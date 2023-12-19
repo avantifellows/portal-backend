@@ -252,9 +252,9 @@ async def create_student(request: Request):
         + mapping.ENROLLMENT_RECORD_PARAMS
         + ["id_generation"],
     )
-
+    print(data)
     # if ID generation is false, the user has provided with the ID
-    if data["id_generation"] == "False":
+    if not data["id_generation"]:
         # check if ID is part of the request
         if (
             "student_id" not in query_params
@@ -269,6 +269,7 @@ async def create_student(request: Request):
         does_student_already_exist = await verify_student(
             build_request(), query_params["student_id"]
         )
+        print(does_student_already_exist)
         if does_student_already_exist:
             return query_params["student_id"]
 
@@ -286,6 +287,35 @@ async def create_student(request: Request):
                 created_student_data = helpers.is_response_empty(
                     response.json(), "Student API could fetch the created student"
                 )
+
+                group_data = group.get_group_data(
+                    build_request(query_params={"name": data["group"]})
+                )
+
+                # get group-type ID
+                response = requests.get(
+                    routes.group_type_db_url,
+                    params={
+                        "child_id": group_data["id"],
+                        "type": "group",
+                    },
+                    headers=db_request_token(),
+                )
+
+                if helpers.is_response_valid(response):
+                    group_data = helpers.is_response_empty(response.json(), False)
+                    group_data = group_data[0]
+                    print(group_data)
+                    # create a group-user record
+                    created_user_group_response = requests.post(
+                        routes.group_user_db_url,
+                        data={
+                            "group_type_id": group_data["id"],
+                            "user_id": created_student_data["user"]["id"],
+                        },
+                        headers=db_request_token(),
+                    )
+
 
             # based on the school name, retrieve the school ID
             school_id_response = school.get_school(
