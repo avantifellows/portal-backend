@@ -23,6 +23,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:8080",
+    "http://localhost:3000",
     "https://staging-auth.avantifellows.org",
     "https://auth.avantifellows.org",
 ]
