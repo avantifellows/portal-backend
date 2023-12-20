@@ -137,7 +137,6 @@ async def get_student_fields(request: Request):
     )
 
     if student_data:
-
         student_data = student_data[0]
 
         # get enrollment data for the student
@@ -159,15 +158,12 @@ async def get_student_fields(request: Request):
         returned_form_schema = {}
 
         for priority in priority_order:
-
             if number_of_fields_left > 0:
-
                 if is_user_attribute_empty(
                     form_attributes, priority, student_data
                 ) or is_student_attribute_empty(
                     form_attributes, priority, student_data
                 ):
-
                     (
                         returned_form_schema,
                         number_of_fields_left,
@@ -184,11 +180,10 @@ async def get_student_fields(request: Request):
                     in mapping.ENROLLMENT_RECORD_PARAMS
                     and form_attributes[str(priority)]["key"] != "student_id"
                 ):
-
                     if form_attributes[str(priority)]["key"] != "school_name":
-                        if (
-                            enrollment_record_data == []
-                            or enrollment_record_data[0][
+                        if enrollment_record_data == [] or (
+                            enrollment_record_data != []
+                            and enrollment_record_data[
                                 form_attributes[str(priority)]["key"]
                             ]
                             is None
@@ -207,7 +202,6 @@ async def get_student_fields(request: Request):
                         if enrollment_record_data == []:
                             if student_data["user"]["state"]:
                                 if student_data["user"]["district"]:
-
                                     (
                                         returned_form_schema,
                                         number_of_fields_left,

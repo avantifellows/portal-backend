@@ -133,7 +133,8 @@ async def verify_student(request: Request, student_id: str):
     """
 
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS
+        request.query_params,
+        mapping.STUDENT_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["group_id"],
     )
 
     response = requests.get(
@@ -142,23 +143,54 @@ async def verify_student(request: Request, student_id: str):
         headers=db_request_token(),
     )
     if helpers.is_response_valid(response):
-        data = helpers.is_response_empty(response.json(), False)
+        student_data = helpers.is_response_empty(response.json(), False)
 
-        if data:
-            data = data[0]
+        if student_data:
+            student_data = student_data[0]
             if len(query_params) != 0:
-
                 for key in query_params.keys():
-
                     if key in mapping.USER_QUERY_PARAMS:
-                        if data["user"][key] != "":
-                            if data["user"][key] != query_params[key]:
+                        if student_data["user"][key] != "":
+                            if student_data["user"][key] != query_params[key]:
                                 return False
 
                     if key in mapping.STUDENT_QUERY_PARAMS:
-                        if data[key] != "":
-                            if data[key] != query_params[key]:
+                        if student_data[key] != "":
+                            if student_data[key] != query_params[key]:
                                 return False
+                    # check if the user belongs to the group that sent the validation request
+                    if key == "group_id":
+                        # get the group-type ID based on the group ID
+                        response = requests.get(
+                            routes.group_type_db_url,
+                            params={
+                                "child_id": query_params["group_id"],
+                                "type": "group",
+                            },
+                            headers=db_request_token(),
+                        )
+
+                        if helpers.is_response_valid(response):
+                            data = helpers.is_response_empty(response.json(), False)
+                            data = data[0]
+
+                            # check if the group-type ID and user ID mapping exists
+                            response = requests.get(
+                                routes.group_user_db_url,
+                                params={
+                                    "group_type_id": data["id"],
+                                    "user_id": student_data["user"]["id"],
+                                },
+                                headers=db_request_token(),
+                            )
+                            if helpers.is_response_valid(response):
+                                return len(response.json()) != 0
+                            return False
+
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Group Type ID could not be retrieved",
+                        )
             return True
         return False
     return False
@@ -167,7 +199,7 @@ async def verify_student(request: Request, student_id: str):
 @router.post("/")
 async def create_student(request: Request):
     data = await request.body()
-
+    print("student:", data)
     query_params = helpers.validate_and_build_query_params(
         data["form_data"],
         mapping.STUDENT_QUERY_PARAMS

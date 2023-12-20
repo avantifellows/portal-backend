@@ -7,3 +7,7 @@ This is a string of random characters that will be used to encrypt the access an
 ### `DB_SERVICE_URL`
 
 The URL to connect to our database service
+
+### `DB_SERVICE_TOKEN`
+
+Token to authenticate DB service
