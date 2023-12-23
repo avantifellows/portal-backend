@@ -61,7 +61,6 @@ def refresh_token(Authorize: AuthJWT = Depends()):
 # verifies token
 @router.get("/verify")
 def verify_token(Authorize: AuthJWT = Depends()):
-    print("Here:", Authorize)
     Authorize.jwt_required()
     current_user = Authorize.get_jwt_subject()
     data = Authorize.get_raw_jwt()
