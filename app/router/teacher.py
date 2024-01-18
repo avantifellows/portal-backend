@@ -61,7 +61,8 @@ async def verify_teacher(request: Request, teacher_id: str):
     """
 
     query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.TEACHER_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ['teacher_id']
+        request.query_params,
+        mapping.TEACHER_QUERY_PARAMS + mapping.USER_QUERY_PARAMS + ["teacher_id"],
     )
 
     response = requests.get(
@@ -76,9 +77,7 @@ async def verify_teacher(request: Request, teacher_id: str):
         if data:
             data = data[0]
             if len(query_params) != 0:
-
                 for key in query_params.keys():
-
                     if key in mapping.USER_QUERY_PARAMS:
                         if data["user"][key] != "":
                             if data["user"][key] != query_params[key]:
