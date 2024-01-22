@@ -358,12 +358,11 @@ async def create_student(request: Request):
                 group_data = group.get_group_data(
                     build_request(query_params={"name": data["group"]})
                 )
-
                 # get group-type ID
                 response = requests.get(
                     routes.group_type_db_url,
                     params={
-                        "child_id": group_data[0]["id"],
+                        "child_id": group_data["id"],
                         "type": "group",
                     },
                     headers=db_request_token(),
@@ -394,7 +393,6 @@ async def create_student(request: Request):
                             }
                         )
                     )
-
                     query_params["school_id"] = school_id_response[0]["id"]
 
                     # create a new enrollment record for the student, based on the student ID and school ID

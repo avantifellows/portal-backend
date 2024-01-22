@@ -88,25 +88,27 @@ def dedupe_for_users(parameters):
                         }
                     )
                 )
-
-                # check if any of the found students study in the school
-                for student in does_student_already_exist:
-                    does_enrollment_record_exist = (
-                        enrollment_record.get_enrollment_record(
-                            build_request(
-                                query_params={
-                                    "school_id": school_id_response[0]["id"],
-                                    "student_id": student["id"],
-                                    "grade": parameters["grade"],
-                                }
+                if len(school_id_response) > 0:
+                    # check if any of the found students study in the school
+                    for student in does_student_already_exist:
+                        does_enrollment_record_exist = (
+                            enrollment_record.get_enrollment_record(
+                                build_request(
+                                    query_params={
+                                        "school_id": school_id_response["id"],
+                                        "student_id": student["id"],
+                                        "grade": parameters["grade"],
+                                    }
+                                )
                             )
                         )
-                    )
 
-                    if len(does_enrollment_record_exist) == 0:
-                        return [False, ""]
-                    else:
-                        return [True, student["student_id"]]
+                        if len(does_enrollment_record_exist) == 0:
+                            return [False, ""]
+                        else:
+                            return [True, student["student_id"]]
+                else:
+                    raise HTTPException(status_code=404, detail="School does not exist!")
 
 
 def get_class_code(grade):
