@@ -31,11 +31,9 @@ def get_group_data(request: Request):
         "headers": null
     }
     """
-
     query_params = helpers.validate_and_build_query_params(
         request.query_params, mapping.GROUP_QUERY_PARAMS
     )
-
     response = requests.get(
         routes.group_db_url, params=query_params, headers=db_request_token()
     )
