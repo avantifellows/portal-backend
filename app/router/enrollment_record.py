@@ -148,11 +148,13 @@ async def update_enrollment_record(request: Request):
         }
     """
     data = await request.body()
+    print(data)
     response = requests.patch(
         routes.enrollment_record_db_url + "/" + str(data["id"]),
         data=data,
         headers=db_request_token(),
     )
+    print(response)
     if helpers.is_response_valid(response, "Enrollment API could not patch the data!"):
         return helpers.is_response_empty(
             response.json(), "Enrollment API could not fetch the patched record!"

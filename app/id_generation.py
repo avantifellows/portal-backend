@@ -62,9 +62,10 @@ def dedupe_for_users(parameters):
         return [False, ""]
 
     else:
+        number_of_students_matching_user = []
         # if user does exist, check corresponding student attributes
         for user in does_user_already_exist:
-            does_student_already_exist = student_router.get_students(
+            matching_student= student_router.get_students(
                 build_request(
                     query_params={
                         "user_id": user["id"],
@@ -72,43 +73,47 @@ def dedupe_for_users(parameters):
                     }
                 )
             )
+            if len(matching_student) > 0:
+                number_of_students_matching_user.append(matching_student[0])
+        print(len(number_of_students_matching_user))
 
-            if len(does_student_already_exist) == 0:
-                # if user is found, but a matching student is not found, then go ahead with ID generation
-                return [False, ""]
 
-            else:
-                # first, get the school ID based on the school name given in the request
-                school_id_response = school.get_school(
-                    build_request(
-                        query_params={
-                            "name": parameters["school_name"],
-                            "state": parameters["state"],
-                            "district": parameters["district"],
-                        }
-                    )
+        if len(number_of_students_matching_user) == 0:
+            # if user is found, but a matching student is not found, then go ahead with ID generation
+            return [False, ""]
+
+        else:
+            # first, get the school ID based on the school name given in the request
+            school_id_response = school.get_school(
+                build_request(
+                    query_params={
+                        "name": parameters["school_name"],
+                        "state": parameters["state"],
+                        "district": parameters["district"],
+                    }
                 )
-                if len(school_id_response) > 0:
-                    # check if any of the found students study in the school
-                    for student in does_student_already_exist:
-                        does_enrollment_record_exist = (
-                            enrollment_record.get_enrollment_record(
-                                build_request(
-                                    query_params={
-                                        "school_id": school_id_response["id"],
-                                        "student_id": student["id"],
-                                        "grade": parameters["grade"],
-                                    }
-                                )
+            )
+
+            if len(school_id_response) > 0:
+                # check if any of the found students study in the school
+                for student in number_of_students_matching_user:
+                    does_enrollment_record_exist = (
+                        enrollment_record.get_enrollment_record(
+                            build_request(
+                                query_params={
+                                    "school_id": school_id_response[0]["id"],
+                                    "student_id": student["id"],
+                                    "grade": parameters["grade"],
+                                }
                             )
                         )
+                    )
 
-                        if len(does_enrollment_record_exist) == 0:
-                            return [False, ""]
-                        else:
-                            return [True, student["student_id"]]
-                else:
-                    raise HTTPException(status_code=404, detail="School does not exist!")
+                    if len(does_enrollment_record_exist) > 0:
+                      return [True, student["student_id"]]
+                return [False, ""]
+            else:
+                raise HTTPException(status_code=404, detail="School does not exist!")
 
 
 def get_class_code(grade):

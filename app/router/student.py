@@ -252,7 +252,7 @@ async def create_student(request: Request):
         + mapping.ENROLLMENT_RECORD_PARAMS
         + ["id_generation"],
     )
-    print(data)
+
     # if ID generation is false, the user has provided with the ID
     if not data["id_generation"]:
         # check if ID is part of the request
@@ -336,6 +336,7 @@ async def create_student(request: Request):
         if data["group"] == "EnableStudents":
             add_Id, id = await JNV_ID_generation(query_params)
 
+        print(add_Id)
         if add_Id:
             # build the complete profile object
             student_data = build_student_data(query_params)
@@ -407,7 +408,8 @@ async def create_student(request: Request):
                     )
                     return id
 
-        raise HTTPException(status_code=500, detail="Student not created!")
+        else:
+            return id
 
 
 @router.patch("/")
@@ -437,7 +439,7 @@ async def complete_profile_details(request: Request):
         mapping.STUDENT_QUERY_PARAMS
         + mapping.USER_QUERY_PARAMS
         + mapping.ENROLLMENT_RECORD_PARAMS
-        + mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS,
+        + mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS + ['region']
     )
 
     # build respective data objects based on the request data
@@ -454,7 +456,7 @@ async def complete_profile_details(request: Request):
     )
 
     student_data["id"] = student_response[0]["id"]
-    print(student_data)
+
     # update the student with the entered details
     await update_student(build_request(body=student_data))
 
@@ -488,21 +490,21 @@ async def complete_profile_details(request: Request):
             build_request(query_params={"student_id": student_data["id"]})
         )
 
+
+        if "school_name" in data:
+            school_response = school.get_school(
+                build_request(query_params={"name": data["school_name"]})
+            )
+
+            enrollment_data["school_id"] = school_response[0]["id"]
+            enrollment_data["student_id"] = student_data["id"]
+
         if len(enrollment_record_response) == 0:
-            # if record does not exist, create a new record
-            if "school_name" in data:
-                school_response = school.get_school(
-                    build_request(query_params={"name": data["school_name"]})
+            enrollment_record_response = (
+                await enrollment_record.create_enrollment_record(
+                    build_request(body=enrollment_data)
                 )
-
-                enrollment_data["school_id"] = school_response[0]["id"]
-                enrollment_data["student_id"] = student_data["id"]
-
-                enrollment_record_response = (
-                    await enrollment_record.create_enrollment_record(
-                        build_request(body=enrollment_data)
-                    )
-                )
+            )
 
         # if record already exists, update with new details
         else:
