@@ -85,7 +85,7 @@ async def create_user(request: Request):
         + mapping.USER_QUERY_PARAMS
         + mapping.ENROLLMENT_RECORD_PARAMS
         + ["id_generation"]
-        + ["user_type"],
+        + ["user_type"]  + ["region"],
     )
 
     if data["user_type"] == "student":

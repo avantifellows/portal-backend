@@ -250,7 +250,7 @@ async def create_student(request: Request):
         mapping.STUDENT_QUERY_PARAMS
         + mapping.USER_QUERY_PARAMS
         + mapping.ENROLLMENT_RECORD_PARAMS
-        + ["id_generation"],
+        + ["id_generation"] + ["region"],
     )
 
     # if ID generation is false, the user has provided with the ID
