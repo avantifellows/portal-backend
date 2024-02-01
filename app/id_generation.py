@@ -65,7 +65,7 @@ def dedupe_for_users(parameters):
         number_of_students_matching_user = []
         # if user does exist, check corresponding student attributes
         for user in does_user_already_exist:
-            matching_student= student_router.get_students(
+            matching_student = student_router.get_students(
                 build_request(
                     query_params={
                         "user_id": user["id"],
@@ -76,7 +76,6 @@ def dedupe_for_users(parameters):
             if len(matching_student) > 0:
                 number_of_students_matching_user.append(matching_student[0])
         print(len(number_of_students_matching_user))
-
 
         if len(number_of_students_matching_user) == 0:
             # if user is found, but a matching student is not found, then go ahead with ID generation
@@ -110,7 +109,7 @@ def dedupe_for_users(parameters):
                     )
 
                     if len(does_enrollment_record_exist) > 0:
-                      return [True, student["student_id"]]
+                        return [True, student["student_id"]]
                 return [False, ""]
             else:
                 raise HTTPException(status_code=404, detail="School does not exist!")

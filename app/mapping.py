@@ -24,7 +24,7 @@ STUDENT_QUERY_PARAMS = [
     "primary_smartphone_owner_profession",
     "group",
     "planned_competitive_exams",
-#    "region",
+    #    "region",
     "user_id",
     "primary_contact",
     "guardian_name",

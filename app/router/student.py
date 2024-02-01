@@ -250,7 +250,8 @@ async def create_student(request: Request):
         mapping.STUDENT_QUERY_PARAMS
         + mapping.USER_QUERY_PARAMS
         + mapping.ENROLLMENT_RECORD_PARAMS
-        + ["id_generation"] + ["region"],
+        + ["id_generation"]
+        + ["region"],
     )
 
     # if ID generation is false, the user has provided with the ID
@@ -439,7 +440,8 @@ async def complete_profile_details(request: Request):
         mapping.STUDENT_QUERY_PARAMS
         + mapping.USER_QUERY_PARAMS
         + mapping.ENROLLMENT_RECORD_PARAMS
-        + mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS + ['region']
+        + mapping.STUDENT_EXAM_RECORD_QUERY_PARAMS
+        + ["region"],
     )
 
     # build respective data objects based on the request data
@@ -489,7 +491,6 @@ async def complete_profile_details(request: Request):
         enrollment_record_response = enrollment_record.get_enrollment_record(
             build_request(query_params={"student_id": student_data["id"]})
         )
-
 
         if "school_name" in data:
             school_response = school.get_school(

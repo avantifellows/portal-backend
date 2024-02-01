@@ -55,7 +55,9 @@ def refresh_token(Authorize: AuthJWT = Depends()):
     Authorize.jwt_refresh_token_required()
     current_user = Authorize.get_jwt_subject()
     data = Authorize.get_raw_jwt()
-    new_access_token = Authorize.create_access_token(subject=current_user, user_claims=data)
+    new_access_token = Authorize.create_access_token(
+        subject=current_user, user_claims=data
+    )
     return {"access_token": new_access_token}
 
 
