@@ -14,7 +14,6 @@ def index():
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
 def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
-    print(auth_user)
     refresh_token = ""
     data = auth_user.data
 
