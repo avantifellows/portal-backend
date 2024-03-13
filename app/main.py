@@ -28,6 +28,7 @@ origins = [
     "https://staging-auth.avantifellows.org",
     "https://auth.avantifellows.org",
     "https://staging-gurukul.avantifellows.org",
+    "https://gurukul.avantifellows.org",
 ]
 
 app.add_middleware(
