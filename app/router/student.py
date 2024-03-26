@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
-from router import group, auth_group, group_user, user, school, grade
+from router import group, auth_group, group_user, user, school, grade, enrollment_record
 from id_generation_classes import JNVIDGeneration
 from request import build_request
 from routes import student_db_url
@@ -11,7 +11,8 @@ from helpers import (
     is_response_valid,
     is_response_empty,
 )
-import json
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 from mapping import (
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
@@ -40,16 +41,29 @@ def generate_JNV_student_id(data):
 async def create_school_user_record(data, school_name):
     school_data = school.get_school(build_request(query_params={"name": school_name}))
     group_data = group.get_group(
-        build_request(
-            query_params={"child_id": school_data["id"], "type": "auth_group"}
-        )
+        build_request(query_params={"child_id": school_data["id"], "type": "school"})
     )
 
     await group_user.create_group_user(
         build_request(
             method="POST",
-            body={"group_id": group_data["id"], "user_id": data["user"]["id"]},
+            body={"group_id": group_data[0]["id"], "user_id": data["user"]["id"]},
         )
+    )
+    enrollment_record_data = {
+        "academic_year": str(datetime.now().year)
+        + "-"
+        + str((datetime.now() + relativedelta(years=1)).year),
+        "is_current": True,
+        "start_date": datetime.now().strftime("%Y-%m-%d"),
+        "end_date": "",
+        "group_id": school["id"],
+        "group_type": "school",
+        "user_id": data["user"]["id"],
+        "grade_id": data["grade_id"],
+    }
+    await enrollment_record.create_enrollment_record(
+        build_request(method="POST", body=enrollment_record_data)
     )
 
 
@@ -66,8 +80,25 @@ async def create_auth_group_user_record(data, auth_group_name):
     await group_user.create_group_user(
         build_request(
             method="POST",
-            body={"group_id": group_data["id"], "user_id": data["user"]["id"]},
+            body={"group_id": group_data[0]["id"], "user_id": data["user"]["id"]},
         )
+    )
+
+    enrollment_record_data = {
+        "academic_year": str(datetime.now().year)
+        + "-"
+        + str((datetime.now() + relativedelta(years=1)).year),
+        "is_current": "true",
+        "start_date": datetime.now().strftime("%Y-%m-%d"),
+        "end_date": "",
+        "group_id": auth_group_data["id"],
+        "group_type": "auth_group",
+        "user_id": data["user"]["id"],
+        "grade_id": data["grade_id"],
+    }
+    print(enrollment_record_data)
+    await enrollment_record.create_enrollment_record(
+        build_request(method="POST", body=enrollment_record_data)
     )
 
 
@@ -221,10 +252,11 @@ async def create_student(request: Request):
             if student_id_already_exists:
                 return student_id
 
-    student_grade_id = grade.get_grade(
-        build_request(query_params={"number": int(query_params["grade"])})
-    )
-    query_params["grade_id"] = student_grade_id["id"]
+    if "grade" in query_params:
+        student_grade_id = grade.get_grade(
+            build_request(query_params={"number": int(query_params["grade"])})
+        )
+        query_params["grade_id"] = student_grade_id["id"]
 
     new_student_data = create_new_student_record(query_params)
 

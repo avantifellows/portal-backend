@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 import requests
 from routes import group_user_db_url
+from router import enrollment_record
 from helpers import (
     db_request_token,
     validate_and_build_query_params,
@@ -10,6 +11,10 @@ from helpers import (
 from mapping import GROUP_USER_QUERY_PARAMS
 
 router = APIRouter(prefix="/group-user", tags=["Group-User"])
+
+
+def create_auth_group_enrollment_record(data):
+    enrollment_record.create_enrollment_record()
 
 
 @router.get("/")

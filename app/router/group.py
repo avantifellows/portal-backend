@@ -21,6 +21,4 @@ def get_group(request: Request):
         group_db_url, params=query_params, headers=db_request_token()
     )
     if is_response_valid(response, "Group API could not fetch the data!"):
-        return is_response_empty(
-            response.json()[0], True, "Group record does not exist!"
-        )
+        return is_response_empty(response.json(), True, "Group record does not exist!")
