@@ -9,7 +9,12 @@ from helpers import (
     is_response_valid,
     is_response_empty,
 )
-from mapping import USER_QUERY_PARAMS, STUDENT_QUERY_PARAMS, ENROLLMENT_RECORD_PARAMS, SCHOOL_QUERY_PARAMS
+from mapping import (
+    USER_QUERY_PARAMS,
+    STUDENT_QUERY_PARAMS,
+    ENROLLMENT_RECORD_PARAMS,
+    SCHOOL_QUERY_PARAMS,
+)
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -33,7 +38,8 @@ async def create_user(request: Request):
         data["form_data"],
         STUDENT_QUERY_PARAMS
         + USER_QUERY_PARAMS
-        + ENROLLMENT_RECORD_PARAMS + SCHOOL_QUERY_PARAMS
+        + ENROLLMENT_RECORD_PARAMS
+        + SCHOOL_QUERY_PARAMS
         + ["id_generation"]
         + ["user_type"],
     )

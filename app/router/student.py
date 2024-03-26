@@ -12,7 +12,12 @@ from helpers import (
     is_response_empty,
 )
 import json
-from mapping import USER_QUERY_PARAMS, STUDENT_QUERY_PARAMS, ENROLLMENT_RECORD_PARAMS, SCHOOL_QUERY_PARAMS
+from mapping import (
+    USER_QUERY_PARAMS,
+    STUDENT_QUERY_PARAMS,
+    ENROLLMENT_RECORD_PARAMS,
+    SCHOOL_QUERY_PARAMS,
+)
 
 router = APIRouter(prefix="/student", tags=["Student"])
 
@@ -33,9 +38,7 @@ def generate_JNV_student_id(data):
 
 
 async def create_school_user_record(data, school_name):
-    school_data = school.get_school(
-        build_request(query_params={"name": school_name})
-    )
+    school_data = school.get_school(build_request(query_params={"name": school_name}))
     group_data = group.get_group(
         build_request(
             query_params={"child_id": school_data["id"], "type": "auth_group"}
@@ -43,7 +46,10 @@ async def create_school_user_record(data, school_name):
     )
 
     await group_user.create_group_user(
-        build_request(method="POST", body={"group_id": group_data["id"], "user_id": data["user"]["id"]})
+        build_request(
+            method="POST",
+            body={"group_id": group_data["id"], "user_id": data["user"]["id"]},
+        )
     )
 
 
@@ -58,19 +64,20 @@ async def create_auth_group_user_record(data, auth_group_name):
     )
 
     await group_user.create_group_user(
-        build_request(method="POST", body={"group_id": group_data["id"], "user_id": data["user"]["id"]})
+        build_request(
+            method="POST",
+            body={"group_id": group_data["id"], "user_id": data["user"]["id"]},
+        )
     )
 
 
 def create_new_student_record(data):
-    response = requests.post(
-        student_db_url, data=data, headers=db_request_token()
-    )
+    response = requests.post(student_db_url, data=data, headers=db_request_token())
     if is_response_valid(response, "Student API could not post the data!"):
         created_student_data = is_response_empty(
             response.json(), "Student API could fetch the created student"
         )
-        
+
         return created_student_data
 
 
@@ -172,29 +179,20 @@ async def create_student(request: Request):
         data["form_data"],
         STUDENT_QUERY_PARAMS
         + USER_QUERY_PARAMS
-        + ENROLLMENT_RECORD_PARAMS + SCHOOL_QUERY_PARAMS
+        + ENROLLMENT_RECORD_PARAMS
+        + SCHOOL_QUERY_PARAMS
         + ["id_generation"],
     )
 
     if not data["id_generation"]:
+        student_id = query_params["student_id"]
         check_if_student_id_is_part_of_request(query_params)
 
         does_student_already_exist = await verify_student(
             build_request(), query_params["student_id"]
         )
+
         if does_student_already_exist:
-            return query_params["student_id"]
-
-        else:
-            student_grade_id = grade.get_grade( build_request(
-            query_params={"number": int(query_params["grade"])})
-        )
-            query_params["grade_id"] = student_grade_id["id"]
-            new_student_data = create_new_student_record(query_params)
-            await create_auth_group_user_record(new_student_data, data["auth_group"])
-            if "school_name" in query_params:
-                await create_school_user_record(new_student_data, query_params["school_name"])
-
             return query_params["student_id"]
 
     else:
@@ -222,11 +220,20 @@ async def create_student(request: Request):
 
             if student_id_already_exists:
                 return student_id
-            else:
-                create_new_student_record(query_params)
-                awacreate_group_user_record(query_params, data["auth_group"])
 
-                return student_id
+    student_grade_id = grade.get_grade(
+        build_request(query_params={"number": int(query_params["grade"])})
+    )
+    query_params["grade_id"] = student_grade_id["id"]
+
+    new_student_data = create_new_student_record(query_params)
+
+    await create_auth_group_user_record(new_student_data, data["auth_group"])
+
+    if "school_name" in query_params:
+        await create_school_user_record(new_student_data, query_params["school_name"])
+
+    return student_id
 
 
 # @router.post("/complete-profile-details")

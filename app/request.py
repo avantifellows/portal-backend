@@ -1,6 +1,7 @@
 from starlette.requests import Request
 from starlette.datastructures import Headers
 
+
 def build_request(
     method: str = "GET",
     server: str = "http://127.0.0.1:8000/",

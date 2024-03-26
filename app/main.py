@@ -1,5 +1,4 @@
 from router import (
-    
     auth_group,
     auth,
     batch,
@@ -14,7 +13,7 @@ from router import (
     student,
     teacher,
     user_session,
-    user
+    user,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request

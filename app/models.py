@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Union, Dict, Optional
 
+
 class AuthGroupResponse(BaseModel):
     id: str
     name: str
@@ -8,12 +9,14 @@ class AuthGroupResponse(BaseModel):
     locale: Optional[str] = ""
     locale_data: Optional[Dict] = {}
 
+
 class AuthUser(BaseModel):
     id: str
     type: str
     name: Optional[str] = None
     is_user_valid: Optional[bool] = None
     data: Union[Dict[str, str], None]
+
 
 class BatchResponse(BaseModel):
     id: str
@@ -60,8 +63,6 @@ class SessionResponse(BaseModel):
     popup_form: Optional[str] = None
     signup_form_id: Optional[str] = None
     popup_form_id: Optional[str] = None
-
-
 
 
 class UserSession(BaseModel):

@@ -14,9 +14,13 @@ router = APIRouter(prefix="/group", tags=["Group"])
 
 @router.get("/")
 def get_group(request: Request):
-    query_params = validate_and_build_query_params(request.query_params, GROUP_QUERY_PARAMS)
+    query_params = validate_and_build_query_params(
+        request.query_params, GROUP_QUERY_PARAMS
+    )
     response = requests.get(
         group_db_url, params=query_params, headers=db_request_token()
     )
     if is_response_valid(response, "Group API could not fetch the data!"):
-        return is_response_empty(response.json()[0], True, "Group record does not exist!")
+        return is_response_empty(
+            response.json()[0], True, "Group record does not exist!"
+        )

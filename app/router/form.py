@@ -112,14 +112,11 @@ def get_form_schema(request: Request):
 @router.get("/student")
 async def get_student_fields(request: Request):
     query_params = validate_and_build_query_params(
-        request.query_params, ["number_of_fields_in_pop_form", "auth_group", "student_id", "form_id"]
+        request.query_params,
+        ["number_of_fields_in_pop_form", "auth_group", "student_id", "form_id"],
     )
 
-    form = get_form_schema(
-        build_request(
-            query_params={"id": query_params["form_id"]}
-        )
-    )
+    form = get_form_schema(build_request(query_params={"id": query_params["form_id"]}))
     form = form[0]
 
     student_data = student.get_students(
@@ -127,7 +124,6 @@ async def get_student_fields(request: Request):
     )[0]
 
     if student_data:
-
         # get enrollment data for the student
         enrollment_record_data = enrollment_record.get_enrollment_record(
             build_request(query_params={"student_id": student_data["id"]})
