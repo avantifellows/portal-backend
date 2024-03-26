@@ -1,11 +1,16 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
+from routes import form_db_url
 from settings import settings
-from router import student, routes, enrollment_record
+from router import student, enrollment_record
 from request import build_request
-import helpers
-import mapping
-from helpers import db_request_token
+from mapping import FORM_SCHEMA_QUERY_PARAMS
+from helpers import (
+    db_request_token,
+    validate_and_build_query_params,
+    is_response_valid,
+    is_response_empty,
+)
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
 
@@ -94,50 +99,34 @@ def build_returned_form_schema_data(
 
 @router.get("/")
 def get_form_schema(request: Request):
-    """
-    This API returns a form schema when an ID is given
-
-    Returns:
-    list: form schema data if ID is a match, otherwise 404
-
-    Example:
-    > $BASE_URL/form_schema/?form_schema_id=1234
-    returns [{form_schema_data_of_id_1234}]
-
-    """
-    query_params = helpers.validate_and_build_query_params(
-        request.query_params, ["id", "name"]
+    query_params = validate_and_build_query_params(
+        request.query_params, FORM_SCHEMA_QUERY_PARAMS
     )
-
     response = requests.get(
-        routes.form_db_url, params=query_params, headers=db_request_token()
+        form_db_url, params=query_params, headers=db_request_token()
     )
-    if helpers.is_response_valid(response, "Form API could not fetch the data!"):
-        return helpers.is_response_empty(response.json(), "Form does not exist!")
+    if is_response_valid(response, "Form API could not fetch the data!"):
+        return is_response_empty(response.json()[0], "True", "Form does not exist!")
 
 
 @router.get("/student")
 async def get_student_fields(request: Request):
-    query_params = helpers.validate_and_build_query_params(
-        request.query_params, ["number_of_fields_in_pop_form", "group", "student_id"]
+    query_params = validate_and_build_query_params(
+        request.query_params, ["number_of_fields_in_pop_form", "auth_group", "student_id", "form_id"]
     )
 
-    # get the field ordering for a particular group
     form = get_form_schema(
         build_request(
-            query_params={"name": mapping.FORM_GROUP_MAPPING[query_params["group"]]}
+            query_params={"id": query_params["form_id"]}
         )
     )
     form = form[0]
 
-    # get student and user data for the student ID that is requesting for profile completion
-    # ASSUMPTION : student_id is valid and exists because only valid students will reach profile completion
     student_data = student.get_students(
         build_request(query_params={"student_id": query_params["student_id"]})
-    )
+    )[0]
 
     if student_data:
-        student_data = student_data[0]
 
         # get enrollment data for the student
         enrollment_record_data = enrollment_record.get_enrollment_record(
