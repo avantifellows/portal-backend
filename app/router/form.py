@@ -178,10 +178,6 @@ async def get_student_fields(request: Request):
         build_request(query_params={"student_id": query_params["student_id"]})
     )[0]
 
-    enrollment_record_data = enrollment_record.get_enrollment_record(
-        build_request(query_params={"user_id": student_data["user"]["id"]})
-    )
-
     # get the priorities for all fields and sort them
     priority_order = sorted([eval(i) for i in form["attributes"].keys()])
 
