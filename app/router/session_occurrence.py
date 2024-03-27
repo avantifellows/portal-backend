@@ -5,11 +5,13 @@ from datetime import datetime
 from models import SessionResponse
 import pytz
 from helpers import db_request_token
+from logger_config import get_logger
 
 IST = pytz.timezone("Asia/Kolkata")
 router = APIRouter(prefix="/session-occurrence", tags=["Session Occurrence"])
 session_db_url = settings.db_url + "/session/"
 session_occurrence_db_url = settings.db_url + "/session-occurrence/"
+logger = get_logger()
 
 
 def build_date_and_time(date_time: str):
@@ -83,7 +85,6 @@ async def get_session_occurrence_data(request: Request):
         "headers": null
     }
     """
-
     query_params = {}
     for key in request.query_params.keys():
         if key not in ["name", "session_id"]:
@@ -91,6 +92,8 @@ async def get_session_occurrence_data(request: Request):
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
         query_params[key] = request.query_params[key]
+
+    logger.info("Searching for session {} ...".format(query_params["session_id"]))
 
     response = requests.get(
         session_occurrence_db_url, params=query_params, headers=db_request_token()

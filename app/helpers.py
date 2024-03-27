@@ -1,5 +1,8 @@
 from fastapi import HTTPException
+from logger_config import get_logger
 from settings import settings
+
+logger = get_logger()
 
 
 def is_response_valid(response, error_message=""):
@@ -8,6 +11,7 @@ def is_response_valid(response, error_message=""):
     elif response.status_code == 201:
         return True
     if error_message:
+        logger.error(error_message)
         raise HTTPException(status_code=500, detail=error_message)
     return False
 
@@ -17,6 +21,7 @@ def is_response_empty(response_data, return_boolean, error_message=""):
         return response_data
     if return_boolean:
         if error_message:
+            logger.error(error_message)
             raise HTTPException(status_code=404, detail=error_message)
         else:
             return False
@@ -27,6 +32,7 @@ def validate_and_build_query_params(data, valid_query_params):
     query_params = {}
     for key in data.keys():
         if key not in valid_query_params:
+            logger.error("Query Parameter {key} is not allowed!")
             raise HTTPException(
                 status_code=400, detail="Query Parameter {} is not allowed!".format(key)
             )
