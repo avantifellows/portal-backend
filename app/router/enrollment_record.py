@@ -24,7 +24,7 @@ def get_enrollment_record(request: Request):
 
     if is_response_valid(response, "Enrollment API could not fetch the data!"):
         return is_response_empty(
-            response.json()[0], True, "Enrollment record does not exist!"
+            response.json(), True, "Enrollment record does not exist!"
         )
 
 

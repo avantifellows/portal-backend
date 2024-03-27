@@ -23,6 +23,14 @@ from mapping import (
 router = APIRouter(prefix="/student", tags=["Student"])
 
 
+def build_student_and_user_data(student_data):
+    data = {}
+    for key in student_data.keys():
+        if key in STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS:
+            data[key] = student_data[key]
+    return data
+
+
 def generate_JNV_student_id(data):
     counter = settings.JNV_COUNTER_FOR_ID_GENERATION
 
@@ -54,10 +62,10 @@ async def create_school_user_record(data, school_name):
         "academic_year": str(datetime.now().year)
         + "-"
         + str((datetime.now() + relativedelta(years=1)).year),
-        "is_current": True,
+        "is_current": "true",
         "start_date": datetime.now().strftime("%Y-%m-%d"),
         "end_date": "",
-        "group_id": school["id"],
+        "group_id": school_data["id"],
         "group_type": "school",
         "user_id": data["user"]["id"],
         "grade_id": data["grade_id"],
@@ -167,10 +175,11 @@ async def verify_student(request: Request, student_id: str):
     )
     if is_response_valid(response):
         student_data = is_response_empty(response.json(), False)
-
+        
         if student_data:
             student_data = student_data[0]
             for key, value in query_params.items():
+
                 if key in USER_QUERY_PARAMS and student_data["user"].get(key) != value:
                     return False
                 if key in STUDENT_QUERY_PARAMS and student_data.get(key) != value:
@@ -186,6 +195,7 @@ async def verify_student(request: Request, student_id: str):
                             }
                         )
                     )
+                    
                     if response:
                         response = response[0]
                         group_user_response = group_user.get_group_user(
@@ -268,86 +278,32 @@ async def create_student(request: Request):
     return student_id
 
 
-# @router.post("/complete-profile-details")
-# async def complete_profile_details(request: Request):
-#     data = await request.json()
+@router.patch("/")
+async def update_student(request: Request):
+    data = await request.body()
 
-#     validate_and_build_query_params(
-#         data,
-#         STUDENT_QUERY_PARAMS
-#         + USER_QUERY_PARAMS
-#         + ENROLLMENT_RECORD_PARAMS,
-#     )
-
-#     user_data, student_data, enrollment_data = (
-#         build_user_data(data),
-#         build_student_data(data),
-#         build_enrollment_data(data),
-#     )
-
-#     # get the PK of the student whose profile is being completed
-#     student_response = get_students(
-#         build_request(query_params={"student_id": data["student_id"]})
-#     )
-
-#     student_data["id"] = student_response[0]["id"]
-
-#     # update the student with the entered details
-#     await update_student(build_request(body=student_data))
-
-#     user_data["id"] = student_response[0]["user"]["id"]
-
-#     if len(user_data) > 0:
-#         # update the student with the entered user details
-#         await user.update_user(build_request(body=user_data))
-
-#     # get the enrollment record of the student
-#     enrollment_record_response = enrollment_record.get_enrollment_record(
-#         build_request(query_params={"student_id": student_response[0]["id"]})
-#     )
-
-#     # if school name was entered by the student, get the school ID from the school table
-#     if "school_name" in data:
-#         school_response = school.get_school(
-#             build_request(query_params={"name": data["school_name"]})
-#         )
-#         enrollment_data["school_id"] = school_response[0]["id"]
-
-#     # if enrollment record already exists, update with new details
-#     if enrollment_record_response != []:
-#         enrollment_data["id"] = enrollment_record_response[0]["id"]
-
-#         enrollment_record_response = await enrollment_record.update_enrollment_record(
-#             build_request(body=enrollment_data)
-#         )
-
-#     # else, create a new enrollment record for the student
-#     else:
-#         enrollment_data["student_id"] = student_response[0]["id"]
-
-#         enrollment_record_response = await enrollment_record.create_enrollment_record(
-#             build_request(body=enrollment_data)
-#         )
-
-# def build_enrollment_data(data):
-#     enrollment_data = {}
-#     for key in data.keys():
-#         if key in ENROLLMENT_RECORD_PARAMS and key != "student_id":
-#             enrollment_data[key] = data[key]
-#     return enrollment_data
+    response = requests.post(student_db_url, data=data, headers=db_request_token())
+    if is_response_valid(response, "Student API could not patch the data!"):
+        return is_response_empty(
+            response.json(), "Student API could not fetch the patched student"
+        )
 
 
-# def build_student_data(data):
-#     student_data = {}
-#     for key in data.keys():
-#         if key in STUDENT_QUERY_PARAMS:
-#             student_data[key] = data[key]
-#     return student_data
+@router.post("/complete-profile-details")
+async def complete_profile_details(request: Request):
+    data = await request.json()
+    print(data)
+
+    student_data = build_student_and_user_data(data)
+    print(student_data)
+
+    student_response = get_students(
+        build_request(query_params={"student_id": data["student_id"]})
+    )
+
+    student_data["id"] = student_response[0]["id"]
+
+    await update_student(build_request(body=student_data))
 
 
-# def build_user_data(data):
-#     user_data = {}
-#     for key in data.keys():
-#         if key in USER_QUERY_PARAMS:
-#             user_data[key] = data[key]
-#     return user_data
+
