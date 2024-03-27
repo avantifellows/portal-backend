@@ -175,11 +175,10 @@ async def verify_student(request: Request, student_id: str):
     )
     if is_response_valid(response):
         student_data = is_response_empty(response.json(), False)
-        
+
         if student_data:
             student_data = student_data[0]
             for key, value in query_params.items():
-
                 if key in USER_QUERY_PARAMS and student_data["user"].get(key) != value:
                     return False
                 if key in STUDENT_QUERY_PARAMS and student_data.get(key) != value:
@@ -195,7 +194,7 @@ async def verify_student(request: Request, student_id: str):
                             }
                         )
                     )
-                    
+
                     if response:
                         response = response[0]
                         group_user_response = group_user.get_group_user(
@@ -304,6 +303,3 @@ async def complete_profile_details(request: Request):
     student_data["id"] = student_response[0]["id"]
 
     await update_student(build_request(body=student_data))
-
-
-

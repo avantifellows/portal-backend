@@ -19,7 +19,9 @@ def create_auth_group_enrollment_record(data):
 
 @router.get("/")
 def get_group_user(request: Request):
-    query_params = validate_and_build_query_params(request.query_params, GROUP_USER_QUERY_PARAMS)
+    query_params = validate_and_build_query_params(
+        request.query_params, GROUP_USER_QUERY_PARAMS
+    )
     response = requests.get(
         group_user_db_url, params=query_params, headers=db_request_token()
     )

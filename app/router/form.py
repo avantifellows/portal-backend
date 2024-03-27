@@ -114,8 +114,7 @@ def school_name_in_returned_form_schema_data(
 
 
 def build_returned_form_schema_data(
-    returned_form_schema,
-    field, number_of_fields_in_form_schema
+    returned_form_schema, field, number_of_fields_in_form_schema
 ):
     returned_form_schema[number_of_fields_in_form_schema] = field
     number_of_fields_in_form_schema += 1
@@ -125,7 +124,11 @@ def build_returned_form_schema_data(
 def is_user_or_student_attribute_empty_then_build_schema(
     form_schema, number_of_fields_in_form_schema, field, data
 ):
-    print(field["key"], is_user_attribute_empty(field, data), is_student_attribute_empty(field, data))
+    print(
+        field["key"],
+        is_user_attribute_empty(field, data),
+        is_student_attribute_empty(field, data),
+    )
     return (
         build_returned_form_schema_data(
             form_schema, field, number_of_fields_in_form_schema
@@ -174,19 +177,17 @@ async def get_student_fields(request: Request):
     student_data = student.get_students(
         build_request(query_params={"student_id": query_params["student_id"]})
     )[0]
-    
+
     enrollment_record_data = enrollment_record.get_enrollment_record(
         build_request(query_params={"user_id": student_data["user"]["id"]})
     )
-  
+
     # get the priorities for all fields and sort them
     priority_order = sorted([eval(i) for i in form["attributes"].keys()])
 
     fields = form["attributes"]
 
-    total_number_of_fields =  int(
-        query_params["number_of_fields_in_popup_form"]
-    )
+    total_number_of_fields = int(query_params["number_of_fields_in_popup_form"])
 
     number_of_fields_in_form_schema = 0
 
@@ -194,16 +195,15 @@ async def get_student_fields(request: Request):
 
     for priority in priority_order:
         if number_of_fields_in_form_schema <= total_number_of_fields:
-                print(fields[str(priority)]["key"])
-                (
-                    returned_form_schema,
-                    number_of_fields_in_form_schema,
-                ) = is_user_or_student_attribute_empty_then_build_schema(
-                    returned_form_schema,
-                    number_of_fields_in_form_schema,
-                    fields[str(priority)],
-                    student_data,
-                )
-            
+            print(fields[str(priority)]["key"])
+            (
+                returned_form_schema,
+                number_of_fields_in_form_schema,
+            ) = is_user_or_student_attribute_empty_then_build_schema(
+                returned_form_schema,
+                number_of_fields_in_form_schema,
+                fields[str(priority)],
+                student_data,
+            )
 
     return returned_form_schema
