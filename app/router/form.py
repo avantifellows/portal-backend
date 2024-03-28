@@ -54,10 +54,14 @@ def is_student_attribute_empty(field, student_data):
             or student_data[key] is None
             for key in parent_keys
         )
-    
+
     if key == "grade":
-        return "grade_id" not in student_data or student_data["grade_id"] is None or student_data["grade_id"] == ""
-        
+        return (
+            "grade_id" not in student_data
+            or student_data["grade_id"] is None
+            or student_data["grade_id"] == ""
+        )
+
     return key in STUDENT_QUERY_PARAMS and (
         key not in student_data or student_data[key] is None or student_data[key] == ""
     )
