@@ -104,7 +104,7 @@ async def create_auth_group_user_record(data, auth_group_name):
         "user_id": data["user"]["id"],
         "grade_id": data["grade_id"],
     }
-    print(enrollment_record_data)
+
     await enrollment_record.create_enrollment_record(
         build_request(method="POST", body=enrollment_record_data)
     )
@@ -291,10 +291,8 @@ async def update_student(request: Request):
 @router.post("/complete-profile-details")
 async def complete_profile_details(request: Request):
     data = await request.json()
-    print(data)
 
     student_data = build_student_and_user_data(data)
-    print(student_data)
 
     student_response = get_students(
         build_request(query_params={"student_id": data["student_id"]})

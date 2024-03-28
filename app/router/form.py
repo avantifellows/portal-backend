@@ -128,11 +128,6 @@ def build_returned_form_schema_data(
 def is_user_or_student_attribute_empty_then_build_schema(
     form_schema, number_of_fields_in_form_schema, field, data
 ):
-    print(
-        field["key"],
-        is_user_attribute_empty(field, data),
-        is_student_attribute_empty(field, data),
-    )
     return (
         build_returned_form_schema_data(
             form_schema, field, number_of_fields_in_form_schema
@@ -195,7 +190,6 @@ async def get_student_fields(request: Request):
 
     for priority in priority_order:
         if number_of_fields_in_form_schema <= total_number_of_fields:
-            print(fields[str(priority)]["key"])
             (
                 returned_form_schema,
                 number_of_fields_in_form_schema,
