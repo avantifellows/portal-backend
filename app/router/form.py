@@ -11,6 +11,7 @@ from helpers import (
     is_response_valid,
     is_response_empty,
 )
+import json
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
 
@@ -24,34 +25,31 @@ def is_user_attribute_empty(field, student_data):
 
 def is_student_attribute_empty(field, student_data):
     key = field["key"]
-    if key == "primary_contact":
-        # Special handling for primary_contact attribute with sub-fields for guardians and parents
-        guardian_keys = [
-            "guardian_name",
-            "guardian_relation",
-            "guardian_phone",
-            "guardian_education_level",
-            "guardian_profession",
-        ]
-        parent_keys = [
-            "father_name",
-            "father_phone",
-            "father_profession",
-            "father_education_level",
-            "mother_name",
-            "mother_phone",
-            "mother_profession",
-            "mother_education_level",
-        ]
+    # Special handling for primary_contact attribute with sub-fields for guardians and parents
+    guardian_keys = [
+        "guardian_name",
+        "guardian_relation",
+        "guardian_phone",
+        "guardian_education_level",
+        "guardian_profession",
+    ]
+    parent_keys = [
+        "father_name",
+        "father_phone",
+        "father_profession",
+        "father_education_level",
+        "mother_name",
+        "mother_phone",
+        "mother_profession",
+        "mother_education_level",
+    ]
+    
+    if key == "primary_contact" or key in guardian_keys or key in parent_keys:
         return all(
-            key not in student_data
-            or student_data[key] == ""
-            or student_data[key] is None
+            key in student_data and student_data[key] != "" and student_data[key] is not None
             for key in guardian_keys
         ) and all(
-            key not in student_data
-            or student_data[key] == ""
-            or student_data[key] is None
+            key in student_data and student_data[key] != "" and student_data[key] is not None
             for key in parent_keys
         )
 
@@ -124,6 +122,7 @@ def school_name_in_returned_form_schema_data(
 def build_returned_form_schema_data(
     returned_form_schema, field, number_of_fields_in_form_schema
 ):
+    
     returned_form_schema[number_of_fields_in_form_schema] = field
     number_of_fields_in_form_schema += 1
     return (returned_form_schema, number_of_fields_in_form_schema)
@@ -155,6 +154,16 @@ def find_dependant_parent(fields, priority, dependent_hierarchy, data):
             fields, parent_field_priority[0], dependent_hierarchy, data
         )
 
+    return dependent_hierarchy
+
+
+def find_children_fields(fields, parent_field):
+    children_fields = []
+    for field in fields:
+        if fields[field]["dependantField"] == parent_field["key"] or (len(fields[field]["showBasedOn"]) > 0 and fields[field]["showBasedOn"].split('==')[0] == parent_field["key"]):
+            children_fields.append(int(field))
+    
+    return children_fields
 
 @router.get("/")
 def get_form_schema(request: Request):
@@ -191,17 +200,36 @@ async def get_student_fields(request: Request):
     number_of_fields_in_form_schema = 0
 
     returned_form_schema = {}
-
+    
     for priority in priority_order:
         if number_of_fields_in_form_schema <= total_number_of_fields:
-            (
+            children_fields = find_children_fields(fields,fields[str(priority)] )
+            children_fields.append(priority)
+
+            for child_field in sorted(children_fields):
+                (
                 returned_form_schema,
                 number_of_fields_in_form_schema,
-            ) = is_user_or_student_attribute_empty_then_build_schema(
+                ) = is_user_or_student_attribute_empty_then_build_schema(
                 returned_form_schema,
                 number_of_fields_in_form_schema,
-                fields[str(priority)],
+                fields[str(child_field)],
                 student_data,
-            )
+                )
+
+            # else:
+                
+            #         (
+            #         returned_form_schema,
+            #         number_of_fields_in_form_schema,
+            #     ) = is_user_or_student_attribute_empty_then_build_schema(
+            #         returned_form_schema,
+            #         number_of_fields_in_form_schema,
+            #         fields[str(priority)],
+            #         student_data,
+            #     )
 
     return returned_form_schema
+
+
+ 
