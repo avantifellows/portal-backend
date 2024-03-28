@@ -34,6 +34,7 @@ SESSION_QUERY_PARAMS = ["id", "name", "session_id"]
 
 STUDENT_QUERY_PARAMS = [
     "student_id",
+    "grade",
     "grade_id",
     "father_name",
     "father_phone",
