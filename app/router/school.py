@@ -1,23 +1,24 @@
 from fastapi import APIRouter, Request
 import requests
-from router import routes
-import helpers
-import mapping
-from helpers import db_request_token
+from routes import school_db_url
+from helpers import (
+    db_request_token,
+    validate_and_build_query_params,
+    is_response_valid,
+    is_response_empty,
+)
+from mapping import SCHOOL_QUERY_PARAMS
 
 router = APIRouter(prefix="/school", tags=["School"])
 
 
 @router.get("/")
 def get_school(request: Request):
-    query_params = helpers.validate_and_build_query_params(
-        request.query_params, mapping.SCHOOL_QUERY_PARAMS
+    query_params = validate_and_build_query_params(
+        request.query_params, SCHOOL_QUERY_PARAMS
     )
     response = requests.get(
-        routes.school_db_url, params=query_params, headers=db_request_token()
+        school_db_url, params=query_params, headers=db_request_token()
     )
-
-    if helpers.is_response_valid(response, "School API could not fetch the data!"):
-        return helpers.is_response_empty(
-            response.json(), False, "School does not exist"
-        )
+    if is_response_valid(response, "School API could not fetch the data!"):
+        return is_response_empty(response.json()[0], True, "School does not exist")

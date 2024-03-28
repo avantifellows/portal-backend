@@ -7,7 +7,7 @@ def build_request(
     server: str = "http://127.0.0.1:8000/",
     path: str = "/",
     headers: dict = None,
-    body: str = None,
+    body: dict = None,
     query_params: dict = None,
 ) -> Request:
     if headers is None:

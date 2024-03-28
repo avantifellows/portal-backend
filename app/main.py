@@ -1,17 +1,19 @@
 from router import (
+    auth_group,
     auth,
-    session,
-    group,
-    student,
-    session_group,
-    user_session,
-    session_occurrence,
     batch,
-    program,
-    group_type,
+    enrollment_record,
     form,
-    user,
+    group_session,
+    group_user,
+    group,
+    school,
+    session_occurrence,
+    session,
+    student,
     teacher,
+    user_session,
+    user,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -45,19 +47,21 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
+app.include_router(auth_group.router)
 app.include_router(auth.router)
-app.include_router(session.router)
-app.include_router(group.router)
-app.include_router(student.router)
-app.include_router(session_group.router)
-app.include_router(user_session.router)
-app.include_router(session_occurrence.router)
 app.include_router(batch.router)
-app.include_router(program.router)
-app.include_router(group_type.router)
+app.include_router(enrollment_record.router)
 app.include_router(form.router)
-app.include_router(user.router)
+app.include_router(group_session.router)
+app.include_router(group_user.router)
+app.include_router(group.router)
+app.include_router(school.router)
+app.include_router(session_occurrence.router)
+app.include_router(session.router)
+app.include_router(student.router)
 app.include_router(teacher.router)
+app.include_router(user_session.router)
+app.include_router(user.router)
 
 
 @app.get("/")

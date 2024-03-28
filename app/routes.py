@@ -1,0 +1,18 @@
+from settings import settings
+
+auth_group_db_url = settings.db_url + "/auth-group"
+batch_db_url = settings.db_url + "/batch/"
+enrollment_record_db_url = settings.db_url + "/enrollment-record"
+form_db_url = settings.db_url + "/form-schema"
+grade_db_url = settings.db_url + "/grade"
+group_user_db_url = settings.db_url + "/group-user"
+group_db_url = settings.db_url + "/group/"
+program_db_url = settings.db_url + "/program"
+school_db_url = settings.db_url + "/school"
+group_session_db_url = settings.db_url + "/group-session"
+session_occurrence_db_url = settings.db_url + "/session-occurrence"
+session_db_url = settings.db_url + "/session"
+student_db_url = settings.db_url + "/student"
+teacher_db_url = settings.db_url + "/teacher"
+user_session_db_url = settings.db_url + "/user-session/"
+user_db_url = settings.db_url + "/user"
