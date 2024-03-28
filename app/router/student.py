@@ -112,6 +112,7 @@ async def create_auth_group_user_record(data, auth_group_name):
 
 def create_new_student_record(data):
     response = requests.post(student_db_url, data=data, headers=db_request_token())
+    print(response)
     if is_response_valid(response, "Student API could not post the data!"):
         created_student_data = is_response_empty(
             response.json(), "Student API could fetch the created student"
@@ -266,7 +267,10 @@ async def create_student(request: Request):
             build_request(query_params={"number": int(query_params["grade"])})
         )
         query_params["grade_id"] = student_grade_id["id"]
-
+    
+    if "physically_handicapped" in query_params:
+        query_params["physically_handicapped"] = "true" if query_params["physically_handicapped"] == "Yes" else "false"
+    
     new_student_data = create_new_student_record(query_params)
 
     await create_auth_group_user_record(new_student_data, data["auth_group"])
