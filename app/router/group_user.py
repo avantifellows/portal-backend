@@ -27,7 +27,7 @@ def get_group_user(request: Request):
     )
     if is_response_valid(response, "Group-User API could not fetch the data!"):
         return is_response_empty(
-            response.json()[0], True, "Group-User record does not exist!"
+            response.json(), True, "Group-User record does not exist!"
         )
 
 

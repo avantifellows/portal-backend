@@ -205,7 +205,7 @@ async def verify_student(request: Request, student_id: str):
                                 }
                             )
                         )
-                        if not group_user_response:
+                        if not group_user_response or group_user_response == []:
                             return False
             return True
 
