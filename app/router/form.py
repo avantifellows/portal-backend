@@ -45,17 +45,6 @@ def is_student_attribute_empty(field, student_data):
     ]
     
     if key == "primary_contact" or key in guardian_keys or key in parent_keys:
-        print(key, key != "primary_contact" and any(
-            key not in student_data
-            or student_data[key] == ""
-            or student_data[key] is None
-            for key in guardian_keys
-        ) and any(
-            key not in student_data
-            or student_data[key] == ""
-            or student_data[key] is None
-            for key in parent_keys
-        ))
         return any(
             key not in student_data
             or student_data[key] == ""
