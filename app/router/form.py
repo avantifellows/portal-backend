@@ -43,7 +43,7 @@ def is_student_attribute_empty(field, student_data):
         "mother_profession",
         "mother_education_level",
     ]
-    
+
     if key == "primary_contact" or key in guardian_keys or key in parent_keys:
         return any(
             key not in student_data
