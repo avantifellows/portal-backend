@@ -1,26 +1,71 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 import requests
+from routes import form_db_url
 from settings import settings
-from router import student, routes, enrollment_record
+from router import student, enrollment_record
 from request import build_request
-import helpers
-import mapping
-from helpers import db_request_token
+from mapping import FORM_SCHEMA_QUERY_PARAMS, USER_QUERY_PARAMS, STUDENT_QUERY_PARAMS
+from helpers import (
+    db_request_token,
+    validate_and_build_query_params,
+    is_response_valid,
+    is_response_empty,
+)
+import json
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
 
 
-def is_user_attribute_empty(form_attributes, priority, student_data):
-    return (
-        form_attributes[str(priority)]["key"] in mapping.USER_QUERY_PARAMS
-        and student_data["user"][form_attributes[str(priority)]["key"]] is None
+def is_user_attribute_empty(field, student_data):
+    return field["key"] in USER_QUERY_PARAMS and (
+        student_data["user"][field["key"]] is None
+        or student_data["user"][field["key"]] == ""
     )
 
 
-def is_student_attribute_empty(form_attributes, priority, student_data):
-    return (
-        form_attributes[str(priority)]["key"] in mapping.STUDENT_QUERY_PARAMS
-        and student_data[form_attributes[str(priority)]["key"]] is None
+def is_student_attribute_empty(field, student_data):
+    key = field["key"]
+    # Special handling for primary_contact attribute with sub-fields for guardians and parents
+    guardian_keys = [
+        "guardian_name",
+        "guardian_relation",
+        "guardian_phone",
+        "guardian_education_level",
+        "guardian_profession",
+    ]
+    parent_keys = [
+        "father_name",
+        "father_phone",
+        "father_profession",
+        "father_education_level",
+        "mother_name",
+        "mother_phone",
+        "mother_profession",
+        "mother_education_level",
+    ]
+
+    if key == "primary_contact" or key in guardian_keys or key in parent_keys:
+        return any(
+            key not in student_data
+            or student_data[key] == ""
+            or student_data[key] is None
+            for key in guardian_keys
+        ) and any(
+            key not in student_data
+            or student_data[key] == ""
+            or student_data[key] is None
+            for key in parent_keys
+        )
+
+    if key == "grade":
+        return (
+            "grade_id" not in student_data
+            or student_data["grade_id"] is None
+            or student_data["grade_id"] == ""
+        )
+
+    return key in STUDENT_QUERY_PARAMS and (
+        key not in student_data or student_data[key] is None or student_data[key] == ""
     )
 
 
@@ -79,198 +124,116 @@ def school_name_in_returned_form_schema_data(
 
 
 def build_returned_form_schema_data(
-    returned_form_schema,
-    total_number_of_fields,
-    number_of_fields_left,
-    form_attributes,
-    priority,
+    returned_form_schema, field, number_of_fields_in_form_schema
 ):
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = form_attributes[str(priority)]
-    number_of_fields_left -= 1
-    return (returned_form_schema, number_of_fields_left)
+    returned_form_schema[number_of_fields_in_form_schema] = field
+    number_of_fields_in_form_schema += 1
+    return (returned_form_schema, number_of_fields_in_form_schema)
+
+
+def is_user_or_student_attribute_empty_then_build_schema(
+    form_schema, number_of_fields_in_form_schema, field, data
+):
+    return (
+        build_returned_form_schema_data(
+            form_schema, field, number_of_fields_in_form_schema
+        )
+        if is_user_attribute_empty(field, data)
+        or is_student_attribute_empty(field, data)
+        else (form_schema, number_of_fields_in_form_schema)
+    )
+
+
+def find_dependant_parent(fields, priority, dependent_hierarchy, data):
+    parent_field_priority = [
+        key
+        for key, value in list(fields.items())
+        if value["key"] == fields[str(priority)]["dependantField"]
+    ]
+
+    if len(parent_field_priority) == 1:
+        dependent_hierarchy.append(int(parent_field_priority[0]))
+        find_dependant_parent(
+            fields, parent_field_priority[0], dependent_hierarchy, data
+        )
+
+    return dependent_hierarchy
+
+
+def find_children_fields(fields, parent_field):
+    children_fields = []
+    for field in fields:
+        if fields[field]["dependantField"] == parent_field["key"] or (
+            len(fields[field]["showBasedOn"]) > 0
+            and fields[field]["showBasedOn"].split("==")[0] == parent_field["key"]
+        ):
+            children_fields.append(int(field))
+
+    return children_fields
 
 
 @router.get("/")
 def get_form_schema(request: Request):
-    """
-    This API returns a form schema when an ID is given
-
-    Returns:
-    list: form schema data if ID is a match, otherwise 404
-
-    Example:
-    > $BASE_URL/form_schema/?form_schema_id=1234
-    returns [{form_schema_data_of_id_1234}]
-
-    """
-    query_params = helpers.validate_and_build_query_params(
-        request.query_params, ["id", "name"]
+    query_params = validate_and_build_query_params(
+        request.query_params, FORM_SCHEMA_QUERY_PARAMS
     )
-
     response = requests.get(
-        routes.form_db_url, params=query_params, headers=db_request_token()
+        form_db_url, params=query_params, headers=db_request_token()
     )
-    if helpers.is_response_valid(response, "Form API could not fetch the data!"):
-        return helpers.is_response_empty(response.json(), "Form does not exist!")
+    if is_response_valid(response, "Form API could not fetch the data!"):
+        return is_response_empty(response.json()[0], "True", "Form does not exist!")
 
 
 @router.get("/student")
 async def get_student_fields(request: Request):
-    query_params = helpers.validate_and_build_query_params(
-        request.query_params, ["number_of_fields_in_pop_form", "group", "student_id"]
+    query_params = validate_and_build_query_params(
+        request.query_params,
+        ["number_of_fields_in_popup_form", "form_id", "student_id"],
     )
 
-    # get the field ordering for a particular group
-    form = get_form_schema(
-        build_request(
-            query_params={"name": mapping.FORM_GROUP_MAPPING[query_params["group"]]}
-        )
-    )
-    form = form[0]
+    form = get_form_schema(build_request(query_params={"id": query_params["form_id"]}))
 
-    # get student and user data for the student ID that is requesting for profile completion
-    # ASSUMPTION : student_id is valid and exists because only valid students will reach profile completion
     student_data = student.get_students(
         build_request(query_params={"student_id": query_params["student_id"]})
-    )
+    )[0]
 
-    if student_data:
-        student_data = student_data[0]
+    # get the priorities for all fields and sort them
+    priority_order = sorted([eval(i) for i in form["attributes"].keys()])
 
-        # get enrollment data for the student
-        enrollment_record_data = enrollment_record.get_enrollment_record(
-            build_request(query_params={"student_id": student_data["id"]})
-        )
+    fields = form["attributes"]
 
-        # get the priorities for all fields and sort them
-        priority_order = sorted([eval(i) for i in form["attributes"].keys()])
+    total_number_of_fields = int(query_params["number_of_fields_in_popup_form"])
 
-        # get the form attributes
-        form_attributes = form["attributes"]
+    number_of_fields_in_form_schema = 0
 
-        # number of fields to sent back to the student
-        total_number_of_fields = number_of_fields_left = int(
-            query_params["number_of_fields_in_pop_form"]
-        )
+    returned_form_schema = {}
 
-        returned_form_schema = {}
+    for priority in priority_order:
+        if number_of_fields_in_form_schema <= total_number_of_fields:
+            children_fields = find_children_fields(fields, fields[str(priority)])
+            children_fields.append(priority)
 
-        for priority in priority_order:
-            if number_of_fields_left > 0:
-                if is_user_attribute_empty(
-                    form_attributes, priority, student_data
-                ) or is_student_attribute_empty(
-                    form_attributes, priority, student_data
-                ):
-                    (
-                        returned_form_schema,
-                        number_of_fields_left,
-                    ) = build_returned_form_schema_data(
-                        returned_form_schema,
-                        total_number_of_fields,
-                        number_of_fields_left,
-                        form_attributes,
-                        priority,
-                    )
+            for child_field in sorted(children_fields):
+                (
+                    returned_form_schema,
+                    number_of_fields_in_form_schema,
+                ) = is_user_or_student_attribute_empty_then_build_schema(
+                    returned_form_schema,
+                    number_of_fields_in_form_schema,
+                    fields[str(child_field)],
+                    student_data,
+                )
 
-                elif (
-                    form_attributes[str(priority)]["key"]
-                    in mapping.ENROLLMENT_RECORD_PARAMS
-                    and form_attributes[str(priority)]["key"] != "student_id"
-                ):
-                    if form_attributes[str(priority)]["key"] != "school_name":
-                        if enrollment_record_data == [] or (
-                            enrollment_record_data != []
-                            and enrollment_record_data[
-                                form_attributes[str(priority)]["key"]
-                            ]
-                            is None
-                        ):
-                            (
-                                returned_form_schema,
-                                number_of_fields_left,
-                            ) = build_returned_form_schema_data(
-                                returned_form_schema,
-                                total_number_of_fields,
-                                number_of_fields_left,
-                                form_attributes,
-                                priority,
-                            )
-                    else:
-                        if enrollment_record_data == []:
-                            if student_data["user"]["state"]:
-                                if student_data["user"]["district"]:
-                                    (
-                                        returned_form_schema,
-                                        number_of_fields_left,
-                                    ) = school_name_in_returned_form_schema_data(
-                                        returned_form_schema,
-                                        total_number_of_fields,
-                                        number_of_fields_left,
-                                        form_attributes,
-                                        student_data,
-                                    )
+            # else:
 
-                                else:
-                                    (
-                                        returned_form_schema,
-                                        number_of_fields_left,
-                                    ) = district_in_returned_form_schema_data(
-                                        returned_form_schema,
-                                        total_number_of_fields,
-                                        number_of_fields_left,
-                                        form_attributes,
-                                        student_data,
-                                    )
-                            else:
-                                (
-                                    returned_form_schema,
-                                    number_of_fields_left,
-                                ) = state_in_returned_form_schema_data(
-                                    returned_form_schema,
-                                    total_number_of_fields,
-                                    number_of_fields_left,
-                                    form_attributes,
-                                )
-                        else:
-                            enrollment_record_data = enrollment_record_data[0]
-                            if enrollment_record_data["school_id"] is None:
-                                if student_data["user"]["district"] is None:
-                                    if student_data["user"]["state"] is None:
-                                        (
-                                            returned_form_schema,
-                                            number_of_fields_left,
-                                        ) = state_in_returned_form_schema_data(
-                                            returned_form_schema,
-                                            total_number_of_fields,
-                                            number_of_fields_left,
-                                            form_attributes,
-                                        )
-                                    else:
-                                        (
-                                            returned_form_schema,
-                                            number_of_fields_left,
-                                        ) = district_in_returned_form_schema_data(
-                                            returned_form_schema,
-                                            total_number_of_fields,
-                                            number_of_fields_left,
-                                            form_attributes,
-                                            student_data,
-                                        )
-                                else:
-                                    (
-                                        returned_form_schema,
-                                        number_of_fields_left,
-                                    ) = school_name_in_returned_form_schema_data(
-                                        returned_form_schema,
-                                        total_number_of_fields,
-                                        number_of_fields_left,
-                                        form_attributes,
-                                        student_data,
-                                    )
+            #         (
+            #         returned_form_schema,
+            #         number_of_fields_in_form_schema,
+            #     ) = is_user_or_student_attribute_empty_then_build_schema(
+            #         returned_form_schema,
+            #         number_of_fields_in_form_schema,
+            #         fields[str(priority)],
+            #         student_data,
+            #     )
 
-        return returned_form_schema
-
-    raise HTTPException(status_code=404, detail="Student does not exist!")
+    return returned_form_schema
