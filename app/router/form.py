@@ -63,7 +63,9 @@ def is_student_attribute_empty(field, student_data):
             or student_data["grade_id"] is None
             or student_data["grade_id"] == ""
         )
-
+    print("here:", key, key in STUDENT_QUERY_PARAMS and (
+        key not in student_data or student_data[key] is None or student_data[key] == ""
+    ))
     return key in STUDENT_QUERY_PARAMS and (
         key not in student_data or student_data[key] is None or student_data[key] == ""
     )
@@ -123,11 +125,17 @@ def school_name_in_returned_form_schema_data(
     return (returned_form_schema, number_of_fields_left)
 
 
+def is_field_already_in_schema(field, schema):
+    print(field['key'])
+    return (field['key'] in [value['key'] for value in list(schema.values())])
+    
+
 def build_returned_form_schema_data(
     returned_form_schema, field, number_of_fields_in_form_schema
 ):
-    returned_form_schema[number_of_fields_in_form_schema] = field
-    number_of_fields_in_form_schema += 1
+    if not is_field_already_in_schema(field, returned_form_schema):
+        returned_form_schema[number_of_fields_in_form_schema] = field
+        number_of_fields_in_form_schema += 1
     return (returned_form_schema, number_of_fields_in_form_schema)
 
 
@@ -208,11 +216,12 @@ async def get_student_fields(request: Request):
 
     returned_form_schema = {}
 
-    for priority in priority_order:
+    for priority in priority_order[10:]:
         if number_of_fields_in_form_schema <= total_number_of_fields:
+           
             children_fields = find_children_fields(fields, fields[str(priority)])
             children_fields.append(priority)
-
+            print(children_fields)
             for child_field in sorted(children_fields):
                 (
                     returned_form_schema,

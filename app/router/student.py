@@ -27,7 +27,12 @@ def build_student_and_user_data(student_data):
     data = {}
     for key in student_data.keys():
         if key in STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS:
-            data[key] = student_data[key]
+            if key == "physically_handicapped":
+                data["physically_handicapped"] = ("true" if student_data["physically_handicapped"] == "Yes" else "false")
+            elif key == "has_category_certificate":
+                data["has_category_certificate"] = ("true" if student_data["has_category_certificate"] == "Yes" else "false")
+            else:
+                data[key] = student_data[key]
     return data
 
 
@@ -305,5 +310,5 @@ async def complete_profile_details(request: Request):
     )
 
     student_data["id"] = student_response[0]["id"]
-
+    print(student_data)
     await update_student(build_request(body=student_data))
