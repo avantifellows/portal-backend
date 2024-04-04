@@ -123,8 +123,8 @@ def school_name_in_returned_form_schema_data(
 
 
 def is_field_already_in_schema(field, schema):
-    return (field['key'] in [value['key'] for value in list(schema.values())])
-    
+    return field["key"] in [value["key"] for value in list(schema.values())]
+
 
 def build_returned_form_schema_data(
     returned_form_schema, field, number_of_fields_in_form_schema
@@ -214,7 +214,6 @@ async def get_student_fields(request: Request):
 
     for priority in priority_order:
         if number_of_fields_in_form_schema <= total_number_of_fields:
-           
             children_fields = find_children_fields(fields, fields[str(priority)])
             children_fields.append(priority)
 

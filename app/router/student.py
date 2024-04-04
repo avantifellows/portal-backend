@@ -28,9 +28,17 @@ def build_student_and_user_data(student_data):
     for key in student_data.keys():
         if key in STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS:
             if key == "physically_handicapped":
-                data["physically_handicapped"] = ("true" if student_data["physically_handicapped"] == "Yes" else "false")
+                data["physically_handicapped"] = (
+                    "true"
+                    if student_data["physically_handicapped"] == "Yes"
+                    else "false"
+                )
             elif key == "has_category_certificate":
-                data["has_category_certificate"] = ("true" if student_data["has_category_certificate"] == "Yes" else "false")
+                data["has_category_certificate"] = (
+                    "true"
+                    if student_data["has_category_certificate"] == "Yes"
+                    else "false"
+                )
             else:
                 data[key] = student_data[key]
     return data
