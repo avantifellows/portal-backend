@@ -56,6 +56,7 @@ STUDENT_QUERY_PARAMS = [
     "guardian_phone",
     "guardian_education_level",
     "guardian_profession",
+    "has_category_certificate",
     "category_certificate",
     "physically_handicapped",
     "physically_handicapped_certificate",

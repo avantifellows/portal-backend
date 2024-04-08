@@ -63,7 +63,6 @@ def is_student_attribute_empty(field, student_data):
             or student_data["grade_id"] is None
             or student_data["grade_id"] == ""
         )
-
     return key in STUDENT_QUERY_PARAMS and (
         key not in student_data or student_data[key] is None or student_data[key] == ""
     )
@@ -123,11 +122,16 @@ def school_name_in_returned_form_schema_data(
     return (returned_form_schema, number_of_fields_left)
 
 
+def is_field_already_in_schema(field, schema):
+    return field["key"] in [value["key"] for value in list(schema.values())]
+
+
 def build_returned_form_schema_data(
     returned_form_schema, field, number_of_fields_in_form_schema
 ):
-    returned_form_schema[number_of_fields_in_form_schema] = field
-    number_of_fields_in_form_schema += 1
+    if not is_field_already_in_schema(field, returned_form_schema):
+        returned_form_schema[number_of_fields_in_form_schema] = field
+        number_of_fields_in_form_schema += 1
     return (returned_form_schema, number_of_fields_in_form_schema)
 
 
