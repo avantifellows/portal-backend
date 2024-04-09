@@ -269,6 +269,9 @@ async def create_student(request: Request):
             if data["auth_group"] == "JNVStudents":
                 student_id = generate_JNV_student_id(data)
 
+            if data["auth_group"] == "FeedingIndiaStudents" or data["auth_group"] == "UttarakhandStudents":
+                student_id = data["phone"]
+                
             student_id_already_exists = verify_student(build_request(), student_id=id)
 
             if student_id_already_exists:
