@@ -68,23 +68,10 @@ async def create_school_user_record(data, school_name):
     await group_user.create_group_user(
         build_request(
             method="POST",
-            body={"group_id": group_data[0]["id"], "user_id": data["user"]["id"]},
-        )
-    )
-    enrollment_record_data = {
-        "academic_year": str(datetime.now().year)
+            body={"group_id": group_data[0]["id"], "user_id": data["user"]["id"],  "academic_year": str(datetime.now().year)
         + "-"
-        + str((datetime.now() + relativedelta(years=1)).year),
-        "is_current": "true",
-        "start_date": datetime.now().strftime("%Y-%m-%d"),
-        "end_date": "",
-        "group_id": school_data["id"],
-        "group_type": "school",
-        "user_id": data["user"]["id"],
-        "grade_id": data["grade_id"],
-    }
-    await enrollment_record.create_enrollment_record(
-        build_request(method="POST", body=enrollment_record_data)
+        + str((datetime.now() + relativedelta(years=1)).year),"start_date": datetime.now().strftime("%Y-%m-%d"), "grade_id": data["grade_id"]},
+        )
     )
 
 
@@ -97,29 +84,12 @@ async def create_auth_group_user_record(data, auth_group_name):
             query_params={"child_id": auth_group_data["id"], "type": "auth_group"}
         )
     )
-
+    
     await group_user.create_group_user(
         build_request(
             method="POST",
-            body={"group_id": group_data[0]["id"], "user_id": data["user"]["id"]},
-        )
-    )
-
-    enrollment_record_data = {
-        "academic_year": str(datetime.now().year)
-        + "-"
-        + str((datetime.now() + relativedelta(years=1)).year),
-        "is_current": "true",
-        "start_date": datetime.now().strftime("%Y-%m-%d"),
-        "end_date": "",
-        "group_id": auth_group_data["id"],
-        "group_type": "auth_group",
-        "user_id": data["user"]["id"],
-        "grade_id": data["grade_id"],
-    }
-
-    await enrollment_record.create_enrollment_record(
-        build_request(method="POST", body=enrollment_record_data)
+            body={"group_id": group_data[0]["id"], "user_id": data["user"]["id"], "academic_year": str(datetime.now().year) + "-" + str((datetime.now() + relativedelta(years=1)).year),"start_date": datetime.now().strftime("%Y-%m-%d"),"grade_id": data["grade_id"],
+            })   
     )
 
 
@@ -273,18 +243,20 @@ async def create_student(request: Request):
                 data["auth_group"] == "FeedingIndiaStudents"
                 or data["auth_group"] == "UttarakhandStudents"
             ):
-                student_id = data["phone"]
+                student_id = query_params["phone"]
+                query_params["student_id"] = student_id
 
-            student_id_already_exists = verify_student(build_request(), student_id=id)
+            student_id_already_exists = await verify_student(build_request(), student_id=student_id)
 
             if student_id_already_exists:
                 return student_id
-
+    
     if "grade" in query_params:
         student_grade_id = grade.get_grade(
             build_request(query_params={"number": int(query_params["grade"])})
         )
         query_params["grade_id"] = student_grade_id["id"]
+
 
     if "physically_handicapped" in query_params:
         query_params["physically_handicapped"] = (
