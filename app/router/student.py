@@ -122,7 +122,7 @@ def check_if_email_or_phone_is_part_of_request(query_params):
         "email" not in query_params
         or query_params["email"] == ""
         or query_params["email"] is None
-    ) or (
+    ) and (
         "phone" not in query_params
         or query_params["phone"] == ""
         or query_params["phone"] is None
@@ -238,8 +238,8 @@ async def create_student(request: Request):
         user_already_exists = user.get_users(
             build_request(
                 query_params={
-                    "email": query_params["email"],
-                    "phone": query_params["phone"],
+                    "email": query_params["email"] if "email" in query_params else None,
+                    "phone": query_params["phone"] if "phone" in query_params else None,
                 }
             )
         )
