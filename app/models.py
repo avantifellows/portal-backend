@@ -67,6 +67,7 @@ class SessionResponse(BaseModel):
 
 class UserSession(BaseModel):
     user_id: str
-    session_occurrence_id: int
-    is_user_valid: bool
+    session_id: str
+    user_activity_type: str
+    user_type: str
     data: Optional[Dict] = {}
