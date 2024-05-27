@@ -63,6 +63,7 @@ class SessionResponse(BaseModel):
     popup_form: Optional[str] = None
     signup_form_id: Optional[str] = None
     popup_form_id: Optional[str] = None
+    session_occurrence_id: Optional[str] = None
 
 
 class UserSession(BaseModel):
