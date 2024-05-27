@@ -26,6 +26,7 @@ async def user_session(user_session: UserSession):
         build_request(query_params={"session_id": query_params["session_id"]})
     )
     query_params["session_id"] = session_pk_id_response[0]["id"]
+    print(query_params)
 
     response = requests.post(
         user_session_db_url, json=query_params, headers=db_request_token()
