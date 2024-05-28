@@ -95,6 +95,7 @@ async def get_session_occurrence_data(request: Request):
     response = requests.get(
         session_occurrence_db_url, params=query_params, headers=db_request_token()
     )
+
     if response.status_code == 200:
         if len(response.json()) != 0:
             session_occurrence_data = response.json()
@@ -112,7 +113,9 @@ async def get_session_occurrence_data(request: Request):
                     session_data = response.json()[0]
                     if session_data["is_active"]:
                         session_data["is_session_open"] = True
-
+                        session_data[
+                            "session_occurrence_id"
+                        ] = matched_session_occurrences[0]["id"]
                         return session_data
                     return {"is_session_open": False}
                 raise HTTPException(
