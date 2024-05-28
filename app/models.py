@@ -63,10 +63,13 @@ class SessionResponse(BaseModel):
     popup_form: Optional[str] = None
     signup_form_id: Optional[str] = None
     popup_form_id: Optional[str] = None
+    session_occurrence_id: Optional[str] = None
 
 
 class UserSession(BaseModel):
     user_id: str
+    session_id: str
     session_occurrence_id: int
-    is_user_valid: bool
+    user_activity_type: str
+    user_type: str
     data: Optional[Dict] = {}
