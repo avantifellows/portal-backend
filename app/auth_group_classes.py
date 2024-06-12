@@ -9,7 +9,7 @@ from logger_config import get_logger
 
 logger = get_logger()
 
-
+COUNTER_FOR_JNV_ID_GENERATION = 1000
 class EnableStudents:
     def __init__(self, data):
         for param in [
@@ -37,7 +37,7 @@ class EnableStudents:
         self.student_id = self.check_if_student_exists()
 
         if self.student_id == "":
-            counter = int(settings.JNV_COUNTER_FOR_ID_GENERATION)
+            counter = COUNTER_FOR_JNV_ID_GENERATION
 
             while counter > 0:
                 id = (

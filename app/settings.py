@@ -21,7 +21,6 @@ class Settings(BaseModel):
     # DB service base URL
     db_url: str = os.environ.get("DB_SERVICE_URL")
     TOKEN: str = os.environ.get("DB_SERVICE_TOKEN")
-    JNV_COUNTER_FOR_ID_GENERATION: int = os.environ.get("JNV_COUNTER_FOR_ID_GENERATION")
 
 
 # callback to get the configuration
