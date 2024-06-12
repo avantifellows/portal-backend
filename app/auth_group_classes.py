@@ -1,7 +1,7 @@
 from settings import settings
 from fastapi import HTTPException
 import random
-from router import school, student, user, enrollment_record
+from router import school, student, user, enrollment_record, grade
 import datetime
 from dateutil.relativedelta import relativedelta
 from request import build_request
@@ -34,38 +34,47 @@ class EnableStudents:
         self.region = data["region"]
         self.student_id = ""
 
-        self.student_id = self.check_if_user_exists()
+        self.student_id = self.check_if_student_exists()
 
-        if self.student_id != "":
-            return self.student_id
+        if self.student_id == "":
+            counter = int(settings.JNV_COUNTER_FOR_ID_GENERATION)
 
-        counter = settings.JNV_COUNTER_FOR_ID_GENERATION
+            while counter > 0:
+                id = (
+                    self.get_class_code()
+                    + self.get_jnv_code()
+                    + self.generate_three_digit_code()
+                )
 
-        while counter > 0:
-            id = (
-                self.get_class_code()
-                + self.get_jnv_code()
-                + self.generate_three_digit_code()
+                if self.check_if_generated_id_already_exists(id):
+                    counter -= 1
+                else:
+                    self.student_id = id
+                    break
+
+            if counter == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="JNV Student ID could not be generated. Max loops hit!",
+                )
+
+    def check_if_enrolled_in_school(self, school_id, user_id):
+        enrollment_record_already_exists = enrollment_record.get_enrollment_record(
+            build_request(
+                query_params={
+                    "group_id": school_id,
+                    "group_type": "school",
+                    "user_id": user_id,
+                }
             )
-
-            if self.check_if_generated_id_already_exists(id):
-                counter -= 1
-            else:
-                self.student_id = id
-                break
-
-        raise HTTPException(
-            status_code=400,
-            detail="JNV Student ID could not be generated. Max loops hit!",
         )
+        return enrollment_record_already_exists
 
-    def check_if_user_exists(
-        self,
-    ):
-        # First, we check if a user with the same DOB, gender and first_name already exists in the database
+    def check_if_user_exists(self, user_id):
         user_already_exists = user.get_users(
             build_request(
                 query_params={
+                    "id": user_id,
                     "date_of_birth": self.date_of_birth,
                     "gender": self.gender,
                     "first_name": self.first_name,
@@ -73,39 +82,44 @@ class EnableStudents:
             )
         )
 
-        if len(user_already_exists) > 0:
-            # If the user already exists, we check if a student with the same grade, category already exists
-            student_already_exists = student.get_students(
-                build_request(
-                    query_params={
-                        "grade": self.grade,
-                        "category": self.category,
-                    }
-                )
+        return user_already_exists
+
+    def check_if_student_exists(self):
+        grade_response = grade.get_grade(
+            build_request(query_params={"number": self.grade})
+        )
+        # First, we check if a student with the same grade and category already exists in the database
+        student_already_exists = student.get_students(
+            build_request(
+                query_params={
+                    "grade_id": grade_response["id"],
+                    "category": self.category,
+                }
             )
-            if len(student_already_exists) > 0:
-                # If the student already exists, we check if the student is already enrolled in the given school
-                school_response = school.get_school(
-                    build_request(query_params={"name": self.school_name})
+        )
+
+        if len(student_already_exists) > 0:
+            for existing_student in student_already_exists:
+                # If the student already exists, we check if a user with the same DOB, gender and first_name already exists
+                user_already_exists = self.check_if_user_exists(
+                    existing_student["user"]["id"]
                 )
 
-                if len(school_response) > 0:
-                    # At this point, if there is a duplicate student, there should be only one, hence we return the student_id
-                    enrollment_record_already_exists = (
-                        enrollment_record.get_enrollment_records(
-                            build_request(
-                                query_params={
-                                    "group_id": school_response[0].id,
-                                    "group_type": "school",
-                                    "user_id": student_already_exists[0]["user"]["id"],
-                                }
+                if len(user_already_exists) > 0:
+                    # If the student already exists, we check if the student is already enrolled in the given school
+                    school_response = school.get_school(
+                        build_request(query_params={"name": self.school_name})
+                    )
+                    for existing_user in user_already_exists:
+                        enrollment_record_already_exists = (
+                            self.check_if_enrolled_in_school(
+                                school_response["id"], existing_user["id"]
                             )
                         )
-                    )
-
-                    if len(enrollment_record_already_exists) > 0:
-                        logger.error("Student already exists in the database")
-                        return student["student_id"]
+                        # At this point, if there is a duplicate student, there should be only one, hence we return the student_id
+                        if len(enrollment_record_already_exists) > 0:
+                            logger.error("Student already exists in the database")
+                            return existing_student["student_id"]
 
         return ""
 
@@ -135,5 +149,4 @@ class EnableStudents:
         student_response = student.get_students(
             build_request(query_params={"student_id": id})
         )
-
         return len(student_response) != 0

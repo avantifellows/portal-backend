@@ -138,11 +138,12 @@ def get_students(request: Request):
         request.query_params,
         STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ENROLLMENT_RECORD_PARAMS,
     )
+
     response = requests.get(
         student_db_url, params=query_params, headers=db_request_token()
     )
     if is_response_valid(response, "Student API could not fetch the student!"):
-        return is_response_empty(response.json(), True, "Student does not exist")
+        return is_response_empty(response.json(), False, "Student does not exist")
 
 
 @router.get("/verify")
