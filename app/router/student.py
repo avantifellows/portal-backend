@@ -45,6 +45,7 @@ def build_student_and_user_data(student_data):
                 data[key] = student_data[key]
     return data
 
+
 async def create_school_user_record(data, school_name):
     school_data = school.get_school(build_request(query_params={"name": school_name}))
     group_data = group.get_group(
@@ -222,18 +223,23 @@ async def create_student(request: Request):
 
     else:
         if data["auth_group"] == "EnableStudents":
-           student_id = EnableStudents(query_params).get_student_id()
-           query_params['student_id'] = student_id
+            student_id = EnableStudents(query_params).get_student_id()
+            query_params["student_id"] = student_id
 
-           if student_id == "":
+            if student_id == "":
                 return student_id
-        
-        elif (data["auth_group"] == "FeedingIndiaStudents" or data["auth_group"] == "UttarakhandStudents"):
+
+        elif (
+            data["auth_group"] == "FeedingIndiaStudents"
+            or data["auth_group"] == "UttarakhandStudents"
+        ):
             # Use phone number as student ID
             query_params["student_id"] = query_params["phone"]
             student_id = query_params["student_id"]
 
-            student_id_already_exists = await verify_student(build_request(), student_id=student_id)
+            student_id_already_exists = await verify_student(
+                build_request(), student_id=student_id
+            )
 
             if student_id_already_exists:
                 return student_id
@@ -243,17 +249,22 @@ async def create_student(request: Request):
             user_already_exists = user.get_users(
                 build_request(
                     query_params={
-                        "email": query_params["email"] if "email" in query_params else None,
-                        "phone": query_params["phone"] if "phone" in query_params else None,
+                        "email": query_params["email"]
+                        if "email" in query_params
+                        else None,
+                        "phone": query_params["phone"]
+                        if "phone" in query_params
+                        else None,
                     }
                 )
             )
             if user_already_exists:
                 response = get_students(
-                    build_request(query_params={"user_id": user_already_exists["user_id"]})
+                    build_request(
+                        query_params={"user_id": user_already_exists["user_id"]}
+                    )
                 )
                 return response["student_id"]
-                    
 
     if "grade" in query_params:
         student_grade_id = grade.get_grade(
@@ -265,7 +276,7 @@ async def create_student(request: Request):
         query_params["physically_handicapped"] = (
             "true" if query_params["physically_handicapped"] == "Yes" else "false"
         )
-    
+
     new_student_data = create_new_student_record(query_params)
 
     await create_auth_group_user_record(new_student_data, data["auth_group"])

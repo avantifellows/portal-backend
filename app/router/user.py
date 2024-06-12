@@ -40,7 +40,7 @@ async def create_user(request: Request):
         + USER_QUERY_PARAMS
         + ENROLLMENT_RECORD_PARAMS
         + SCHOOL_QUERY_PARAMS
-        + ["id_generation", "user_type", "region"]
+        + ["id_generation", "user_type", "region"],
     )
 
     if data["user_type"] == "student":
