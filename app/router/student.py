@@ -21,6 +21,7 @@ from mapping import (
 )
 
 router = APIRouter(prefix="/student", tags=["Student"])
+logger = get_logger()
 
 
 def build_student_and_user_data(student_data):
@@ -164,6 +165,8 @@ async def verify_student(request: Request, student_id: str):
         request.query_params,
         STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
     )
+
+    logger.info(f"Verifying student: {student_id}")
 
     response = requests.get(
         student_db_url,
