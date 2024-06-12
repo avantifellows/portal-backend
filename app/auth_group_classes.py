@@ -1,4 +1,5 @@
 from settings import settings
+from fastapi import HTTPException
 import random
 from router import school, student, user, enrollment_record
 import datetime
@@ -28,13 +29,20 @@ class EnableStudents:
     
         if self.student_id != "":
             return self.student_id
-        
-        self.student_id = (
-            self.get_class_code()
-            + self.get_jnv_code()
-            + self.generate_three_digit_code()
-        )
 
+        counter = settings.JNV_COUNTER_FOR_ID_GENERATION
+
+        while counter > 0:
+            id = (self.get_class_code() + self.get_jnv_code() + self.generate_three_digit_code())
+
+            if self.check_if_generated_id_already_exists(id):
+                counter -= 1
+            else:
+                self.student_id = id
+                break
+        
+        raise HTTPException(status_code=400, detail="JNV Student ID could not be generated. Max loops hit!")
+    
     def check_if_user_exists(self,):
         # First, we check if a user with the same DOB, gender and first_name already exists in the database
         user_already_exists = user.get_users(
@@ -102,3 +110,14 @@ class EnableStudents:
 
     def get_student_id(self):
         return self.student_id
+
+    def check_if_generated_id_already_exists(self, id):
+        student_response = student.get_students(
+            build_request(
+                    query_params={
+                        "student_id": id
+                    }
+                )
+        )
+
+        return len(student_response) != 0

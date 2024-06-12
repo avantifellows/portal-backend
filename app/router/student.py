@@ -45,22 +45,6 @@ def build_student_and_user_data(student_data):
                 data[key] = student_data[key]
     return data
 
-
-def generate_JNV_student_id(data):
-    counter = settings.JNV_COUNTER_FOR_ID_GENERATION
-
-    if counter > 0:
-        JNV_Id = EnableStudents(
-            data["region"], data["school_name"], data["grade"]
-        ).get_id
-        counter -= 1
-        return JNV_Id
-
-    raise HTTPException(
-        status_code=400, detail="JNV Student ID could not be generated. Max loops hit!"
-    )
-
-
 async def create_school_user_record(data, school_name):
     school_data = school.get_school(build_request(query_params={"name": school_name}))
     group_data = group.get_group(
