@@ -28,7 +28,7 @@ GROUP_QUERY_PARAMS = ["id", "type", "child_id"]
 
 GROUP_USER_QUERY_PARAMS = ["id", "group_id", "user_id"]
 
-SCHOOL_QUERY_PARAMS = ["id", "name", "school_name", "code", "board_medium"]
+SCHOOL_QUERY_PARAMS = ["id", "name", "school_name", "code", "board_medium", "region"]
 
 SESSION_QUERY_PARAMS = ["id", "name", "session_id"]
 
@@ -93,5 +93,4 @@ USER_QUERY_PARAMS = [
     "role",
     "date_of_birth",
     "country",
-    "consent_check",
 ]

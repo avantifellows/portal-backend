@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
 from router import group, auth_group, group_user, user, school, grade, enrollment_record
-from id_generation_classes import JNVIDGeneration
+from auth_group_classes import EnableStudents
 from request import build_request
 from routes import student_db_url
 from helpers import (
@@ -11,6 +11,7 @@ from helpers import (
     is_response_valid,
     is_response_empty,
 )
+from logger_config import get_logger
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 from mapping import (
@@ -49,7 +50,7 @@ def generate_JNV_student_id(data):
     counter = settings.JNV_COUNTER_FOR_ID_GENERATION
 
     if counter > 0:
-        JNV_Id = JNVIDGeneration(
+        JNV_Id = EnableStudents(
             data["region"], data["school_name"], data["grade"]
         ).get_id
         counter -= 1
@@ -221,7 +222,7 @@ async def create_student(request: Request):
         + USER_QUERY_PARAMS
         + ENROLLMENT_RECORD_PARAMS
         + SCHOOL_QUERY_PARAMS
-        + ["id_generation"],
+        + ["id_generation", "region"],
     )
 
     if not data["id_generation"]:
@@ -236,39 +237,39 @@ async def create_student(request: Request):
             return query_params["student_id"]
 
     else:
-        check_if_email_or_phone_is_part_of_request(query_params)
+        if data["auth_group"] == "EnableStudents":
+           student_id = EnableStudents(query_params).get_student_id()
+           query_params['student_id'] = student_id
 
-        user_already_exists = user.get_users(
-            build_request(
-                query_params={
-                    "email": query_params["email"] if "email" in query_params else None,
-                    "phone": query_params["phone"] if "phone" in query_params else None,
-                }
-            )
-        )
-        if user_already_exists:
-            response = get_students(
-                build_request(query_params={"user_id": user_already_exists["user_id"]})
-            )
-            return response["student_id"]
+           if student_id == "":
+                return student_id
+        
+        elif (data["auth_group"] == "FeedingIndiaStudents" or data["auth_group"] == "UttarakhandStudents"):
+            # Use phone number as student ID
+            query_params["student_id"] = query_params["phone"]
+            student_id = query_params["student_id"]
 
-        else:
-            if data["auth_group"] == "JNVStudents":
-                student_id = generate_JNV_student_id(data)
-
-            if (
-                data["auth_group"] == "FeedingIndiaStudents"
-                or data["auth_group"] == "UttarakhandStudents"
-            ):
-                student_id = query_params["phone"]
-                query_params["student_id"] = student_id
-
-            student_id_already_exists = await verify_student(
-                build_request(), student_id=student_id
-            )
+            student_id_already_exists = await verify_student(build_request(), student_id=student_id)
 
             if student_id_already_exists:
                 return student_id
+        else:
+            check_if_email_or_phone_is_part_of_request(query_params)
+
+            user_already_exists = user.get_users(
+                build_request(
+                    query_params={
+                        "email": query_params["email"] if "email" in query_params else None,
+                        "phone": query_params["phone"] if "phone" in query_params else None,
+                    }
+                )
+            )
+            if user_already_exists:
+                response = get_students(
+                    build_request(query_params={"user_id": user_already_exists["user_id"]})
+                )
+                return response["student_id"]
+                    
 
     if "grade" in query_params:
         student_grade_id = grade.get_grade(
@@ -280,7 +281,7 @@ async def create_student(request: Request):
         query_params["physically_handicapped"] = (
             "true" if query_params["physically_handicapped"] == "Yes" else "false"
         )
-
+    
     new_student_data = create_new_student_record(query_params)
 
     await create_auth_group_user_record(new_student_data, data["auth_group"])

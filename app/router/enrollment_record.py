@@ -36,5 +36,5 @@ async def create_enrollment_record(request: Request):
     )
     if is_response_valid(response, "Enrollment API could not post the data!"):
         return is_response_empty(
-            response.json(), "Enrollment API could not fetch the created record!"
+            response.json(), False, "Enrollment API could not fetch the created record!"
         )
