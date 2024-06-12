@@ -91,14 +91,13 @@ class EnableStudents:
 
                 if len(school_response) > 0:
                     # At this point, if there is a duplicate student, there should be only one, hence we return the student_id
-                    student = student_already_exists[0]
                     enrollment_record_already_exists = (
                         enrollment_record.get_enrollment_records(
                             build_request(
                                 query_params={
                                     "group_id": school_response[0].id,
                                     "group_type": "school",
-                                    "user_id": student["user"]["id"],
+                                    "user_id": student_already_exists[0]["user"]["id"],
                                 }
                             )
                         )
