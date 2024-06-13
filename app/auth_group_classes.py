@@ -11,6 +11,7 @@ logger = get_logger()
 
 COUNTER_FOR_JNV_ID_GENERATION = 1000
 
+
 class EnableStudents:
     def __init__(self, data):
         for param in [
