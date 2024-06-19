@@ -118,7 +118,6 @@ class EnableStudents:
                                 school_response["id"], existing_user["id"]
                             )
                         )
-                        print("DOES er EXIST", enrollment_record_already_exists)
                         # At this point, if there is a duplicate student, there should be only one, hence we return the student_id
                         if len(enrollment_record_already_exists) > 0:
                             logger.error("Student already exists in the database")
