@@ -99,14 +99,14 @@ class EnableStudents:
                 }
             )
         )
-
+        print("DOES STUDENT EXIST", student_already_exists)
         if len(student_already_exists) > 0:
             for existing_student in student_already_exists:
                 # If the student already exists, we check if a user with the same DOB, gender and first_name already exists
                 user_already_exists = self.check_if_user_exists(
                     existing_student["user"]["id"]
                 )
-
+                print("DOES USER EXIST", user_already_exists)
                 if len(user_already_exists) > 0:
                     # If the student already exists, we check if the student is already enrolled in the given school
                     school_response = school.get_school(
@@ -118,6 +118,7 @@ class EnableStudents:
                                 school_response["id"], existing_user["id"]
                             )
                         )
+                        print("DOES er EXIST", enrollment_record_already_exists)
                         # At this point, if there is a duplicate student, there should be only one, hence we return the student_id
                         if len(enrollment_record_already_exists) > 0:
                             logger.error("Student already exists in the database")
