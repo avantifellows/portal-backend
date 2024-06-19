@@ -224,6 +224,7 @@ async def create_student(request: Request):
 
     else:
         if data["auth_group"] == "EnableStudents":
+            print("here")
             student_id = EnableStudents(query_params).get_student_id()
             query_params["student_id"] = student_id
 
