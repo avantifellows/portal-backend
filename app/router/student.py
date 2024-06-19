@@ -153,8 +153,6 @@ async def verify_student(request: Request, student_id: str):
         STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
     )
 
-    logger.info(f"Verifying student: {student_id}")
-
     response = requests.get(
         student_db_url,
         params={"student_id": student_id},
