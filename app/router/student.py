@@ -208,7 +208,7 @@ async def create_student(request: Request):
         + SCHOOL_QUERY_PARAMS
         + ["id_generation", "region"],
     )
-    print(queyr_params)
+    print(query_params)
     if not data["id_generation"]:
         student_id = query_params["student_id"]
         check_if_student_id_is_part_of_request(query_params)
