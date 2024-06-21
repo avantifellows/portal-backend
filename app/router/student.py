@@ -208,7 +208,7 @@ async def create_student(request: Request):
         + SCHOOL_QUERY_PARAMS
         + ["id_generation", "region"],
     )
-
+    print(queyr_params)
     if not data["id_generation"]:
         student_id = query_params["student_id"]
         check_if_student_id_is_part_of_request(query_params)
@@ -282,6 +282,7 @@ async def create_student(request: Request):
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if "school_name" in query_params:
+        print(query_params)
         await create_school_user_record(new_student_data, query_params["school_name"])
     print("SCHOOL CREATED!!!")
     return student_id
