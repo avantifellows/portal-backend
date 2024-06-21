@@ -271,19 +271,19 @@ async def create_student(request: Request):
             build_request(query_params={"number": int(query_params["grade"])})
         )
         query_params["grade_id"] = student_grade_id["id"]
-
+    print("I'M HERE!!!")
     if "physically_handicapped" in query_params:
         query_params["physically_handicapped"] = (
             "true" if query_params["physically_handicapped"] == "Yes" else "false"
         )
 
     new_student_data = create_new_student_record(query_params)
-
+    print("CREATED STUDENT!!!")
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if "school_name" in query_params:
         await create_school_user_record(new_student_data, query_params["school_name"])
-
+    print("SCHOOL CREATED!!!")
     return student_id
 
 
