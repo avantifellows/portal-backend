@@ -21,4 +21,5 @@ def get_school(request: Request):
         school_db_url, params=query_params, headers=db_request_token()
     )
     if is_response_valid(response, "School API could not fetch the data!"):
+        print(request.query_params)
         return is_response_empty(response.json()[0], True, "School does not exist")
