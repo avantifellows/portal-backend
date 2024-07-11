@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: Prod - Portal backend
+Description: Portal Backend - Prod
 
 Parameters:
   JwtSecretKey:
@@ -10,6 +10,10 @@ Parameters:
   DbServiceUrl:
     Type: String
     Description: URL for the DB service
+
+  DbServiceToken:
+    Type: String
+    Description: Token to access DB Service
 
 Resources:
   Function:
@@ -24,6 +28,7 @@ Resources:
         Variables:
           JWT_SECRET_KEY: !Ref JwtSecretKey
           DB_SERVICE_URL: !Ref DbServiceUrl
+          DB_SERVICE_TOKEN: !Ref DbServiceToken
 
       Events:
         Api:
