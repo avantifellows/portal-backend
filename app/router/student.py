@@ -233,6 +233,7 @@ async def create_student(request: Request):
         elif (
             data["auth_group"] == "FeedingIndiaStudents"
             or data["auth_group"] == "UttarakhandStudents"
+            or data["auth_group"] == "HimachalStudents"
         ):
             # Use phone number as student ID
             query_params["student_id"] = query_params["phone"]
