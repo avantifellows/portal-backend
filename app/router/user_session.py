@@ -13,7 +13,7 @@ router = APIRouter(prefix="/user-session", tags=["User-Session"])
 @router.post("/")
 async def user_session(user_session: UserSession):
     query_params = user_session.dict()
-    query_params["timestamp"] = datetime.now(timezone.utc).isoformat()
+    query_params["timestamp"] = datetime.now().isoformat()
 
     if query_params["user_type"] == "student":
         user_id_response = student.get_students(
