@@ -40,8 +40,6 @@ async def user_session(user_session: UserSession):
         user_session_db_url, json=query_params, headers=db_request_token()
     )
 
-    print(query_params)
-    print(response.json())
     if is_response_valid(response, "User-session API could not post the data!"):
         is_response_empty(
             response.json(), "User-session API could not fetch the created record!"
