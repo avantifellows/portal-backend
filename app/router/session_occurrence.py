@@ -41,14 +41,13 @@ def has_session_started(start_time: str):
     if start_time is not None:
         session_start_date, session_start_time = build_date_and_time(start_time)
         current_date, current_time = get_current_datetime()
-
         return session_start_date == current_date and session_start_time <= current_time
     return True
 
 
-def has_session_ended(end_time: str):
+def has_session_not_ended(end_time: str):
     """
-    Checks if session has ended
+    Checks if session has not ended
     - If end time is given and if session end date is greater than or equal to current date, returns True
     - Else, always returns True
     """
@@ -102,28 +101,35 @@ async def get_session_occurrence_data(request: Request):
     if response.status_code == 200:
         if len(response.json()) != 0:
             session_occurrence_data = response.json()
+            # session exists because occurrences exist
+            # fetch session data
+            response = requests.get(
+                session_db_url, params=query_params, headers=db_request_token()
+            )
+            if response.status_code == 200:
+                session_data = response.json()[0]
+            else:
+                raise HTTPException(
+                    status_code=404, detail="Session ID does not exist!"
+                )
+
             matched_session_occurrences = [
                 session_occurrence
                 for session_occurrence in session_occurrence_data
                 if has_session_started(session_occurrence["start_time"])
-                and has_session_ended(session_occurrence["end_time"])
+                and has_session_not_ended(session_occurrence["end_time"])
             ]
-            if len(matched_session_occurrences) > 0:
-                response = requests.get(
-                    session_db_url, params=query_params, headers=db_request_token()
-                )
-                if response.status_code == 200:
-                    session_data = response.json()[0]
-                    if session_data["is_active"]:
-                        session_data["is_session_open"] = True
-                        session_data[
-                            "session_occurrence_id"
-                        ] = matched_session_occurrences[0]["id"]
-                        return session_data
-                    return {"is_session_open": False}
-                raise HTTPException(
-                    status_code=404, detail="Session ID does not exist!"
-                )
-            return {"is_session_open": False}
+
+            if session_data["is_active"] and len(matched_session_occurrences) > 0:
+                # active sessions wrt time exist
+                session_data["is_session_open"] = True
+                session_data["session_occurrence_id"] = matched_session_occurrences[0][
+                    "id"
+                ]
+            else:
+                # session either inactive or no occurrences
+                session_data["is_session_open"] = False
+            return session_data
+
         raise HTTPException(status_code=404, detail="Session ID does not exist!")
     raise HTTPException(status_code=404, detail="Session ID not found!")
