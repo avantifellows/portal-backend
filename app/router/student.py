@@ -47,7 +47,8 @@ def build_student_and_user_data(student_data):
 
 
 async def create_school_user_record(data, school_name):
-    school_data = school.get_school(build_request(query_params={"name": school_name}))
+    print(school_name)
+    school_data = school.get_school(build_request(query_params={"name": str(school_name)}))
     group_data = group.get_group(
         build_request(query_params={"child_id": school_data["id"], "type": "school"})
     )
@@ -153,8 +154,6 @@ async def verify_student(request: Request, student_id: str):
         STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
     )
 
-    logger.info(f"Verifying student: {student_id}")
-
     response = requests.get(
         student_db_url,
         params={"student_id": student_id},
@@ -210,7 +209,7 @@ async def create_student(request: Request):
         + SCHOOL_QUERY_PARAMS
         + ["id_generation", "region"],
     )
-
+    print(query_params)
     if not data["id_generation"]:
         student_id = query_params["student_id"]
         check_if_student_id_is_part_of_request(query_params)
@@ -224,6 +223,7 @@ async def create_student(request: Request):
 
     else:
         if data["auth_group"] == "EnableStudents":
+            print("here")
             student_id = EnableStudents(query_params).get_student_id()
             query_params["student_id"] = student_id
 
@@ -273,19 +273,20 @@ async def create_student(request: Request):
             build_request(query_params={"number": int(query_params["grade"])})
         )
         query_params["grade_id"] = student_grade_id["id"]
-
+    print("I'M HERE!!!")
     if "physically_handicapped" in query_params:
         query_params["physically_handicapped"] = (
             "true" if query_params["physically_handicapped"] == "Yes" else "false"
         )
 
     new_student_data = create_new_student_record(query_params)
-
+    print("CREATED STUDENT!!!")
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if "school_name" in query_params:
+        print(query_params)
         await create_school_user_record(new_student_data, query_params["school_name"])
-
+    print("SCHOOL CREATED!!!")
     return student_id
 
 
