@@ -47,7 +47,9 @@ def build_student_and_user_data(student_data):
 
 
 async def create_school_user_record(data, school_name):
-    school_data = school.get_school(build_request(query_params={"name": school_name}))
+    school_data = school.get_school(
+        build_request(query_params={"name": str(school_name)})
+    )
     group_data = group.get_group(
         build_request(query_params={"child_id": school_data["id"], "type": "school"})
     )
@@ -152,8 +154,6 @@ async def verify_student(request: Request, student_id: str):
         request.query_params,
         STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
     )
-
-    logger.info(f"Verifying student: {student_id}")
 
     response = requests.get(
         student_db_url,
@@ -280,12 +280,10 @@ async def create_student(request: Request):
         )
 
     new_student_data = create_new_student_record(query_params)
-
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if "school_name" in query_params:
         await create_school_user_record(new_student_data, query_params["school_name"])
-
     return student_id
 
 
