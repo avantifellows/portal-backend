@@ -113,22 +113,16 @@ async def get_session_occurrence_data(request: Request):
                     status_code=404, detail="Session ID does not exist!"
                 )
 
-            matched_session_occurrences = [
-                session_occurrence
-                for session_occurrence in session_occurrence_data
-                if has_session_started(session_occurrence["start_time"])
-                and has_session_not_ended(session_occurrence["end_time"])
-            ]
+            session_data["is_session_open"] = False
+            if session_data["is_active"]:
+                for session_occurrence in session_occurrence_data:
+                    if has_session_started(
+                        session_occurrence["start_time"]
+                    ) and has_session_not_ended(session_occurrence["end_time"]):
+                        session_data["is_session_open"] = True
+                        session_data["session_occurrence_id"] = session_occurrence["id"]
+                        break  # matched a session occurrence
 
-            if session_data["is_active"] and len(matched_session_occurrences) > 0:
-                # active sessions wrt time exist
-                session_data["is_session_open"] = True
-                session_data["session_occurrence_id"] = matched_session_occurrences[0][
-                    "id"
-                ]
-            else:
-                # session either inactive or no occurrences
-                session_data["is_session_open"] = False
             return session_data
 
         raise HTTPException(status_code=404, detail="Session ID does not exist!")
