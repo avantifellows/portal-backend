@@ -55,7 +55,10 @@ def refresh_token(Authorize: AuthJWT = Depends()):
     Authorize.jwt_refresh_token_required()
     current_user = Authorize.get_jwt_subject()
     old_data = Authorize.get_raw_jwt()
-    custom_claims = {"group": old_data["group"]}
+    if "group" in old_data:
+        custom_claims = {"group": old_data["group"]}
+    else:
+        custom_claims = {}
     new_access_token = Authorize.create_access_token(
         subject=current_user, user_claims=custom_claims
     )
