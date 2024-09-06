@@ -28,7 +28,16 @@ GROUP_QUERY_PARAMS = ["id", "type", "child_id"]
 
 GROUP_USER_QUERY_PARAMS = ["id", "group_id", "user_id"]
 
-SCHOOL_QUERY_PARAMS = ["id", "name", "school_name", "code", "board_medium", "region"]
+SCHOOL_QUERY_PARAMS = [
+    "id",
+    "name",
+    "school_name",
+    "code",
+    "board_medium",
+    "region",
+    "district",
+    "state",
+]
 
 SESSION_QUERY_PARAMS = ["id", "name", "session_id"]
 
@@ -94,3 +103,14 @@ USER_QUERY_PARAMS = [
     "date_of_birth",
     "country",
 ]
+
+authgroup_state_mapping = {
+    "HaryanaStudents": "Haryana",
+    "DelhiStudents": "Delhi",
+    "UttarakhandStudents": "Uttarakhand",
+    "GujaratStudents": "Gujarat",
+    "HimachalStudents": "Himachal Pradesh",
+    "PunjabStudents": "Punjab",
+    "MaharashtraStudents": "Maharashtra",
+    "TNStudents": "Tamil Nadu",
+}
