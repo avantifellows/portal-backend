@@ -19,6 +19,7 @@ from mapping import (
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
     SCHOOL_QUERY_PARAMS,
+    authgroup_state_mapping,
 )
 
 router = APIRouter(prefix="/student", tags=["Student"])
@@ -46,10 +47,26 @@ def build_student_and_user_data(student_data):
     return data
 
 
-async def create_school_user_record(data, school_name):
-    school_data = school.get_school(
-        build_request(query_params={"name": str(school_name)})
-    )
+async def create_school_user_record(data, school_name, district, auth_group_name):
+    state = authgroup_state_mapping.get(auth_group_name, "")
+
+    if state:
+        school_data = school.get_school(
+            build_request(
+                query_params={
+                    "name": str(school_name),
+                    "district": str(district),
+                    "state": state,
+                }
+            )
+        )
+    else:
+        school_data = school.get_school(
+            build_request(
+                query_params={"name": str(school_name), "district": str(district)}
+            )
+        )
+
     group_data = group.get_group(
         build_request(query_params={"child_id": school_data["id"], "type": "school"})
     )
@@ -283,9 +300,12 @@ async def create_student(request: Request):
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if "school_name" in query_params:
-        
-        await create_school_user_record(new_student_data, query_params["school_name"])
-
+        await create_school_user_record(
+            new_student_data,
+            query_params["school_name"],
+            query_params["district"],
+            data["auth_group"],
+        )
     return student_id
 
 
