@@ -19,17 +19,15 @@ async def user_session(user_session: UserSession):
         user_id_response = student.get_students(
             build_request(query_params={"student_id": query_params["user_id"]})
         )
-        query_params["user_id"] = user_id_response[0]["user"]["id"]
     elif query_params["user_type"] == "teacher":
         user_id_response = teacher.get_teachers(
             build_request(query_params={"teacher_id": query_params["user_id"]})
         )
-        query_params["user_id"] = user_id_response[0]["user"]["id"]
     elif query_params["user_type"] == "school":
         user_id_response = school.get_school(
             build_request(query_params={"code": query_params["user_id"]})
         )
-        query_params["user_id"] = user_id_response["user"]["id"]
+    query_params["user_id"] = user_id_response[0]["user"]["id"]
 
     session_pk_id_response = await session.get_session(
         build_request(query_params={"session_id": query_params["session_id"]})
