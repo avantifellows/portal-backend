@@ -25,10 +25,59 @@ import random
 import string
 import time
 from logger_config import setup_logger
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from fastapi import Depends
 
 logger = setup_logger()
 
+RATE_LIMITING_ENABLED = True
+
 app = FastAPI()
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    strategy="fixed-window",
+    storage_uri="memory://",
+    enabled=RATE_LIMITING_ENABLED,
+)
+
+app.state.limiter = limiter
+
+# Add rate limiting middleware
+app.add_middleware(SlowAPIMiddleware)
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(
+        f"Rate limit exceeded - IP: {get_remote_address(request)}, "
+        f"Path: {request.url.path}, "
+        f"Method: {request.method}"
+    )
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded", "retry_after": str(exc.retry_after)},
+    )
+
+
+# Define rate limit decorators for different endpoints
+def auth_rate_limit():
+    return limiter.limit(
+        "100 per minute", error_message="Authentication rate limit exceeded"
+    )
+
+
+def user_rate_limit():
+    return limiter.limit(
+        "100 per minute", error_message="User endpoint rate limit exceeded"
+    )
+
+
+auth.router.dependencies.append(Depends(auth_rate_limit()))
+user.router.dependencies.append(Depends(user_rate_limit()))
 
 
 @app.middleware("http")
@@ -78,8 +127,11 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
+app.include_router(auth.router, prefix="/auth", tags=["authentication"])
+app.include_router(user.router, prefix="/users", tags=["users"])
+
+
 app.include_router(auth_group.router)
-app.include_router(auth.router)
 app.include_router(batch.router)
 app.include_router(enrollment_record.router)
 app.include_router(form.router)
@@ -92,11 +144,11 @@ app.include_router(session.router)
 app.include_router(student.router)
 app.include_router(teacher.router)
 app.include_router(user_session.router)
-app.include_router(user.router)
 
 
 @app.get("/")
-def index():
+@limiter.limit("100 per minute")
+async def index(request: Request):  # Added request parameter and made it async
     return "Welcome to Portal!"
 
 
