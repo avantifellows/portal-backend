@@ -63,3 +63,23 @@ Use `http://127.0.0.1:8000` as the base URL of the endpoints and navigate to `ht
 We are deploying our FastAPI instance on AWS Lambda which is triggered via an API Gateway. In order to automate the process, we are using [AWS SAM](https://www.youtube.com/watch?v=tA9IIGR6XFo&ab_channel=JavaHomeCloud), which creates the stack required for the deployment and updates it as needed with just a couple of commands and without having to do anything manually on the AWS GUI. Refer to [this](https://www.eliasbrange.dev/posts/deploy-fastapi-on-aws-part-1-lambda-api-gateway/) blog post for more details.
 
 The actual deployment happens through Github Actions. Look at [`.github/workflows/deploy_to_staging.yml`](.github/workflows/deploy_to_staging.yml) for understanding the deployment to `Staging` and [`.github/workflows/deploy_to_prod.yml`](.github/workflows/deploy_to_prod.yml) for `Production`. Make sure to set all the environment variables mentioned in [`docs/ENV.md`](docs/ENV.md) in the `Production` and `Staging` environments in your Github repository.
+
+## Docker
+
+### Building the Docker image
+
+To build the Docker image, run the following command in the root of the repository:
+
+```bash
+docker build -t portal-backend .
+```
+
+### Running the Docker container
+
+To run the Docker container, use the following command:
+
+```bash
+docker run -d -p 8000:8000 --env-file .env portal-backend
+```
+
+This will start the FastAPI application in a Docker container, and you can access it at `http://127.0.0.1:8000`.
