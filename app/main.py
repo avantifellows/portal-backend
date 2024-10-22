@@ -66,13 +66,13 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 # Define rate limit decorators for different endpoints
 def auth_rate_limit():
     return limiter.limit(
-        "100 per minute", error_message="Authentication rate limit exceeded"
+        "10 per minute", error_message="Authentication rate limit exceeded"
     )
 
 
 def user_rate_limit():
     return limiter.limit(
-        "100 per minute", error_message="User endpoint rate limit exceeded"
+        "10 per minute", error_message="User endpoint rate limit exceeded"
     )
 
 
@@ -147,7 +147,7 @@ app.include_router(user_session.router)
 
 
 @app.get("/")
-@limiter.limit("100 per minute")
+@limiter.limit("10 per minute")
 async def index(request: Request):  # Added request parameter and made it async
     return "Welcome to Portal!"
 
