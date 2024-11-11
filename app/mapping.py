@@ -51,6 +51,7 @@ STUDENT_QUERY_PARAMS = [
     "mother_phone",
     "category",
     "stream",
+    "board_stream",
     "family_income",
     "father_profession",
     "father_education_level",
