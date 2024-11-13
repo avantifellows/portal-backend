@@ -52,6 +52,7 @@ STUDENT_QUERY_PARAMS = [
     "category",
     "stream",
     "board_stream",
+    "planned_competitive_exams",
     "family_income",
     "father_profession",
     "father_education_level",
