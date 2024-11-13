@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
-from router import group, auth_group, group_user, user, school, grade, enrollment_record
+from router import group, auth_group, group_user, user, school, grade, enrollment_record, exam
 from auth_group_classes import EnableStudents
 from request import build_request
 from routes import student_db_url
@@ -25,23 +25,34 @@ from mapping import (
 router = APIRouter(prefix="/student", tags=["Student"])
 logger = get_logger()
 
+def process_exams(student_exam_texts):
+    student_exam_ids = []
+    for exam_name in student_exam_texts:
+        exam_id = exam.get_exam(
+            build_request(query_params={"name": exam_name})
+        )["id"]
+        student_exam_ids.append(exam_id)
+
+    return student_exam_ids
 
 def build_student_and_user_data(student_data):
     data = {}
     for key in student_data.keys():
         if key in STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS:
             if key == "physically_handicapped":
-                data["physically_handicapped"] = (
+                data[key] = (
                     "true"
-                    if student_data["physically_handicapped"] == "Yes"
+                    if student_data[key] == "Yes"
                     else "false"
                 )
             elif key == "has_category_certificate":
-                data["has_category_certificate"] = (
+                data[key] = (
                     "true"
-                    if student_data["has_category_certificate"] == "Yes"
+                    if student_data[key] == "Yes"
                     else "false"
                 )
+            elif key == "planned_competitive_exams":
+                data[key] = process_exams(student_data[key])
             else:
                 data[key] = student_data[key]
     return data
@@ -290,6 +301,9 @@ async def create_student(request: Request):
             build_request(query_params={"number": int(query_params["grade"])})
         )
         query_params["grade_id"] = student_grade_id["id"]
+
+    if "planned_competitive_exams" in query_params:
+        query_params["planned_competitive_exams"] = process_exams(query_params["planned_competitive_exams"])
     
     if "physically_handicapped" in query_params:
         query_params["physically_handicapped"] = (
