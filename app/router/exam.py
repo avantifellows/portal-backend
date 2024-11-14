@@ -13,9 +13,7 @@ router = APIRouter(prefix="/exam", tags=["Exam"])
 
 @router.get("/")
 def get_exam(request: Request):
-    query_params = validate_and_build_query_params(
-        request.query_params, ["id", "name"]
-    )
+    query_params = validate_and_build_query_params(request.query_params, ["id", "name"])
     response = requests.get(
         exam_db_url, params=query_params, headers=db_request_token()
     )

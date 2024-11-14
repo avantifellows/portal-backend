@@ -53,4 +53,8 @@ async def create_user(request: Request):
                 }
             )
         )
-        return create_student_response
+
+        return {
+            "user_id": create_student_response["student_id"],
+            "already_exists": create_student_response["already_exists"],
+        }

@@ -1,7 +1,16 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
 from settings import settings
-from router import group, auth_group, group_user, user, school, grade, enrollment_record, exam
+from router import (
+    group,
+    auth_group,
+    group_user,
+    user,
+    school,
+    grade,
+    enrollment_record,
+    exam,
+)
 from auth_group_classes import EnableStudents
 from request import build_request
 from routes import student_db_url
@@ -25,32 +34,24 @@ from mapping import (
 router = APIRouter(prefix="/student", tags=["Student"])
 logger = get_logger()
 
+
 def process_exams(student_exam_texts):
     student_exam_ids = []
     for exam_name in student_exam_texts:
-        exam_id = exam.get_exam(
-            build_request(query_params={"name": exam_name})
-        )["id"]
+        exam_id = exam.get_exam(build_request(query_params={"name": exam_name}))["id"]
         student_exam_ids.append(exam_id)
 
     return student_exam_ids
+
 
 def build_student_and_user_data(student_data):
     data = {}
     for key in student_data.keys():
         if key in STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS:
             if key == "physically_handicapped":
-                data[key] = (
-                    "true"
-                    if student_data[key] == "Yes"
-                    else "false"
-                )
+                data[key] = "true" if student_data[key] == "Yes" else "false"
             elif key == "has_category_certificate":
-                data[key] = (
-                    "true"
-                    if student_data[key] == "Yes"
-                    else "false"
-                )
+                data[key] = "true" if student_data[key] == "Yes" else "false"
             elif key == "planned_competitive_exams":
                 data[key] = process_exams(student_data[key])
             else:
@@ -238,7 +239,7 @@ async def create_student(request: Request):
         + SCHOOL_QUERY_PARAMS
         + ["id_generation", "region"],
     )
-    
+
     if not data["id_generation"]:
         student_id = query_params["student_id"]
         check_if_student_id_is_part_of_request(query_params)
@@ -248,7 +249,7 @@ async def create_student(request: Request):
         )
 
         if does_student_already_exist:
-            return query_params["student_id"]
+            return {"student_id": query_params["student_id"], "already_exists": True}
 
     else:
         if data["auth_group"] == "EnableStudents":
@@ -256,7 +257,10 @@ async def create_student(request: Request):
             query_params["student_id"] = student_id
 
             if student_id == "":
-                return student_id
+                return {
+                    "student_id": query_params["student_id"],
+                    "already_exists": True,
+                }
 
         elif (
             data["auth_group"] == "FeedingIndiaStudents"
@@ -272,7 +276,10 @@ async def create_student(request: Request):
             )
 
             if student_id_already_exists:
-                return student_id
+                return {
+                    "student_id": query_params["student_id"],
+                    "already_exists": True,
+                }
         else:
             check_if_email_or_phone_is_part_of_request(query_params)
 
@@ -294,7 +301,10 @@ async def create_student(request: Request):
                         query_params={"user_id": user_already_exists["user_id"]}
                     )
                 )
-                return response["student_id"]
+                return {
+                    "student_id": query_params["student_id"],
+                    "already_exists": True,
+                }
 
     if "grade" in query_params:
         student_grade_id = grade.get_grade(
@@ -303,8 +313,10 @@ async def create_student(request: Request):
         query_params["grade_id"] = student_grade_id["id"]
 
     if "planned_competitive_exams" in query_params:
-        query_params["planned_competitive_exams"] = process_exams(query_params["planned_competitive_exams"])
-    
+        query_params["planned_competitive_exams"] = process_exams(
+            query_params["planned_competitive_exams"]
+        )
+
     if "physically_handicapped" in query_params:
         query_params["physically_handicapped"] = (
             "true" if query_params["physically_handicapped"] == "Yes" else "false"
@@ -320,14 +332,14 @@ async def create_student(request: Request):
             query_params["district"],
             data["auth_group"],
         )
-    return student_id
+    return {"student_id": query_params["student_id"], "already_exists": False}
 
 
 @router.patch("/")
 async def update_student(request: Request):
     data = await request.body()
 
-    response = requests.post(student_db_url, data=data, headers=db_request_token())
+    response = requests.post(student_db_url, json=data, headers=db_request_token())
     if is_response_valid(response, "Student API could not patch the data!"):
         return is_response_empty(
             response.json(), "Student API could not fetch the patched student"
