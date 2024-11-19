@@ -101,7 +101,7 @@ async def create_school_user_record(data, school_name, district, auth_group_name
 
 
 async def create_batch_user_record(data, batch_id):
-    batch_data = batch.get_batch(build_request(query_params={"name": batch_id}))
+    batch_data = batch.get_batch(build_request(query_params={"batch_id": batch_id}))
     group_data = group.get_group(
         build_request(query_params={"child_id": batch_data["id"], "type": "batch"})
     )
@@ -149,7 +149,7 @@ async def create_auth_group_user_record(data, auth_group_name):
 
 
 def create_new_student_record(data):
-    response = requests.post(student_db_url, data=data, headers=db_request_token())
+    response = requests.post(student_db_url, json=data, headers=db_request_token())
     if is_response_valid(response, "Student API could not post the data!"):
         created_student_data = is_response_empty(
             response.json(), "Student API could fetch the created student"
@@ -320,11 +320,6 @@ async def create_student(request: Request):
                 )
             )
             if user_already_exists:
-                response = get_students(
-                    build_request(
-                        query_params={"user_id": user_already_exists["user_id"]}
-                    )
-                )
                 return {
                     "student_id": query_params["student_id"],
                     "already_exists": True,
@@ -350,7 +345,7 @@ async def create_student(request: Request):
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if data["auth_group"] == "AllIndiaStudents":
-        batch_id = f"AllIndiaStudents_{query_params['grade']}_{datetime.now().year}_A001"  # update 24
+        batch_id = f"AllIndiaStudents_{query_params['grade']}_{str(datetime.now().year)[-2:]}_A001"  # update 24
         await create_batch_user_record(new_student_data, batch_id)
 
     if "school_name" in query_params:
