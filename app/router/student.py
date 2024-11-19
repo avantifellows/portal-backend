@@ -4,6 +4,7 @@ from settings import settings
 from router import (
     group,
     auth_group,
+    batch,
     group_user,
     user,
     school,
@@ -81,6 +82,28 @@ async def create_school_user_record(data, school_name, district, auth_group_name
 
     group_data = group.get_group(
         build_request(query_params={"child_id": school_data["id"], "type": "school"})
+    )
+
+    await group_user.create_group_user(
+        build_request(
+            method="POST",
+            body={
+                "group_id": group_data[0]["id"],
+                "user_id": data["user"]["id"],
+                "academic_year": str(datetime.now().year)
+                + "-"
+                + str((datetime.now() + relativedelta(years=1)).year),
+                "start_date": datetime.now().strftime("%Y-%m-%d"),
+                "grade_id": data["grade_id"],
+            },
+        )
+    )
+
+
+async def create_batch_user_record(data, batch_id):
+    batch_data = batch.get_batch(build_request(query_params={"name": batch_id}))
+    group_data = group.get_group(
+        build_request(query_params={"child_id": batch_data["id"], "type": "batch"})
     )
 
     await group_user.create_group_user(
@@ -266,6 +289,7 @@ async def create_student(request: Request):
             data["auth_group"] == "FeedingIndiaStudents"
             or data["auth_group"] == "UttarakhandStudents"
             or data["auth_group"] == "HimachalStudents"
+            or data["auth_group"] == "AllIndiaStudents"
         ):
             # Use phone number as student ID
             query_params["student_id"] = query_params["phone"]
@@ -324,6 +348,10 @@ async def create_student(request: Request):
 
     new_student_data = create_new_student_record(query_params)
     await create_auth_group_user_record(new_student_data, data["auth_group"])
+
+    if data["auth_group"] == "AllIndiaStudents":
+        batch_id = f"AllIndiaStudents_{query_params['grade']}_{datetime.now().year}_A001"  # update 24
+        await create_batch_user_record(new_student_data, batch_id)
 
     if "school_name" in query_params:
         await create_school_user_record(
