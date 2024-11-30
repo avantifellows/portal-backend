@@ -14,16 +14,22 @@ def index():
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
 def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
+    # Define access_token and refresh_token as empty strings
+    access_token = ""
     refresh_token = ""
-    data = auth_user.data
+    data = auth_user.data if auth_user.data is not None else {}
 
-    if auth_user.data is None:
-        data = {}
+    # Validate auth_user.type
+    if auth_user.type not in ["user", "organization"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid user type! Must be either 'user' or 'organization'.",
+        )
 
     if auth_user.type == "organization":
         if not auth_user.name:
-            return HTTPException(
-                status_code=400, detail="Data Parameter {} is missing!".format("name")
+            raise HTTPException(
+                status_code=400, detail="Data Parameter 'name' is missing!"
             )
         expires = datetime.timedelta(weeks=260)
         access_token = Authorize.create_access_token(
@@ -34,9 +40,8 @@ def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
 
     elif auth_user.type == "user":
         if "is_user_valid" not in auth_user.dict().keys():
-            return HTTPException(
-                status_code=400,
-                detail="Data Parameter {} is missing!".format("is_user_valid"),
+            raise HTTPException(
+                status_code=400, detail="Data Parameter 'is_user_valid' is missing!"
             )
         if auth_user.is_user_valid:
             refresh_token = Authorize.create_refresh_token(
@@ -55,10 +60,7 @@ def refresh_token(Authorize: AuthJWT = Depends()):
     Authorize.jwt_refresh_token_required()
     current_user = Authorize.get_jwt_subject()
     old_data = Authorize.get_raw_jwt()
-    if "group" in old_data:
-        custom_claims = {"group": old_data["group"]}
-    else:
-        custom_claims = {}
+    custom_claims = {"group": old_data.get("group", {})}
     new_access_token = Authorize.create_access_token(
         subject=current_user, user_claims=custom_claims
     )
