@@ -90,11 +90,9 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": str(datetime.now().year)
-                + "-"
-                + str((datetime.now() + relativedelta(years=1)).year),
+                "academic_year": "2024-2025", # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],
+                "grade_id": data["grade_id"], # will remove later
             },
         )
     )
@@ -112,11 +110,28 @@ async def create_batch_user_record(data, batch_id):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": str(datetime.now().year)
-                + "-"
-                + str((datetime.now() + relativedelta(years=1)).year),
+                "academic_year": "2024-2025", # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],
+                "grade_id": data["grade_id"], # will remove later
+            },
+        )
+    )
+
+
+async def create_grade_user_record(data):
+    group_data = group.get_group(
+        build_request(query_params={"child_id": data["grade_id"], "type": "grade"})
+    )
+
+    await group_user.create_group_user(
+        build_request(
+            method="POST",
+            body={
+                "group_id": group_data[0]["id"],
+                "user_id": data["user"]["id"],
+                "academic_year": "2024-2025", # hardcoding; will figure better sol later
+                "start_date": datetime.now().strftime("%Y-%m-%d"),
+                "grade_id": data["grade_id"], # will remove later
             },
         )
     )
@@ -138,11 +153,9 @@ async def create_auth_group_user_record(data, auth_group_name):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": str(datetime.now().year)
-                + "-"
-                + str((datetime.now() + relativedelta(years=1)).year),
+                "academic_year": "2024-2025", # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],
+                "grade_id": data["grade_id"], # will remove later
             },
         )
     )
@@ -349,6 +362,9 @@ async def create_student(request: Request):
         batch_id = f"AllIndiaStudents_{query_params['grade']}_{str(datetime.now().year)[-2:]}_A001"  # update 24
         await create_batch_user_record(new_student_data, batch_id)
 
+    if "grade_id" in new_student_data:
+        await create_grade_user_record(new_student_data)
+    
     if "school_name" in query_params:
         await create_school_user_record(
             new_student_data,
