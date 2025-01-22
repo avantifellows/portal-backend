@@ -90,9 +90,9 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025", # hardcoding; will figure better sol later
+                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"], # will remove later
+                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -110,9 +110,9 @@ async def create_batch_user_record(data, batch_id):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025", # hardcoding; will figure better sol later
+                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"], # will remove later
+                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -129,9 +129,9 @@ async def create_grade_user_record(data):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025", # hardcoding; will figure better sol later
+                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"], # will remove later
+                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -153,9 +153,9 @@ async def create_auth_group_user_record(data, auth_group_name):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025", # hardcoding; will figure better sol later
+                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"], # will remove later
+                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -364,7 +364,7 @@ async def create_student(request: Request):
 
     if "grade_id" in new_student_data:
         await create_grade_user_record(new_student_data)
-    
+
     if "school_name" in query_params:
         await create_school_user_record(
             new_student_data,
