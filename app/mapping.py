@@ -19,7 +19,6 @@ ENROLLMENT_RECORD_PARAMS = [
     "group_type",
     "user_id",
     "subject_id",
-    "grade_id",
 ]
 
 FORM_SCHEMA_QUERY_PARAMS = ["id", "name", "attributes"]

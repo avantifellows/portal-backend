@@ -9,7 +9,6 @@ from router import (
     user,
     school,
     grade,
-    enrollment_record,
     exam,
 )
 from auth_group_classes import EnableStudents
@@ -92,7 +91,6 @@ async def create_school_user_record(data, school_name, district, auth_group_name
                 "user_id": data["user"]["id"],
                 "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -112,7 +110,6 @@ async def create_batch_user_record(data, batch_id):
                 "user_id": data["user"]["id"],
                 "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -131,7 +128,6 @@ async def create_grade_user_record(data):
                 "user_id": data["user"]["id"],
                 "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )
@@ -155,7 +151,6 @@ async def create_auth_group_user_record(data, auth_group_name):
                 "user_id": data["user"]["id"],
                 "academic_year": "2024-2025",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
-                "grade_id": data["grade_id"],  # will remove later
             },
         )
     )

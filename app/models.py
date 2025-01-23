@@ -40,7 +40,6 @@ class EnrollmentRecordResponse(BaseModel):
     group_type: str
     user_id: int
     subject_id: int
-    grade_id: int
 
 
 class SessionResponse(BaseModel):
