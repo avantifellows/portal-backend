@@ -15,11 +15,11 @@ Parameters:
     Type: String
     Description: Token to access DB Service
 
-  AwsAccessKey:
+  SqsAccessKey:
     Type: String
     Description: Key to send SQS messages
 
-  AwsSecretAccessKey:
+  SqsSecretAccessKey:
     Type: String
     Description: Key to send SQS messages
 
@@ -41,8 +41,8 @@ Resources:
           JWT_SECRET_KEY: !Ref JwtSecretKey
           DB_SERVICE_URL: !Ref DbServiceUrl
           DB_SERVICE_TOKEN: !Ref DbServiceToken
-          AWS_ACCESS_KEY: !Ref AwsAccessKey
-          AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
+          SQS_ACCESS_KEY: !Ref SqsAccessKey
+          SQS_SECRET_ACCESS_KEY: !Ref SqsSecretAccessKey
           AWS_SQS_URL: !Ref AwsSqsUrl
       Events:
         Api:

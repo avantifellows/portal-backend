@@ -27,8 +27,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.SQS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.SQS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
       - name: Build
@@ -39,8 +39,8 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
           DB_SERVICE_TOKEN: ${{ secrets.DB_SERVICE_TOKEN }}
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SQS_ACCESS_KEY: ${{ secrets.SQS_ACCESS_KEY }}
+          SQS_SECRET_ACCESS_KEY: ${{ secrets.SQS_SECRET_ACCESS_KEY }}
           AWS_SQS_URL: ${{ secrets.AWS_SQS_URL }}
 
         run: sam deploy
@@ -55,6 +55,6 @@ jobs:
           JwtSecretKey=$JWT_SECRET_KEY
           DbServiceUrl=$DB_SERVICE_URL
           DbServiceToken=$DB_SERVICE_TOKEN
-          AwsAccessKey=$AWS_ACCESS_KEY
-          AwsSecretAccessKey=$AWS_SECRET_ACCESS_KEY
+          SqsAccessKey=$SQS_ACCESS_KEY
+          SqsSecretAccessKey=$SQS_SECRET_ACCESS_KEY
           AwsSqsUrl=$AWS_SQS_URL

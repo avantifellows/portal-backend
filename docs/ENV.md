@@ -12,7 +12,7 @@ The URL to connect to our database service
 
 Token to authenticate DB service
 
-### `AWS_ACCESS_KEY`, `AWS_SECRET_ACCESS_KEY`
+### `SQS_ACCESS_KEY`, `SQS_SECRET_ACCESS_KEY`
 
 Access keys that only allow for SQS actions
 
