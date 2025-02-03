@@ -17,8 +17,8 @@ class SQSService:
         self.sqs_client = boto3.client(
             "sqs",
             region_name="ap-south-1",
-            aws_access_key_id=settings.AWS_ACCESS_KEY,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            AWS_ACCESS_KEY_id=settings.SQS_ACCESS_KEY,
+            AWS_SECRET_ACCESS_KEY=settings.SQS_SECRET_ACCESS_KEY,
         )
         self.queue_url = settings.AWS_SQS_URL
 
