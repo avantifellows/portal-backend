@@ -143,6 +143,15 @@ async def create_auth_group_user_record(data, auth_group_name):
         )
     )
 
+    print(
+        {
+            "group_id": group_data[0]["id"],
+            "user_id": data["user"]["id"],
+            "academic_year": "2024-2025",  # hardcoding; will figure better sol later
+            "start_date": datetime.now().strftime("%Y-%m-%d"),
+        }
+    )
+
     await group_user.create_group_user(
         build_request(
             method="POST",

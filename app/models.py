@@ -72,3 +72,20 @@ class UserSession(BaseModel):
     user_activity_type: str
     user_type: str
     data: Optional[Dict] = {}
+
+
+class AttendanceMessageSchema(BaseModel):
+    type: str
+    sub_type: str = ""
+    platform: str
+    platform_id: str
+    user_id: str
+    auth_type: str
+    auth_group: str
+    user_type: str
+    session_id: str
+    user_ip_address: str = ""
+    phone_number: str = ""
+    batch: str = ""
+    date_of_birth: str = ""
+    user_validated: bool = True
