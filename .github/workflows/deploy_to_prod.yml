@@ -38,5 +38,21 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
           DB_SERVICE_TOKEN: ${{ secrets.DB_SERVICE_TOKEN }}
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SQS_URL: ${{ secrets.AWS_SQS_URL }}
 
-        run: sam deploy --stack-name PortalBackendProd --s3-bucket af-portal-backend --no-confirm-changeset --no-fail-on-empty-changeset --region ap-south-1 --capabilities CAPABILITY_IAM --parameter-overrides JwtSecretKey=$JWT_SECRET_KEY DbServiceUrl=$DB_SERVICE_URL DbServiceToken=$DB_SERVICE_TOKEN
+        run: sam deploy
+          --stack-name PortalBackendProd
+          --s3-bucket af-portal-backend
+          --no-confirm-changeset
+          --no-fail-on-empty-changeset
+          --region ap-south-1
+          --capabilities CAPABILITY_IAM
+          --parameter-overrides
+          JwtSecretKey=$JWT_SECRET_KEY
+          DbServiceUrl=$DB_SERVICE_URL
+          DbServiceToken=$DB_SERVICE_TOKEN
+          AwsAccessKey=$AWS_ACCESS_KEY
+          AwsSecretAccessKey=$AWS_SECRET_ACCESS_KEY
+          AwsSqsUrl=$AWS_SQS_URL
