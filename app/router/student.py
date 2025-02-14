@@ -354,7 +354,7 @@ async def create_student(request: Request):
     await create_auth_group_user_record(new_student_data, data["auth_group"])
 
     if data["auth_group"] == "AllIndiaStudents":
-        batch_id = f"AllIndiaStudents_{query_params['grade']}_{str(datetime.now().year)[-2:]}_A001"  # update 24
+        batch_id = f"AllIndiaStudents_{query_params['grade']}_24_A001"  # update to 25 later str(datetime.now().year)[-2:]
         await create_batch_user_record(new_student_data, batch_id)
 
     if "grade_id" in new_student_data:
