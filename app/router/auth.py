@@ -21,11 +21,10 @@ def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
     if auth_user.data is None:
         data = {}
 
-   if auth_user.type not in ["user","organization"]:
-      raise HTTPException(
-        status_code=400,
-      detail = "Invalid type.Must be 'user' or 'organization'"
-    )
+    if auth_user.type not in ["user", "organization"]:
+        raise HTTPException(
+            status_code=400, detail="Invalid type. Must be 'user' or 'organization'"
+        )
 
     if auth_user.type == "organization":
         if not auth_user.name:
