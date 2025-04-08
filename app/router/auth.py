@@ -14,11 +14,17 @@ def index():
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
 def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
+    access_token = ""
     refresh_token = ""
     data = auth_user.data
 
     if auth_user.data is None:
         data = {}
+
+    if auth_user.type not in ["user", "organization"]:
+        raise HTTPException(
+            status_code=400, detail="Invalid type. Must be 'user' or 'organization'"
+        )
 
     if auth_user.type == "organization":
         if not auth_user.name:
