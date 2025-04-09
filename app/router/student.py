@@ -89,7 +89,7 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
+                "academic_year": "2025-2026",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
             },
         )
@@ -108,7 +108,7 @@ async def create_batch_user_record(data, batch_id):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
+                "academic_year": "2025-2026",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
             },
         )
@@ -126,7 +126,7 @@ async def create_grade_user_record(data):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
+                "academic_year": "2025-2026",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
             },
         )
@@ -149,7 +149,7 @@ async def create_auth_group_user_record(data, auth_group_name):
             body={
                 "group_id": group_data[0]["id"],
                 "user_id": data["user"]["id"],
-                "academic_year": "2024-2025",  # hardcoding; will figure better sol later
+                "academic_year": "2025-2026",  # hardcoding; will figure better sol later
                 "start_date": datetime.now().strftime("%Y-%m-%d"),
             },
         )
