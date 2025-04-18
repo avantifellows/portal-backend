@@ -268,7 +268,7 @@ async def create_student(request: Request):
         + USER_QUERY_PARAMS
         + ENROLLMENT_RECORD_PARAMS
         + SCHOOL_QUERY_PARAMS
-        + ["id_generation", "region", "batch_registration"],
+        + ["id_generation", "region", "batch_registration", "block_name"],
     )
 
     if not data["id_generation"]:
