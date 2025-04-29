@@ -21,6 +21,9 @@ class Settings(BaseModel):
     # DB service base URL
     db_url: str = os.environ.get("DB_SERVICE_URL")
     TOKEN: str = os.environ.get("DB_SERVICE_TOKEN")
+    SQS_ACCESS_KEY: str = os.environ.get("SQS_ACCESS_KEY")
+    SQS_SECRET_ACCESS_KEY: str = os.environ.get("SQS_SECRET_ACCESS_KEY")
+    AWS_SQS_URL: str = os.environ.get("AWS_SQS_URL")
 
 
 # callback to get the configuration
