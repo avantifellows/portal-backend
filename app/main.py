@@ -9,6 +9,7 @@ from router import (
     group,
     school,
     session_occurrence,
+    abtest,
     session,
     student,
     teacher,
@@ -84,6 +85,7 @@ app.include_router(group_user.router)
 app.include_router(group.router)
 app.include_router(school.router)
 app.include_router(session_occurrence.router)
+app.include_router(abtest.router)
 app.include_router(session.router)
 app.include_router(student.router)
 app.include_router(teacher.router)

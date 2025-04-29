@@ -83,6 +83,7 @@ STUDENT_QUERY_PARAMS = [
     "percentage_in_grade_10_english",
     "grade_10_marksheet",
     "photo",
+    "school_medium",
 ]
 
 TEACHER_QUERY_PARAMS = ["teacher_id", "subject_id", "designation"]
