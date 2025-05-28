@@ -10,10 +10,14 @@ from helpers import (
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
+    safe_get_first_item,
 )
 import json
+import logging
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
+
+logger = logging.getLogger(__name__)
 
 
 def is_user_attribute_empty(field, student_data):
@@ -181,11 +185,18 @@ def get_form_schema(request: Request):
     query_params = validate_and_build_query_params(
         request.query_params, FORM_SCHEMA_QUERY_PARAMS
     )
+
+    logger.info(f"Fetching form schema with params: {query_params}")
+
     response = requests.get(
         form_db_url, params=query_params, headers=db_request_token()
     )
+
     if is_response_valid(response, "Form API could not fetch the data!"):
-        return is_response_empty(response.json()[0], True, "Form does not exist!")
+        # Use safe_get_first_item instead of direct array access
+        form_data = safe_get_first_item(response.json(), "Form does not exist!")
+        logger.info("Successfully retrieved form schema data")
+        return form_data
 
 
 @router.get("/student")
