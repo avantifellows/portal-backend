@@ -783,7 +783,9 @@ async def update_student(request: Request):
 async def complete_profile_details(request: Request):
     try:
         data = await request.json()
-        logger.info(f"Completing profile details for student: {data.get('student_id', 'unknown')}")
+        logger.info(
+            f"Completing profile details for student: {data.get('student_id', 'unknown')}"
+        )
 
         student_data = build_student_and_user_data(data)
 
@@ -791,7 +793,11 @@ async def complete_profile_details(request: Request):
             build_request(query_params={"student_id": data["student_id"]})
         )
 
-        if not student_response or not isinstance(student_response, list) or len(student_response) == 0:
+        if (
+            not student_response
+            or not isinstance(student_response, list)
+            or len(student_response) == 0
+        ):
             logger.error(f"Student not found for ID: {data.get('student_id')}")
             raise HTTPException(status_code=404, detail="Student not found")
 
