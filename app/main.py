@@ -26,6 +26,7 @@ import random
 import string
 import time
 from logger_config import setup_logger
+from error_middleware import error_handling_middleware
 
 logger = setup_logger()
 
@@ -50,6 +51,14 @@ async def log_requests(request: Request, call_next):
     )
 
     return response
+
+
+@app.middleware("http")
+async def error_handling(request: Request, call_next):
+    """
+    Global error handling middleware
+    """
+    return await error_handling_middleware(request, call_next)
 
 
 origins = [

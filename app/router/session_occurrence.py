@@ -92,38 +92,96 @@ async def get_session_occurrence_data(request: Request):
             )
         query_params[key] = request.query_params[key]
 
-    logger.info("Searching for session {} ...".format(query_params["session_id"]))
+    session_id = query_params.get("session_id")
+    if not session_id:
+        logger.error("No session_id provided in query parameters")
+        raise HTTPException(status_code=400, detail="session_id parameter is required!")
 
-    response = requests.get(
-        session_occurrence_db_url, params=query_params, headers=db_request_token()
-    )
+    logger.info("Searching for session {} ...".format(session_id))
+
+    try:
+        response = requests.get(
+            session_occurrence_db_url, params=query_params, headers=db_request_token()
+        )
+    except Exception as e:
+        logger.error(f"Failed to connect to session occurrence API: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to connect to session occurrence service"
+        )
 
     if response.status_code == 200:
-        if len(response.json()) != 0:
-            session_occurrence_data = response.json()
+        session_occurrences = response.json()
+
+        if not isinstance(session_occurrences, list):
+            logger.error(
+                f"Unexpected response format from session occurrence API: {type(session_occurrences)}"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid response format from session occurrence service",
+            )
+
+        if len(session_occurrences) != 0:
+            logger.info(
+                f"Found {len(session_occurrences)} session occurrences for session {session_id}"
+            )
+
             # session exists because occurrences exist
             # fetch session data
-            response = requests.get(
-                session_db_url, params=query_params, headers=db_request_token()
-            )
-            if response.status_code == 200:
-                session_data = response.json()[0]
+            try:
+                session_response = requests.get(
+                    session_db_url, params=query_params, headers=db_request_token()
+                )
+            except Exception as e:
+                logger.error(f"Failed to connect to session API: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail="Failed to connect to session service"
+                )
+
+            if session_response.status_code == 200:
+                session_data_list = session_response.json()
+
+                if (
+                    not isinstance(session_data_list, list)
+                    or len(session_data_list) == 0
+                ):
+                    logger.error(f"No session data found for session_id: {session_id}")
+                    raise HTTPException(
+                        status_code=404, detail="Session ID does not exist!"
+                    )
+
+                session_data = session_data_list[0]
+                logger.info(f"Retrieved session data for session {session_id}")
             else:
+                logger.error(
+                    f"Session API returned status {session_response.status_code} for session_id: {session_id}"
+                )
                 raise HTTPException(
                     status_code=404, detail="Session ID does not exist!"
                 )
 
             session_data["is_session_open"] = False
-            if session_data["is_active"]:
-                for session_occurrence in session_occurrence_data:
+            if session_data.get("is_active", False):
+                for session_occurrence in session_occurrences:
                     if has_session_started(
-                        session_occurrence["start_time"]
-                    ) and has_session_not_ended(session_occurrence["end_time"]):
+                        session_occurrence.get("start_time")
+                    ) and has_session_not_ended(session_occurrence.get("end_time")):
                         session_data["is_session_open"] = True
-                        session_data["session_occurrence_id"] = session_occurrence["id"]
+                        session_data["session_occurrence_id"] = session_occurrence.get(
+                            "id"
+                        )
+                        logger.info(f"Session {session_id} is currently open")
                         break  # matched a session occurrence
+
+                if not session_data["is_session_open"]:
+                    logger.info(f"Session {session_id} exists but is currently closed")
 
             return session_data
 
+        logger.warning(f"No session occurrences found for session_id: {session_id}")
         raise HTTPException(status_code=404, detail="Session ID does not exist!")
+
+    logger.error(
+        f"Session occurrence API returned status {response.status_code} for session_id: {session_id}"
+    )
     raise HTTPException(status_code=404, detail="Session ID not found!")
