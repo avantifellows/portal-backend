@@ -28,7 +28,7 @@ def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
 
     if auth_user.type == "organization":
         if not auth_user.name:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400, detail="Data Parameter {} is missing!".format("name")
             )
         expires = datetime.timedelta(weeks=260)
@@ -40,7 +40,7 @@ def create_access_token(auth_user: AuthUser, Authorize: AuthJWT = Depends()):
 
     elif auth_user.type == "user":
         if "is_user_valid" not in auth_user.dict().keys():
-            return HTTPException(
+            raise HTTPException(
                 status_code=400,
                 detail="Data Parameter {} is missing!".format("is_user_valid"),
             )
