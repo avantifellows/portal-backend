@@ -449,15 +449,88 @@ def get_students(request: Request):
         return students_data
 
 
+def verify_student_record(student_record, query_params, student_id):
+    """Helper function to verify a student record against query parameters"""
+    if not student_record:
+        logger.warning(f"No student data found for student_id: {student_id}")
+        return False
+
+    for key, value in query_params.items():
+        if key in USER_QUERY_PARAMS:
+            # Safe access to nested user object
+            user_data = student_record.get("user", {})
+            if not isinstance(user_data, dict):
+                logger.warning(f"Invalid user data structure for student: {student_id}")
+                return False
+            if user_data.get(key) != value:
+                logger.info(f"User verification failed for key: {key}")
+                return False
+
+        if key in STUDENT_QUERY_PARAMS:
+            if student_record.get(key) != value:
+                logger.info(f"Student verification failed for key: {key}")
+                return False
+
+        # check if the user belongs to the auth-group that sent the validation request
+        if key == "auth_group_id":
+            group_response = group.get_group(
+                build_request(
+                    query_params={
+                        "child_id": query_params["auth_group_id"],
+                        "type": "auth_group",
+                    }
+                )
+            )
+
+            if (
+                group_response
+                and isinstance(group_response, list)
+                and len(group_response) > 0
+            ):
+                group_record = group_response[0]
+                if isinstance(group_record, dict) and "id" in group_record:
+                    user_data = student_record.get("user", {})
+                    if isinstance(user_data, dict) and "id" in user_data:
+                        group_user_response = group_user.get_group_user(
+                            build_request(
+                                query_params={
+                                    "group_id": group_record["id"],
+                                    "user_id": user_data["id"],
+                                }
+                            )
+                        )
+                        if not group_user_response or group_user_response == []:
+                            logger.info("User not found in auth group")
+                            return False
+                    else:
+                        logger.warning("Invalid user data in student record")
+                        return False
+                else:
+                    logger.warning("Invalid group record structure")
+                    return False
+            else:
+                logger.warning(
+                    f"Group not found for auth_group_id: {query_params['auth_group_id']}"
+                )
+                return False
+
+    return True
+
+
 @router.get("/verify")
 async def verify_student(request: Request, student_id: str):
     query_params = validate_and_build_query_params(
         request.query_params,
-        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
+        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id", "auth_group"],
     )
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
 
+    # Check if this is EnableStudents auth group
+    auth_group = query_params.get("auth_group")
+    is_enable_students = auth_group == "EnableStudents"
+
+    # First attempt: try with student_id
     response = requests.get(
         student_db_url,
         params={"student_id": student_id},
@@ -475,73 +548,38 @@ async def verify_student(request: Request, student_id: str):
                 else student_data
             )
 
-            if not student_record:
-                logger.warning(f"No student data found for student_id: {student_id}")
-                return False
+            if verify_student_record(student_record, query_params, student_id):
+                logger.info(
+                    f"Student verification successful with student_id: {student_id}"
+                )
+                return True
 
-            for key, value in query_params.items():
-                if key in USER_QUERY_PARAMS:
-                    # Safe access to nested user object
-                    user_data = student_record.get("user", {})
-                    if not isinstance(user_data, dict):
-                        logger.warning(
-                            f"Invalid user data structure for student: {student_id}"
-                        )
-                        return False
-                    if user_data.get(key) != value:
-                        logger.info(f"User verification failed for key: {key}")
-                        return False
+    # For EnableStudents: if student_id verification failed, try apaar_id
+    if is_enable_students:
+        logger.info(f"EnableStudents: Trying apaar_id verification for: {student_id}")
 
-                if key in STUDENT_QUERY_PARAMS:
-                    if student_record.get(key) != value:
-                        logger.info(f"Student verification failed for key: {key}")
-                        return False
+        response = requests.get(
+            student_db_url,
+            params={"apaar_id": student_id},
+            headers=db_request_token(),
+        )
 
-                # check if the user belongs to the auth-group that sent the validation request
-                if key == "auth_group_id":
-                    group_response = group.get_group(
-                        build_request(
-                            query_params={
-                                "child_id": query_params["auth_group_id"],
-                                "type": "auth_group",
-                            }
-                        )
+        if is_response_valid(response):
+            student_data = is_response_empty(response.json(), False)
+
+            if student_data:
+                # Safe access to first student
+                student_record = (
+                    safe_get_first_item(student_data)
+                    if isinstance(student_data, list)
+                    else student_data
+                )
+
+                if verify_student_record(student_record, query_params, student_id):
+                    logger.info(
+                        f"Student verification successful with apaar_id: {student_id}"
                     )
-
-                    if (
-                        group_response
-                        and isinstance(group_response, list)
-                        and len(group_response) > 0
-                    ):
-                        group_record = group_response[0]
-                        if isinstance(group_record, dict) and "id" in group_record:
-                            user_data = student_record.get("user", {})
-                            if isinstance(user_data, dict) and "id" in user_data:
-                                group_user_response = group_user.get_group_user(
-                                    build_request(
-                                        query_params={
-                                            "group_id": group_record["id"],
-                                            "user_id": user_data["id"],
-                                        }
-                                    )
-                                )
-                                if not group_user_response or group_user_response == []:
-                                    logger.info("User not found in auth group")
-                                    return False
-                            else:
-                                logger.warning("Invalid user data in student record")
-                                return False
-                        else:
-                            logger.warning("Invalid group record structure")
-                            return False
-                    else:
-                        logger.warning(
-                            f"Group not found for auth_group_id: {query_params['auth_group_id']}"
-                        )
-                        return False
-
-            logger.info(f"Student verification successful for: {student_id}")
-            return True
+                    return True
 
     logger.warning(f"Student verification failed for: {student_id}")
     return False
