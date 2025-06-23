@@ -453,14 +453,19 @@ def get_students(request: Request):
 async def verify_student(request: Request, student_id: str):
     query_params = validate_and_build_query_params(
         request.query_params,
-        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id", "auth_group"],
+        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
     )
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
 
-    # Check if this is EnableStudents auth group
-    auth_group = query_params.get("auth_group")
-    is_enable_students = auth_group == "EnableStudents"
+    # Check if this is EnableStudents auth group (temporary hardcoded check)
+    # TODO: Remove check for EnableStudents auth group when apaar_id merges with student_id
+    auth_group_id = query_params.get("auth_group_id")
+    is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
+    if is_enable_students:
+        logger.info(
+            "Detected EnableStudents auth group - will try apaar_id fallback if needed"
+        )
 
     # Try student_id first
     student_record = None
