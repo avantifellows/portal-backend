@@ -484,7 +484,8 @@ async def verify_student(request: Request, student_id: str):
                 else student_data
             )
 
-    # For EnableStudents: if no student found with student_id, try apaar_id
+        # For EnableStudents: if no student found with student_id, try apaar_id
+    found_via_apaar_id = False
     if not student_record and is_enable_students:
         logger.info(f"EnableStudents: Trying apaar_id for: {student_id}")
 
@@ -502,6 +503,7 @@ async def verify_student(request: Request, student_id: str):
                     if isinstance(student_data, list)
                     else student_data
                 )
+                found_via_apaar_id = True
 
     # Now verify the student record against all query params
     if not student_record:
@@ -520,6 +522,10 @@ async def verify_student(request: Request, student_id: str):
                 return False
 
         elif key in STUDENT_QUERY_PARAMS:
+            # Skip student_id verification if we found the student via apaar_id
+            if key == "student_id" and found_via_apaar_id:
+                logger.info("Skipping student_id verification - found via apaar_id")
+                continue
             if student_record.get(key) != value:
                 logger.info(f"Student verification failed for key: {key}")
                 return False
