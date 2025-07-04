@@ -34,9 +34,32 @@ async def get_session_occurrence_data(request: Request):
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id parameter is required!")
 
-    # Add filter to get only today's occurrences to reduce response size
-    query_params["is_start_time"] = "today"
+    # First check if session exists at all
+    try:
+        session_params = {"session_id": session_id}
+        session_response = requests.get(
+            session_db_url,
+            params=session_params,
+            headers=db_request_token(),
+            timeout=60,
+        )
+    except Exception as e:
+        logger.error(f"Failed to connect to session API: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to connect to session service"
+        )
 
+    if session_response.status_code != 200:
+        raise HTTPException(status_code=404, detail="Session ID does not exist!")
+
+    session_data_list = session_response.json()
+    if not isinstance(session_data_list, list) or len(session_data_list) == 0:
+        raise HTTPException(status_code=404, detail="Session ID does not exist!")
+
+    session_data = session_data_list[0]
+
+    # Now check for today's occurrences
+    query_params["is_start_time"] = "today"
     try:
         response = requests.get(
             session_occurrence_db_url,
@@ -66,47 +89,16 @@ async def get_session_occurrence_data(request: Request):
                 detail="Invalid response format from session occurrence service",
             )
 
-        if len(session_occurrences) != 0:
-            # session exists because occurrences exist - fetch session data
-            try:
-                # Use only session_id for session API (it doesn't understand is_start_time parameter)
-                session_params = {"session_id": session_id}
-                session_response = requests.get(
-                    session_db_url,
-                    params=session_params,
-                    headers=db_request_token(),
-                    timeout=60,
-                )
-            except Exception as e:
-                logger.error(f"Failed to connect to session API: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail="Failed to connect to session service"
-                )
-
-            if session_response.status_code == 200:
-                session_data_list = session_response.json()
-
-                if (
-                    not isinstance(session_data_list, list)
-                    or len(session_data_list) == 0
-                ):
-                    raise HTTPException(
-                        status_code=404, detail="Session ID does not exist!"
-                    )
-
-                session_data = session_data_list[0]
-            else:
-                raise HTTPException(
-                    status_code=404, detail="Session ID does not exist!"
-                )
-
-            # Since we filtered by today, any returned occurrence is potentially active
+        # Session exists - check if there are occurrences today
+        if len(session_occurrences) > 0:
+            # Session has occurrences today - check if active
             session_data["is_session_open"] = bool(session_data.get("is_active", False))
-            if session_data["is_session_open"] and len(session_occurrences) > 0:
+            if session_data["is_session_open"]:
                 session_data["session_occurrence_id"] = session_occurrences[0].get("id")
+        else:
+            # Session exists but no occurrences today - "no class right now"
+            session_data["is_session_open"] = False
 
-            return session_data
-
-        raise HTTPException(status_code=404, detail="Session ID does not exist!")
+        return session_data
 
     raise HTTPException(status_code=404, detail="Session ID not found!")
