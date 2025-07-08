@@ -121,6 +121,11 @@ def build_student_and_user_data(student_data):
                     data[key] = "true" if student_data[key] == "Yes" else "false"
                 elif key == "has_category_certificate":
                     data[key] = "true" if student_data[key] == "Yes" else "false"
+                elif (
+                    key == "category"
+                    and student_data.get("physically_handicapped") == "Yes"
+                ):
+                    data[key] = f"{student_data[key]}-PWD"
                 elif key == "planned_competitive_exams":
                     data[key] = process_exams(student_data[key])
                 else:
