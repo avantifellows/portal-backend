@@ -125,7 +125,9 @@ def build_student_and_user_data(student_data):
                     key == "category"
                     and student_data.get("physically_handicapped") == "Yes"
                 ):
-                    data[key] = f"{student_data[key]}-PWD"
+                    data[key] = f"PWD-{student_data[key].split('-')[-1]}"
+                    # Gen -> "PWD-Gen"
+                    # Gen-EWS -> "PWD-EWS"
                 elif key == "planned_competitive_exams":
                     data[key] = process_exams(student_data[key])
                 else:
