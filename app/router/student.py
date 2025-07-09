@@ -126,8 +126,6 @@ def build_student_and_user_data(student_data):
                     and student_data.get("physically_handicapped") == "Yes"
                 ):
                     data[key] = f"PWD-{student_data[key].split('-')[-1]}"
-                    # Gen -> "PWD-Gen"
-                    # Gen-EWS -> "PWD-EWS"
                 elif key == "planned_competitive_exams":
                     data[key] = process_exams(student_data[key])
                 else:
@@ -722,6 +720,14 @@ async def create_student(request_or_data):
             query_params["planned_competitive_exams"] = process_exams(
                 query_params["planned_competitive_exams"]
             )
+
+        if (
+            "category" in query_params
+            and query_params.get("physically_handicapped") == "Yes"
+        ):
+            query_params["category"] = f"PWD-{query_params['category'].split('-')[-1]}"
+            # Gen -> "PWD-Gen"
+            # Gen-EWS -> "PWD-EWS"
 
         if "physically_handicapped" in query_params:
             query_params["physically_handicapped"] = (
