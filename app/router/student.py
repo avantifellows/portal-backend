@@ -659,6 +659,7 @@ async def create_student(request_or_data):
                 or data["auth_group"] == "HimachalStudents"
                 or data["auth_group"] == "AllIndiaStudents"
                 or data["auth_group"] == "ChhattisgarhStudents"
+                or data["auth_group"] == "MaharashtraStudents"
             ):
                 # Use phone number as student ID
                 phone = query_params.get("phone")
