@@ -24,7 +24,7 @@ class Settings(BaseModel):
     SQS_ACCESS_KEY: str = os.environ.get("SQS_ACCESS_KEY")
     SQS_SECRET_ACCESS_KEY: str = os.environ.get("SQS_SECRET_ACCESS_KEY")
     AWS_SQS_URL: str = os.environ.get("AWS_SQS_URL")
-    
+
     # Business logic configuration
     DEFAULT_ACADEMIC_YEAR: str = os.environ.get("DEFAULT_ACADEMIC_YEAR", "2025-2026")
 

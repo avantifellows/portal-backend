@@ -22,7 +22,9 @@ class JNVIDGeneration:
         return str(graduating_year.year)[-2:]
 
     def get_jnv_code(self):
-        school_data = get_school_by_name_and_region(name=self.school_name, region=self.region)
+        school_data = get_school_by_name_and_region(
+            name=self.school_name, region=self.region
+        )
         return school_data.get("code") if school_data else None
 
     def generate_three_digit_code(code=""):

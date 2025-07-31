@@ -23,16 +23,16 @@ def get_grade(**params) -> Optional[Dict[str, Any]]:
     """Get grade with flexible parameters."""
     # Filter out None values
     query_params = {k: v for k, v in params.items() if v is not None}
-    
+
     logger.info(f"Fetching grade with params: {query_params}")
-    
+
     response = requests.get(
         grade_db_url, params=query_params, headers=db_request_token()
     )
-    
+
     if is_response_valid(response, "Grade API could not fetch the data!"):
         grade_data = safe_get_first_item(response.json(), "Grade does not exist!")
         logger.info("Successfully retrieved grade data")
         return grade_data
-    
+
     return None

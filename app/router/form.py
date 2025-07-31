@@ -94,9 +94,9 @@ def district_in_returned_form_schema_data(
     ]
     district_form_field["dependant"] = False
 
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = district_form_field
+    returned_form_schema[total_number_of_fields - number_of_fields_left] = (
+        district_form_field
+    )
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -116,9 +116,9 @@ def school_name_in_returned_form_schema_data(
     ]
     school_form_field["dependant"] = False
 
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = school_form_field
+    returned_form_schema[total_number_of_fields - number_of_fields_left] = (
+        school_form_field
+    )
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -206,7 +206,9 @@ async def get_student_fields(request: Request):
     form = get_form_schema_by_id(query_params["form_id"])
 
     student_response = get_student_by_id(query_params["student_id"])
-    student_data = student_response[0] if student_response and len(student_response) > 0 else {}
+    student_data = (
+        student_response[0] if student_response and len(student_response) > 0 else {}
+    )
 
     # get the priorities for all fields and sort them
     priority_order = sorted([eval(i) for i in form["attributes"].keys()])

@@ -6,13 +6,17 @@ from services.batch_service import get_batch_by_id
 from services.school_service import (
     get_school_by_name_and_region,
     get_school_by_name_and_district,
-    get_school_by_name_district_state
+    get_school_by_name_district_state,
 )
 from services.group_service import get_group_by_child_id_and_type
 from services.group_user_service import create_group_user, get_group_user
 from services.auth_group_service import get_auth_group_by_name
 from services.grade_service import get_grade_by_number
-from services.student_service import get_student_by_id, update_student_data, verify_student_by_id
+from services.student_service import (
+    get_student_by_id,
+    update_student_data,
+    verify_student_by_id,
+)
 from services.user_service import get_user_by_email_and_phone
 from routes import student_db_url
 from helpers import (
@@ -69,13 +73,11 @@ def validate_school_exists(school_name, district, auth_group_name):
 
         if state:
             school_data = get_school_by_name_and_region(
-                name=str(school_name),
-                region=state
+                name=str(school_name), region=state
             )
         else:
             school_data = get_school_by_name_and_district(
-                name=str(school_name),
-                district=str(district)
+                name=str(school_name), district=str(district)
             )
 
         if not school_data or "id" not in school_data:
@@ -86,8 +88,7 @@ def validate_school_exists(school_name, district, auth_group_name):
 
         # Also validate that the school has a group
         group_data = get_group_by_child_id_and_type(
-            child_id=school_data["id"],
-            group_type="school"
+            child_id=school_data["id"], group_type="school"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -144,14 +145,11 @@ async def create_school_user_record(data, school_name, district, auth_group_name
 
         if state:
             school_data = get_school_by_name_district_state(
-                name=str(school_name),
-                district=str(district),
-                state=state
+                name=str(school_name), district=str(district), state=state
             )
         else:
             school_data = get_school_by_name_and_district(
-                name=str(school_name),
-                district=str(district)
+                name=str(school_name), district=str(district)
             )
 
         if not school_data or "id" not in school_data:
@@ -159,8 +157,7 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             raise HTTPException(status_code=404, detail="School not found")
 
         group_data = get_group_by_child_id_and_type(
-            child_id=school_data["id"],
-            group_type="school"
+            child_id=school_data["id"], group_type="school"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -183,7 +180,7 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             group_id=first_group["id"],
             user_id=user_data["id"],
             academic_year=settings.DEFAULT_ACADEMIC_YEAR,
-            start_date=datetime.now().strftime("%Y-%m-%d")
+            start_date=datetime.now().strftime("%Y-%m-%d"),
         )
 
         logger.info("Successfully created school user record")
@@ -207,8 +204,7 @@ async def create_batch_user_record(data, batch_id):
             raise HTTPException(status_code=404, detail="Batch not found")
 
         group_data = get_group_by_child_id_and_type(
-            child_id=batch_data["id"],
-            group_type="batch"
+            child_id=batch_data["id"], group_type="batch"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -231,7 +227,7 @@ async def create_batch_user_record(data, batch_id):
             group_id=first_group["id"],
             user_id=user_data["id"],
             academic_year=settings.DEFAULT_ACADEMIC_YEAR,
-            start_date=datetime.now().strftime("%Y-%m-%d")
+            start_date=datetime.now().strftime("%Y-%m-%d"),
         )
 
         logger.info("Successfully created batch user record")
@@ -254,8 +250,7 @@ async def create_grade_user_record(data):
         logger.info(f"Creating grade user record for grade_id: {grade_id}")
 
         group_data = get_group_by_child_id_and_type(
-            child_id=grade_id,
-            group_type="grade"
+            child_id=grade_id, group_type="grade"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -278,7 +273,7 @@ async def create_grade_user_record(data):
             group_id=first_group["id"],
             user_id=user_data["id"],
             academic_year=settings.DEFAULT_ACADEMIC_YEAR,
-            start_date=datetime.now().strftime("%Y-%m-%d")
+            start_date=datetime.now().strftime("%Y-%m-%d"),
         )
 
         logger.info("Successfully created grade user record")
@@ -302,8 +297,7 @@ async def create_auth_group_user_record(data, auth_group_name):
             raise HTTPException(status_code=404, detail="Auth group not found")
 
         group_data = get_group_by_child_id_and_type(
-            child_id=auth_group_data["id"],
-            group_type="auth_group"
+            child_id=auth_group_data["id"], group_type="auth_group"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -326,7 +320,7 @@ async def create_auth_group_user_record(data, auth_group_name):
             group_id=first_group["id"],
             user_id=user_data["id"],
             academic_year=settings.DEFAULT_ACADEMIC_YEAR,
-            start_date=datetime.now().strftime("%Y-%m-%d")
+            start_date=datetime.now().strftime("%Y-%m-%d"),
         )
 
         logger.info("Successfully created auth group user record")
@@ -507,8 +501,7 @@ async def verify_student(request: Request, student_id: str):
         elif key == "auth_group_id":
             # Verify user belongs to the auth group
             group_response = get_group_by_child_id_and_type(
-                child_id=value,
-                group_type="auth_group"
+                child_id=value, group_type="auth_group"
             )
 
             if not (
@@ -530,8 +523,7 @@ async def verify_student(request: Request, student_id: str):
                 return False
 
             group_user_response = get_group_user(
-                group_id=group_record["id"],
-                user_id=user_data["id"]
+                group_id=group_record["id"], user_id=user_data["id"]
             )
             if not group_user_response or group_user_response == []:
                 logger.info("User not found in auth group")
@@ -643,8 +635,7 @@ async def create_student(request_or_data):
                 check_if_email_or_phone_is_part_of_request(query_params)
 
                 user_already_exists = get_user_by_email_and_phone(
-                    email=query_params.get("email"),
-                    phone=query_params.get("phone")
+                    email=query_params.get("email"), phone=query_params.get("phone")
                 )
                 if user_already_exists:
                     logger.info("User already exists with email/phone")

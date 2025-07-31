@@ -67,18 +67,23 @@ async def get_session_occurrence_data(request: Request):
     logger.info(f"Retrieved session data for session {session_id}")
 
     # Check if this is a quiz session to determine query strategy
-    is_quiz_session = (
-        session_data.get("platform") == "quiz" or
-        (session_data.get("purpose", {}).get("sub-type") == "quiz")
+    is_quiz_session = session_data.get("platform") == "quiz" or (
+        session_data.get("purpose", {}).get("sub-type") == "quiz"
     )
 
     # For quiz sessions, query for occurrences that encompass current time
     # For live class sessions, query for today's occurrences (existing behavior)
     if is_quiz_session:
-        logger.info(f"Detected quiz session {session_id}, querying for active occurrences")
-        query_params["is_start_time"] = "active"  # Query for currently active occurrences
+        logger.info(
+            f"Detected quiz session {session_id}, querying for active occurrences"
+        )
+        query_params["is_start_time"] = (
+            "active"  # Query for currently active occurrences
+        )
     else:
-        logger.info(f"Detected live class session {session_id}, querying for today's occurrences")
+        logger.info(
+            f"Detected live class session {session_id}, querying for today's occurrences"
+        )
         query_params["is_start_time"] = "today"
 
     try:

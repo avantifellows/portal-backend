@@ -23,16 +23,16 @@ def get_exam(**params) -> Optional[Dict[str, Any]]:
     """Get exam with flexible parameters."""
     # Filter out None values
     query_params = {k: v for k, v in params.items() if v is not None}
-    
+
     logger.info(f"Fetching exam with params: {query_params}")
-    
+
     response = requests.get(
         exam_db_url, params=query_params, headers=db_request_token()
     )
-    
+
     if is_response_valid(response, "Exam API could not fetch the data!"):
         exam_data = safe_get_first_item(response.json(), "Exam record does not exist!")
         logger.info("Successfully retrieved exam data")
         return exam_data
-    
+
     return None
