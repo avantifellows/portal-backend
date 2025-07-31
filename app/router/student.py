@@ -1,17 +1,19 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from router import (
-    group,
-    auth_group,
-    batch,
-    group_user,
-    user,
-    school,
-    grade,
-    exam,
-)
 from auth_group_classes import EnableStudents
-from request import build_request
+from services.exam_service import get_exam_by_name
+from services.batch_service import get_batch_by_id
+from services.school_service import (
+    get_school_by_name_and_region,
+    get_school_by_name_and_district,
+    get_school_by_name_district_state
+)
+from services.group_service import get_group_by_child_id_and_type
+from services.group_user_service import create_group_user, get_group_user
+from services.auth_group_service import get_auth_group_by_name
+from services.grade_service import get_grade_by_number
+from services.student_service import get_student_by_id, update_student_data, verify_student_by_id
+from services.user_service import get_user_by_email_and_phone
 from routes import student_db_url
 from helpers import (
     db_request_token,
@@ -21,6 +23,7 @@ from helpers import (
     safe_get_first_item,
 )
 from logger_config import get_logger
+from settings import settings
 from datetime import datetime
 from mapping import (
     USER_QUERY_PARAMS,
@@ -39,7 +42,7 @@ def process_exams(student_exam_texts):
     student_exam_ids = []
     try:
         for exam_name in student_exam_texts:
-            exam_data = exam.get_exam(build_request(query_params={"name": exam_name}))
+            exam_data = get_exam_by_name(exam_name)
             if exam_data and "id" in exam_data:
                 student_exam_ids.append(exam_data["id"])
             else:
@@ -65,20 +68,14 @@ def validate_school_exists(school_name, district, auth_group_name):
         logger.info(f"Validating school: {school_name}, {district}, {state}")
 
         if state:
-            school_data = school.get_school(
-                build_request(
-                    query_params={
-                        "name": str(school_name),
-                        "district": str(district),
-                        "state": state,
-                    }
-                )
+            school_data = get_school_by_name_and_region(
+                name=str(school_name),
+                region=state
             )
         else:
-            school_data = school.get_school(
-                build_request(
-                    query_params={"name": str(school_name), "district": str(district)}
-                )
+            school_data = get_school_by_name_and_district(
+                name=str(school_name),
+                district=str(district)
             )
 
         if not school_data or "id" not in school_data:
@@ -88,10 +85,9 @@ def validate_school_exists(school_name, district, auth_group_name):
             return False, f"School '{school_name}' not found in district '{district}'"
 
         # Also validate that the school has a group
-        group_data = group.get_group(
-            build_request(
-                query_params={"child_id": school_data["id"], "type": "school"}
-            )
+        group_data = get_group_by_child_id_and_type(
+            child_id=school_data["id"],
+            group_type="school"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -147,30 +143,24 @@ async def create_school_user_record(data, school_name, district, auth_group_name
         )
 
         if state:
-            school_data = school.get_school(
-                build_request(
-                    query_params={
-                        "name": str(school_name),
-                        "district": str(district),
-                        "state": state,
-                    }
-                )
+            school_data = get_school_by_name_district_state(
+                name=str(school_name),
+                district=str(district),
+                state=state
             )
         else:
-            school_data = school.get_school(
-                build_request(
-                    query_params={"name": str(school_name), "district": str(district)}
-                )
+            school_data = get_school_by_name_and_district(
+                name=str(school_name),
+                district=str(district)
             )
 
         if not school_data or "id" not in school_data:
             logger.error(f"School not found: {school_name}, {district}")
             raise HTTPException(status_code=404, detail="School not found")
 
-        group_data = group.get_group(
-            build_request(
-                query_params={"child_id": school_data["id"], "type": "school"}
-            )
+        group_data = get_group_by_child_id_and_type(
+            child_id=school_data["id"],
+            group_type="school"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -189,16 +179,11 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             logger.error(f"Invalid user data structure: {user_data}")
             raise HTTPException(status_code=500, detail="Invalid user data")
 
-        await group_user.create_group_user(
-            build_request(
-                method="POST",
-                body={
-                    "group_id": first_group["id"],
-                    "user_id": user_data["id"],
-                    "academic_year": "2025-2026",  # hardcoding; will figure better sol later
-                    "start_date": datetime.now().strftime("%Y-%m-%d"),
-                },
-            )
+        await create_group_user(
+            group_id=first_group["id"],
+            user_id=user_data["id"],
+            academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+            start_date=datetime.now().strftime("%Y-%m-%d")
         )
 
         logger.info("Successfully created school user record")
@@ -215,14 +200,15 @@ async def create_batch_user_record(data, batch_id):
     try:
         logger.info(f"Creating batch user record for batch_id: {batch_id}")
 
-        batch_data = batch.get_batch(build_request(query_params={"batch_id": batch_id}))
+        batch_data = get_batch_by_id(batch_id)
 
         if not batch_data or "id" not in batch_data:
             logger.error(f"Batch not found: {batch_id}")
             raise HTTPException(status_code=404, detail="Batch not found")
 
-        group_data = group.get_group(
-            build_request(query_params={"child_id": batch_data["id"], "type": "batch"})
+        group_data = get_group_by_child_id_and_type(
+            child_id=batch_data["id"],
+            group_type="batch"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -241,16 +227,11 @@ async def create_batch_user_record(data, batch_id):
             logger.error(f"Invalid user data structure: {user_data}")
             raise HTTPException(status_code=500, detail="Invalid user data")
 
-        await group_user.create_group_user(
-            build_request(
-                method="POST",
-                body={
-                    "group_id": first_group["id"],
-                    "user_id": user_data["id"],
-                    "academic_year": "2025-2026",  # hardcoding; will figure better sol later
-                    "start_date": datetime.now().strftime("%Y-%m-%d"),
-                },
-            )
+        await create_group_user(
+            group_id=first_group["id"],
+            user_id=user_data["id"],
+            academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+            start_date=datetime.now().strftime("%Y-%m-%d")
         )
 
         logger.info("Successfully created batch user record")
@@ -272,8 +253,9 @@ async def create_grade_user_record(data):
 
         logger.info(f"Creating grade user record for grade_id: {grade_id}")
 
-        group_data = group.get_group(
-            build_request(query_params={"child_id": grade_id, "type": "grade"})
+        group_data = get_group_by_child_id_and_type(
+            child_id=grade_id,
+            group_type="grade"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -292,16 +274,11 @@ async def create_grade_user_record(data):
             logger.error(f"Invalid user data structure: {user_data}")
             raise HTTPException(status_code=500, detail="Invalid user data")
 
-        await group_user.create_group_user(
-            build_request(
-                method="POST",
-                body={
-                    "group_id": first_group["id"],
-                    "user_id": user_data["id"],
-                    "academic_year": "2025-2026",  # hardcoding; will figure better sol later
-                    "start_date": datetime.now().strftime("%Y-%m-%d"),
-                },
-            )
+        await create_group_user(
+            group_id=first_group["id"],
+            user_id=user_data["id"],
+            academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+            start_date=datetime.now().strftime("%Y-%m-%d")
         )
 
         logger.info("Successfully created grade user record")
@@ -318,18 +295,15 @@ async def create_auth_group_user_record(data, auth_group_name):
     try:
         logger.info(f"Creating auth group user record for: {auth_group_name}")
 
-        auth_group_data = auth_group.get_auth_group(
-            build_request(query_params={"name": auth_group_name})
-        )
+        auth_group_data = get_auth_group_by_name(auth_group_name)
 
         if not auth_group_data or "id" not in auth_group_data:
             logger.error(f"Auth group not found: {auth_group_name}")
             raise HTTPException(status_code=404, detail="Auth group not found")
 
-        group_data = group.get_group(
-            build_request(
-                query_params={"child_id": auth_group_data["id"], "type": "auth_group"}
-            )
+        group_data = get_group_by_child_id_and_type(
+            child_id=auth_group_data["id"],
+            group_type="auth_group"
         )
 
         if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
@@ -348,16 +322,11 @@ async def create_auth_group_user_record(data, auth_group_name):
             logger.error(f"Invalid user data structure: {user_data}")
             raise HTTPException(status_code=500, detail="Invalid user data")
 
-        await group_user.create_group_user(
-            build_request(
-                method="POST",
-                body={
-                    "group_id": first_group["id"],
-                    "user_id": user_data["id"],
-                    "academic_year": "2025-2026",  # hardcoding; will figure better sol later
-                    "start_date": datetime.now().strftime("%Y-%m-%d"),
-                },
-            )
+        await create_group_user(
+            group_id=first_group["id"],
+            user_id=user_data["id"],
+            academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+            start_date=datetime.now().strftime("%Y-%m-%d")
         )
 
         logger.info("Successfully created auth group user record")
@@ -537,13 +506,9 @@ async def verify_student(request: Request, student_id: str):
 
         elif key == "auth_group_id":
             # Verify user belongs to the auth group
-            group_response = group.get_group(
-                build_request(
-                    query_params={
-                        "child_id": value,
-                        "type": "auth_group",
-                    }
-                )
+            group_response = get_group_by_child_id_and_type(
+                child_id=value,
+                group_type="auth_group"
             )
 
             if not (
@@ -564,13 +529,9 @@ async def verify_student(request: Request, student_id: str):
                 logger.warning("Invalid user data in student record")
                 return False
 
-            group_user_response = group_user.get_group_user(
-                build_request(
-                    query_params={
-                        "group_id": group_record["id"],
-                        "user_id": user_data["id"],
-                    }
-                )
+            group_user_response = get_group_user(
+                group_id=group_record["id"],
+                user_id=user_data["id"]
             )
             if not group_user_response or group_user_response == []:
                 logger.info("User not found in auth group")
@@ -631,9 +592,7 @@ async def create_student(request_or_data):
             student_id = query_params.get("student_id")
             check_if_student_id_is_part_of_request(query_params)
 
-            does_student_already_exist = await verify_student(
-                build_request(), student_id
-            )
+            does_student_already_exist = await verify_student_by_id(student_id)
 
             if does_student_already_exist:
                 logger.info(f"Student already exists: {student_id}")
@@ -672,9 +631,7 @@ async def create_student(request_or_data):
                 query_params["student_id"] = phone
                 student_id = phone
 
-                student_id_already_exists = await verify_student(
-                    build_request(), student_id=student_id
-                )
+                student_id_already_exists = await verify_student_by_id(student_id)
 
                 if student_id_already_exists:
                     logger.info(f"Student already exists (phone-based): {student_id}")
@@ -685,13 +642,9 @@ async def create_student(request_or_data):
             else:
                 check_if_email_or_phone_is_part_of_request(query_params)
 
-                user_already_exists = user.get_users(
-                    build_request(
-                        query_params={
-                            "email": query_params.get("email"),
-                            "phone": query_params.get("phone"),
-                        }
-                    )
+                user_already_exists = get_user_by_email_and_phone(
+                    email=query_params.get("email"),
+                    phone=query_params.get("phone")
                 )
                 if user_already_exists:
                     logger.info("User already exists with email/phone")
@@ -702,9 +655,7 @@ async def create_student(request_or_data):
 
         if "grade" in query_params:
             try:
-                student_grade_data = grade.get_grade(
-                    build_request(query_params={"number": int(query_params["grade"])})
-                )
+                student_grade_data = get_grade_by_number(int(query_params["grade"]))
                 if student_grade_data and "id" in student_grade_data:
                     query_params["grade_id"] = student_grade_data["id"]
                 else:
@@ -831,9 +782,7 @@ async def complete_profile_details(request: Request):
 
         student_data = build_student_and_user_data(data)
 
-        student_response = get_students(
-            build_request(query_params={"student_id": data["student_id"]})
-        )
+        student_response = get_student_by_id(data["student_id"])
 
         if (
             not student_response
@@ -850,7 +799,7 @@ async def complete_profile_details(request: Request):
             raise HTTPException(status_code=500, detail="Invalid student data")
 
         student_data["id"] = first_student["id"]
-        result = await update_student(build_request(body=student_data))
+        result = await update_student_data(student_data)
 
         logger.info("Successfully completed profile details")
         return result

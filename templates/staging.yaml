@@ -34,7 +34,7 @@ Resources:
       FunctionName: "PortalBackendStaging"
       CodeUri: ../app
       Handler: main.handler
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 10
       Environment:
         Variables:

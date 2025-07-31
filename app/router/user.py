@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException
 import requests
-from router import student
-from request import build_request
+from services.student_service import create_student
+
 from routes import user_db_url
 from helpers import (
     db_request_token,
@@ -76,8 +76,8 @@ async def create_user(request: Request):
                 "auth_group": data.get("auth_group", ""),
             }
 
-            # Call student.create_student directly with the data
-            create_student_response = await student.create_student(student_data)
+            # Call create_student service function directly with the data
+            create_student_response = await create_student(student_data)
 
             if not create_student_response:
                 logger.error("Failed to create student - no response received")

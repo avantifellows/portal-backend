@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 import requests
-from settings import settings
 from routes import group_session_db_url
 from helpers import db_request_token, is_response_valid, is_response_empty
 

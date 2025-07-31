@@ -66,8 +66,21 @@ async def get_session_occurrence_data(request: Request):
     session_data = session_data_list[0]
     logger.info(f"Retrieved session data for session {session_id}")
 
-    # Now check for today's occurrences
-    query_params["is_start_time"] = "today"
+    # Check if this is a quiz session to determine query strategy
+    is_quiz_session = (
+        session_data.get("platform") == "quiz" or
+        (session_data.get("purpose", {}).get("sub-type") == "quiz")
+    )
+
+    # For quiz sessions, query for occurrences that encompass current time
+    # For live class sessions, query for today's occurrences (existing behavior)
+    if is_quiz_session:
+        logger.info(f"Detected quiz session {session_id}, querying for active occurrences")
+        query_params["is_start_time"] = "active"  # Query for currently active occurrences
+    else:
+        logger.info(f"Detected live class session {session_id}, querying for today's occurrences")
+        query_params["is_start_time"] = "today"
+
     try:
         response = requests.get(
             session_occurrence_db_url,
@@ -100,12 +113,12 @@ async def get_session_occurrence_data(request: Request):
                 detail="Invalid response format from session occurrence service",
             )
 
-        # Session exists - check if there are occurrences today
+        # Session exists - check if there are active occurrences
         if len(session_occurrences) > 0:
             logger.info(
                 f"Found {len(session_occurrences)} session occurrences for session {session_id}"
             )
-            # Session has occurrences today - check if active
+            # Session has active occurrences - check if session is enabled
             session_data["is_session_open"] = bool(session_data.get("is_active", False))
             if session_data["is_session_open"]:
                 session_data["session_occurrence_id"] = session_occurrences[0].get("id")
@@ -113,10 +126,15 @@ async def get_session_occurrence_data(request: Request):
             else:
                 logger.info(f"Session {session_id} exists but is currently closed")
         else:
-            logger.info(
-                f"Session {session_id} exists but no occurrences found for today"
-            )
-            # Session exists but no occurrences today - "no class right now"
+            if is_quiz_session:
+                logger.info(
+                    f"Quiz session {session_id} exists but no active occurrences found"
+                )
+            else:
+                logger.info(
+                    f"Live class session {session_id} exists but no occurrences found for today"
+                )
+            # Session exists but no active occurrences - "no class/quiz right now"
             session_data["is_session_open"] = False
 
         return session_data
