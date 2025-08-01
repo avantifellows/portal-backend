@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from fastapi_jwt_auth import AuthJWT
+from fastapi_jwt import JwtAccessBearer, JwtAuthorizationCredentials
 import os
 
 if "JWT_SECRET_KEY" not in os.environ:
     from dotenv import load_dotenv
 
-    load_dotenv("../.env")
+    load_dotenv(".env")
 
 
 # 'authjwt_secret_key' stores the secret key for encoding and decoding
@@ -25,11 +25,12 @@ class Settings(BaseModel):
     SQS_SECRET_ACCESS_KEY: str = os.environ.get("SQS_SECRET_ACCESS_KEY")
     AWS_SQS_URL: str = os.environ.get("AWS_SQS_URL")
 
+    # Business logic configuration
+    DEFAULT_ACADEMIC_YEAR: str = os.environ.get("DEFAULT_ACADEMIC_YEAR", "2025-2026")
 
-# callback to get the configuration
-@AuthJWT.load_config
-def get_config():
-    return Settings()
+
+# JWT access bearer
+access_security = JwtAccessBearer(secret_key=os.getenv("JWT_SECRET_KEY"))
 
 
 settings = Settings()

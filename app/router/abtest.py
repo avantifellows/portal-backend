@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 import json
 from pathlib import Path
-from helpers import validate_and_build_query_params
+from app.helpers import validate_and_build_query_params
 
 router = APIRouter(prefix="/abtest", tags=["ABTest"])
 

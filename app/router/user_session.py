@@ -1,21 +1,23 @@
 from fastapi import APIRouter, HTTPException
 import requests
-from models import UserSession, AttendanceMessageSchema
+from app.models import UserSession, AttendanceMessageSchema
 from datetime import datetime
-from routes import user_session_db_url
-from helpers import (
+from app.routes import user_session_db_url
+from app.helpers import (
     db_request_token,
     is_response_valid,
     is_response_empty,
     safe_get_first_item,
 )
-from router import student, session, teacher, school
-from request import build_request
-from settings import settings
+from app.services.student_service import get_student_by_id
+from app.services.school_service import get_school_by_code
+from app.services.teacher_service import get_teacher_by_id
+from app.services.session_service import get_session_by_id
+from app.settings import settings
 import boto3
 from typing import Dict, Any
 import json
-from logger_config import get_logger
+from app.logger_config import get_logger
 
 logger = get_logger()
 
@@ -67,9 +69,7 @@ async def user_session(user_session: UserSession):
         # Simple ID resolution without extensive validation
         if query_params["user_type"] == "student":
             try:
-                user_id_response = student.get_students(
-                    build_request(query_params={"student_id": query_params["user_id"]})
-                )
+                user_id_response = get_student_by_id(query_params["user_id"])
 
                 student_data = safe_get_first_item(
                     user_id_response, "Student not found"
@@ -89,9 +89,7 @@ async def user_session(user_session: UserSession):
 
         elif query_params["user_type"] == "teacher":
             try:
-                user_id_response = teacher.get_teachers(
-                    build_request(query_params={"teacher_id": query_params["user_id"]})
-                )
+                user_id_response = get_teacher_by_id(query_params["user_id"])
 
                 teacher_data = safe_get_first_item(
                     user_id_response, "Teacher not found"
@@ -111,9 +109,7 @@ async def user_session(user_session: UserSession):
 
         elif query_params["user_type"] == "school":
             try:
-                user_id_response = school.get_school(
-                    build_request(query_params={"code": query_params["user_id"]})
-                )
+                user_id_response = get_school_by_code(query_params["user_id"])
 
                 if not isinstance(user_id_response, dict) or not user_id_response.get(
                     "user", {}
@@ -135,9 +131,7 @@ async def user_session(user_session: UserSession):
 
         # Simple session validation
         try:
-            session_pk_id_response = await session.get_session(
-                build_request(query_params={"session_id": query_params["session_id"]})
-            )
+            session_pk_id_response = await get_session_by_id(query_params["session_id"])
 
             session_data = safe_get_first_item(
                 session_pk_id_response, "Session not found"

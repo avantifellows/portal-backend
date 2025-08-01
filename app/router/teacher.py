@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Request
 import requests
-from routes import teacher_db_url
-from helpers import (
+from app.routes import teacher_db_url
+from app.helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
     safe_get_first_item,
 )
-from mapping import USER_QUERY_PARAMS, TEACHER_QUERY_PARAMS, ENROLLMENT_RECORD_PARAMS
-from logger_config import get_logger
+from app.mapping import (
+    USER_QUERY_PARAMS,
+    TEACHER_QUERY_PARAMS,
+    ENROLLMENT_RECORD_PARAMS,
+)
+from app.logger_config import get_logger
 
 router = APIRouter(prefix="/teacher", tags=["Teacher"])
 logger = get_logger()

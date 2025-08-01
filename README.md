@@ -4,34 +4,31 @@ The backend for Portal created using FastAPI! The frontend can be found [here](h
 
 ## Installation
 
-- Create a virtual environment (make sure that `virtualenv` is installed on your system):
+This project uses [uv](https://docs.astral.sh/uv/) for fast, modern Python package management.
+
+- Install uv (if not already installed):
 
 ```bash
-virtualenv venv
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Or via pip
+pip install uv
 ```
 
-- Activate the environment:
+- Install dependencies and create virtual environment:
 
 ```bash
-source venv/bin/activate
+uv sync
 ```
 
-- Install the dependencies:
+- Set up pre-commit hooks:
 
 ```bash
-pip install -r app/requirements.txt
-```
-
-- Install `pre-commit`
-
-```
-pip install pre-commit
-```
-
-- Set up `pre-commit`
-
-```
-pre-commit install
+uv run pre-commit install
 ```
 
 - Copy `.env.example` to `.env` and set all the environment variables as mentioned in [`docs/ENV.md`](docs/ENV.md).
@@ -40,8 +37,8 @@ pre-commit install
 
 Simply run:
 
-```
-cd app; uvicorn main:app --reload
+```bash
+uv run uvicorn app.main:app --reload
 ```
 
 You should see a message like:

@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Request
 import requests
-from routes import form_db_url
-from settings import settings
-from router import student, enrollment_record
-from request import build_request
-from mapping import FORM_SCHEMA_QUERY_PARAMS, USER_QUERY_PARAMS, STUDENT_QUERY_PARAMS
-from helpers import (
+from app.routes import form_db_url
+from app.services.form_service import get_form_schema_by_id
+from app.services.student_service import get_student_by_id
+from app.mapping import (
+    FORM_SCHEMA_QUERY_PARAMS,
+    USER_QUERY_PARAMS,
+    STUDENT_QUERY_PARAMS,
+)
+from app.helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
-    is_response_empty,
     safe_get_first_item,
 )
-import json
 import logging
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
@@ -97,9 +98,9 @@ def district_in_returned_form_schema_data(
     ]
     district_form_field["dependant"] = False
 
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = district_form_field
+    returned_form_schema[total_number_of_fields - number_of_fields_left] = (
+        district_form_field
+    )
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -119,9 +120,9 @@ def school_name_in_returned_form_schema_data(
     ]
     school_form_field["dependant"] = False
 
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = school_form_field
+    returned_form_schema[total_number_of_fields - number_of_fields_left] = (
+        school_form_field
+    )
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -206,11 +207,12 @@ async def get_student_fields(request: Request):
         ["number_of_fields_in_popup_form", "form_id", "student_id"],
     )
 
-    form = get_form_schema(build_request(query_params={"id": query_params["form_id"]}))
+    form = get_form_schema_by_id(query_params["form_id"])
 
-    student_data = student.get_students(
-        build_request(query_params={"student_id": query_params["student_id"]})
-    )[0]
+    student_response = get_student_by_id(query_params["student_id"])
+    student_data = (
+        student_response[0] if student_response and len(student_response) > 0 else {}
+    )
 
     # get the priorities for all fields and sort them
     priority_order = sorted([eval(i) for i in form["attributes"].keys()])
