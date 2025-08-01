@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 import requests
-from routes import group_session_db_url
-from helpers import db_request_token, is_response_valid, is_response_empty
+from app.routes import group_session_db_url
+from app.helpers import db_request_token, is_response_valid, is_response_empty
 
 
 router = APIRouter(prefix="/session-group", tags=["Session-Group"])

@@ -1,35 +1,35 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from auth_group_classes import EnableStudents
-from services.exam_service import get_exam_by_name
-from services.batch_service import get_batch_by_id
-from services.school_service import (
+from app.auth_group_classes import EnableStudents
+from app.services.exam_service import get_exam_by_name
+from app.services.batch_service import get_batch_by_id
+from app.services.school_service import (
     get_school_by_name_and_region,
     get_school_by_name_and_district,
     get_school_by_name_district_state,
 )
-from services.group_service import get_group_by_child_id_and_type
-from services.group_user_service import create_group_user, get_group_user
-from services.auth_group_service import get_auth_group_by_name
-from services.grade_service import get_grade_by_number
-from services.student_service import (
+from app.services.group_service import get_group_by_child_id_and_type
+from app.services.group_user_service import create_group_user, get_group_user
+from app.services.auth_group_service import get_auth_group_by_name
+from app.services.grade_service import get_grade_by_number
+from app.services.student_service import (
     get_student_by_id,
     update_student_data,
     verify_student_by_id,
 )
-from services.user_service import get_user_by_email_and_phone
-from routes import student_db_url
-from helpers import (
+from app.services.user_service import get_user_by_email_and_phone
+from app.routes import student_db_url
+from app.helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
     safe_get_first_item,
 )
-from logger_config import get_logger
-from settings import settings
+from app.logger_config import get_logger
+from app.settings import settings
 from datetime import datetime
-from mapping import (
+from app.mapping import (
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from settings import settings
-from models import SessionResponse
-from helpers import db_request_token
-from logger_config import get_logger
+from app.settings import settings
+from app.models import SessionResponse
+from app.helpers import db_request_token
+from app.logger_config import get_logger
 
 router = APIRouter(prefix="/session-occurrence", tags=["Session Occurrence"])
 session_db_url = settings.db_url + "/session/"
@@ -66,24 +66,33 @@ async def get_session_occurrence_data(request: Request):
     session_data = session_data_list[0]
     logger.info(f"Retrieved session data for session {session_id}")
 
-    # Check if this is a non-recurring session to determine query strategy
-    is_non_recurring_session = session_data.get("platform") in [
-        "quiz",
-        "others",
-        "no-platform",
-        "AF-plio",
-        "SCERT-plio",
-    ]
+    # Check if this is a continuous session to determine query strategy
+    repeat_schedule = session_data.get("repeat_schedule", {})
+    is_continuous_session = repeat_schedule.get("type") == "continuous"
 
-    # For non-recurring sessions, query for occurrences that encompass current time
-    # For recurring sessions, query for today's occurrences (existing behavior)
-    if is_non_recurring_session:
-        logger.info(f"Detected session {session_id}, querying for active occurrences")
+    # Backward compatibility: if repeat_schedule.type is not set, fall back to platform-based logic
+    if repeat_schedule.get("type") is None:
+        is_continuous_session = session_data.get("platform") in [
+            "quiz",
+            "others",
+            "no-platform",
+            "AF-plio",
+            "SCERT-plio",
+        ]
+
+    # For continuous sessions, query for occurrences that encompass current time
+    # For weekly sessions, query for today's occurrences (existing behavior)
+    if is_continuous_session:
+        logger.info(
+            f"Detected continuous session {session_id}, querying for active occurrences"
+        )
         query_params["is_start_time"] = (
             "active"  # Query for currently active occurrences
         )
     else:
-        logger.info(f"Detected session {session_id}, querying for today's occurrences")
+        logger.info(
+            f"Detected weekly session {session_id}, querying for today's occurrences"
+        )
         query_params["is_start_time"] = "today"
 
     try:
@@ -131,7 +140,7 @@ async def get_session_occurrence_data(request: Request):
             else:
                 logger.info(f"Session {session_id} exists but is currently closed")
         else:
-            if is_non_recurring_session:
+            if is_continuous_session:
                 logger.info(
                     f"Session {session_id} exists but no active occurrences found"
                 )

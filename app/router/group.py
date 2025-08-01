@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Request
 import requests
-from routes import group_db_url
-from helpers import (
+from app.routes import group_db_url
+from app.helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
 )
-from mapping import GROUP_QUERY_PARAMS
+from app.mapping import GROUP_QUERY_PARAMS
 
 router = APIRouter(prefix="/group", tags=["Group"])
 

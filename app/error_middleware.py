@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
-from logger_config import get_logger
+from app.logger_config import get_logger
 import traceback
 from typing import Union
 import requests

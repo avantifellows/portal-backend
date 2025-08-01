@@ -1,4 +1,4 @@
-from router import (
+from app.router import (
     auth_group,
     auth,
     batch,
@@ -19,13 +19,12 @@ from router import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi_jwt_auth.exceptions import AuthJWTException
 from mangum import Mangum
 import random
 import string
 import time
-from logger_config import setup_logger
-from error_middleware import error_handling_middleware
+from app.logger_config import setup_logger
+from app.error_middleware import error_handling_middleware
 
 logger = setup_logger()
 
@@ -76,11 +75,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.exception_handler(AuthJWTException)
-def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
 app.include_router(auth_group.router)

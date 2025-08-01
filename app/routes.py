@@ -1,4 +1,4 @@
-from settings import settings
+from app.settings import settings
 
 auth_group_db_url = settings.db_url + "/auth-group"
 batch_db_url = settings.db_url + "/batch/"
