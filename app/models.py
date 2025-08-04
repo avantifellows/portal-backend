@@ -43,7 +43,7 @@ class EnrollmentRecordResponse(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    id: Optional[str] = None
+    id: Optional[Union[str, int]] = None
     session_id: Optional[str] = None
     name: Optional[str] = None
     start_time: Optional[str] = None
@@ -56,13 +56,13 @@ class SessionResponse(BaseModel):
     is_session_open: bool
     type: Optional[str] = None
     auth_type: Optional[str] = None
-    signup_form: Optional[str] = None
-    id_generation: Optional[str] = None
-    redirection: Optional[str] = None
-    popup_form: Optional[str] = None
+    signup_form: Optional[Union[str, bool]] = None
+    id_generation: Optional[Union[str, bool]] = None
+    redirection: Optional[Union[str, bool]] = None
+    popup_form: Optional[Union[str, bool]] = None
     signup_form_id: Optional[str] = None
     popup_form_id: Optional[str] = None
-    session_occurrence_id: Optional[str] = None
+    session_occurrence_id: Optional[Union[str, int]] = None
 
 
 class UserSession(BaseModel):

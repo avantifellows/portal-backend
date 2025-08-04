@@ -91,7 +91,7 @@ def validate_school_exists(school_name, district, auth_group_name):
             child_id=school_data["id"], group_type="school"
         )
 
-        if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
+        if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
             logger.warning(
                 f"School group not found during validation for school: {school_data['id']}"
             )
@@ -160,12 +160,12 @@ async def create_school_user_record(data, school_name, district, auth_group_name
             child_id=school_data["id"], group_type="school"
         )
 
-        if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
+        if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
             logger.error(f"Group not found for school: {school_data['id']}")
             raise HTTPException(status_code=404, detail="School group not found")
 
-        # Safe access to first group
-        first_group = group_data[0]
+        # Safe access to group
+        first_group = group_data
         if not isinstance(first_group, dict) or "id" not in first_group:
             logger.error(f"Invalid group data structure: {first_group}")
             raise HTTPException(status_code=500, detail="Invalid group data")
@@ -207,12 +207,12 @@ async def create_batch_user_record(data, batch_id):
             child_id=batch_data["id"], group_type="batch"
         )
 
-        if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
+        if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
             logger.error(f"Group not found for batch: {batch_data['id']}")
             raise HTTPException(status_code=404, detail="Batch group not found")
 
-        # Safe access to first group
-        first_group = group_data[0]
+        # Safe access to group
+        first_group = group_data
         if not isinstance(first_group, dict) or "id" not in first_group:
             logger.error(f"Invalid group data structure: {first_group}")
             raise HTTPException(status_code=500, detail="Invalid group data")
@@ -253,12 +253,12 @@ async def create_grade_user_record(data):
             child_id=grade_id, group_type="grade"
         )
 
-        if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
+        if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
             logger.error(f"Group not found for grade: {grade_id}")
             raise HTTPException(status_code=404, detail="Grade group not found")
 
-        # Safe access to first group
-        first_group = group_data[0]
+        # Safe access to group
+        first_group = group_data
         if not isinstance(first_group, dict) or "id" not in first_group:
             logger.error(f"Invalid group data structure: {first_group}")
             raise HTTPException(status_code=500, detail="Invalid group data")
@@ -300,12 +300,12 @@ async def create_auth_group_user_record(data, auth_group_name):
             child_id=auth_group_data["id"], group_type="auth_group"
         )
 
-        if not group_data or not isinstance(group_data, list) or len(group_data) == 0:
+        if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
             logger.error(f"Group not found for auth group: {auth_group_data['id']}")
             raise HTTPException(status_code=404, detail="Auth group group not found")
 
-        # Safe access to first group
-        first_group = group_data[0]
+        # Safe access to group
+        first_group = group_data
         if not isinstance(first_group, dict) or "id" not in first_group:
             logger.error(f"Invalid group data structure: {first_group}")
             raise HTTPException(status_code=500, detail="Invalid group data")
@@ -452,7 +452,7 @@ async def verify_student(request: Request, student_id: str):
                 else student_data
             )
 
-        # For EnableStudents: if no student found with student_id, try apaar_id
+    # For EnableStudents: if no student found with student_id, try apaar_id
     found_via_apaar_id = False
     if not student_record and is_enable_students:
         logger.info(f"EnableStudents: Trying apaar_id for: {student_id}")
@@ -506,13 +506,13 @@ async def verify_student(request: Request, student_id: str):
 
             if not (
                 group_response
-                and isinstance(group_response, list)
-                and len(group_response) > 0
+                and isinstance(group_response, dict)
+                and "id" in group_response
             ):
                 logger.warning(f"Group not found for auth_group_id: {value}")
                 return False
 
-            group_record = group_response[0]
+            group_record = group_response
             if not (isinstance(group_record, dict) and "id" in group_record):
                 logger.warning("Invalid group record structure")
                 return False
