@@ -66,8 +66,8 @@ async def get_session_occurrence_data(request: Request):
     session_data = session_data_list[0]
     logger.info(f"Retrieved session data for session {session_id}")
 
-    # Now check for today's occurrences
-    query_params["is_start_time"] = "today"
+    # Now check for active occurrences
+    query_params["is_start_time"] = "active"
     try:
         response = requests.get(
             session_occurrence_db_url,
