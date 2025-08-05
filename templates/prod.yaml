@@ -35,7 +35,8 @@ Resources:
       CodeUri: ../app
       Handler: main.handler
       Runtime: python3.11
-      Timeout: 10
+      Timeout: 30
+      MemorySize: 512
       Environment:
         Variables:
           JWT_SECRET_KEY: !Ref JwtSecretKey

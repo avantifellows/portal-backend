@@ -3,6 +3,7 @@
 on:
   push:
     branches: ["release"]
+  workflow_dispatch:
 
 name: Deploy to production
 
@@ -17,11 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-
       - name: Set up Python
-        run: uv python install 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: "latest"
 
       - name: Set up SAM
         uses: aws-actions/setup-sam@v1
@@ -36,8 +41,20 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Build
-        run: sam build --use-container -t templates/prod.yaml
+      - name: Generate requirements for SAM
+        run: |
+          echo "Generating requirements.txt using uv pip freeze:"
+          uv pip freeze > app/requirements.txt
+          echo "Generated requirements.txt content:"
+          cat app/requirements.txt
+
+      - name: Clean SAM build cache
+        run: |
+          rm -rf .aws-sam || true
+          sam --version
+
+      - name: Build with SAM
+        run: sam build --use-container -t templates/prod.yaml --debug
 
       - name: Deploy
         env:
@@ -48,17 +65,19 @@ jobs:
           SQS_SECRET_ACCESS_KEY: ${{ secrets.SQS_SECRET_ACCESS_KEY }}
           AWS_SQS_URL: ${{ secrets.AWS_SQS_URL }}
 
-        run: sam deploy
-          --stack-name PortalBackendProd
-          --s3-bucket af-portal-backend
-          --no-confirm-changeset
-          --no-fail-on-empty-changeset
-          --region ap-south-1
-          --capabilities CAPABILITY_IAM
-          --parameter-overrides
-          JwtSecretKey=$JWT_SECRET_KEY
-          DbServiceUrl=$DB_SERVICE_URL
-          DbServiceToken=$DB_SERVICE_TOKEN
-          SqsAccessKey=$SQS_ACCESS_KEY
-          SqsSecretAccessKey=$SQS_SECRET_ACCESS_KEY
-          AwsSqsUrl=$AWS_SQS_URL
+        run: >
+           sam deploy
+           --stack-name PortalBackendProd
+           --s3-bucket af-portal-backend
+           --s3-prefix prod
+           --no-confirm-changeset
+           --no-fail-on-empty-changeset
+           --region ap-south-1
+           --capabilities CAPABILITY_IAM
+           --parameter-overrides
+           JwtSecretKey=$JWT_SECRET_KEY
+           DbServiceUrl=$DB_SERVICE_URL
+           DbServiceToken=$DB_SERVICE_TOKEN
+           SqsAccessKey=$SQS_ACCESS_KEY
+           SqsSecretAccessKey=$SQS_SECRET_ACCESS_KEY
+           AwsSqsUrl=$AWS_SQS_URL
