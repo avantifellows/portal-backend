@@ -1,4 +1,4 @@
-from app.router import (
+from router import (
     auth_group,
     auth,
     batch,
@@ -23,8 +23,8 @@ from mangum import Mangum
 import random
 import string
 import time
-from app.logger_config import setup_logger
-from app.error_middleware import error_handling_middleware
+from logger_config import setup_logger
+from error_middleware import error_handling_middleware
 
 logger = setup_logger()
 

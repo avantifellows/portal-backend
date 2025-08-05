@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", message="PythonJoseJWTBackend is deprecated")
 if "JWT_SECRET_KEY" not in os.environ:
     from dotenv import load_dotenv
 
-    load_dotenv(".env")
+    load_dotenv("../.env")
 
 
 # 'authjwt_secret_key' stores the secret key for encoding and decoding
