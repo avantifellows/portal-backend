@@ -44,8 +44,8 @@ jobs:
 
       - name: Generate requirements for SAM
         run: |
-          echo "Generating requirements.txt using uv pip freeze:"
-          uv pip freeze > app/requirements.txt
+          echo "Generating requirements.txt using uv export:"
+          uv export --format requirements-txt --no-hashes --no-dev | grep -v "^-e " > app/requirements.txt
           echo "Generated requirements.txt content:"
           cat app/requirements.txt
 
