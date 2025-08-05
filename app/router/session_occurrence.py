@@ -66,35 +66,8 @@ async def get_session_occurrence_data(request: Request):
     session_data = session_data_list[0]
     logger.info(f"Retrieved session data for session {session_id}")
 
-    # Check if this is a continuous session to determine query strategy
-    repeat_schedule = session_data.get("repeat_schedule", {})
-    is_continuous_session = repeat_schedule.get("type") == "continuous"
-
-    # Backward compatibility: if repeat_schedule.type is not set, fall back to platform-based logic
-    if repeat_schedule.get("type") is None:
-        is_continuous_session = session_data.get("platform") in [
-            "quiz",
-            "others",
-            "no-platform",
-            "AF-plio",
-            "SCERT-plio",
-        ]
-
-    # For continuous sessions, query for occurrences that encompass current time
-    # For weekly sessions, query for today's occurrences (existing behavior)
-    if is_continuous_session:
-        logger.info(
-            f"Detected continuous session {session_id}, querying for active occurrences"
-        )
-        query_params["is_start_time"] = (
-            "active"  # Query for currently active occurrences
-        )
-    else:
-        logger.info(
-            f"Detected weekly session {session_id}, querying for today's occurrences"
-        )
-        query_params["is_start_time"] = "today"
-
+    # Now check for active occurrences
+    query_params["is_start_time"] = "active"
     try:
         response = requests.get(
             session_occurrence_db_url,
