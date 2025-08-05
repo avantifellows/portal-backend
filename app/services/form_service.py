@@ -49,11 +49,6 @@ def enhance_form_schema_with_dynamic_data(
     if not form_data or not form_data.get("attributes") or not auth_group:
         return form_data
 
-    if auth_group not in authgroup_state_mapping:
-        logger.warning(f"Unknown auth_group for form enhancement: {auth_group}")
-        return form_data
-
-    state = authgroup_state_mapping[auth_group]
     attributes = form_data["attributes"]
 
     # Check what fields need enhancement
@@ -65,14 +60,23 @@ def enhance_form_schema_with_dynamic_data(
         and _has_field(attributes, "block_name")
         and _has_field(attributes, "school_name")
     )
-    needs_colleges = _has_field(attributes, "college")
+    needs_colleges = _has_field(attributes, "college_name")
     needs_states = _has_field(attributes, "state")
 
-    if needs_district_block_school:
-        _enhance_with_district_block_school_mapping(attributes, auth_group, state)
-    elif needs_district_school:
-        _enhance_with_district_school_mapping(attributes, auth_group, state)
+    # For district/school mappings, we need the auth_group to be in the mapping
+    if auth_group in authgroup_state_mapping:
+        state = authgroup_state_mapping[auth_group]
 
+        if needs_district_block_school:
+            _enhance_with_district_block_school_mapping(attributes, auth_group, state)
+        elif needs_district_school:
+            _enhance_with_district_school_mapping(attributes, auth_group, state)
+    else:
+        logger.warning(
+            f"Unknown auth_group for school/district enhancement: {auth_group}"
+        )
+
+    # These enhancements don't require auth_group mapping
     if needs_colleges:
         _enhance_with_colleges(attributes)
 
@@ -266,7 +270,7 @@ def _enhance_with_colleges(attributes: Dict[str, Any]):
 
         colleges = colleges_data["colleges"]
 
-        college_field = _find_field_by_key(attributes, "college")
+        college_field = _find_field_by_key(attributes, "college_name")
         if college_field:
             college_field["options"] = {
                 "en": [{"label": college, "value": college} for college in colleges],
