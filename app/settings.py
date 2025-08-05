@@ -1,10 +1,5 @@
 from pydantic import BaseModel
-from fastapi_jwt import JwtAccessBearer, JwtAuthorizationCredentials
 import os
-import warnings
-
-# Suppress the python-jose deprecation warning since we're using authlib
-warnings.filterwarnings("ignore", message="PythonJoseJWTBackend is deprecated")
 
 if "JWT_SECRET_KEY" not in os.environ:
     from dotenv import load_dotenv
@@ -33,8 +28,8 @@ class Settings(BaseModel):
     DEFAULT_ACADEMIC_YEAR: str = os.environ.get("DEFAULT_ACADEMIC_YEAR", "2025-2026")
 
 
-# JWT access bearer - should automatically detect authlib backend
-access_security = JwtAccessBearer(secret_key=os.getenv("JWT_SECRET_KEY"))
+# JWT settings
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 
 settings = Settings()

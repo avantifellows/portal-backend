@@ -10,7 +10,6 @@ dependencies = [
     "charset-normalizer>=3.4.0",
     "click>=8.1.7",
     "fastapi>=0.116.1",
-    "fastapi-jwt>=0.2.0",
     "h11>=0.14.0",
     "httptools>=0.6.4",
     "idna>=3.10",

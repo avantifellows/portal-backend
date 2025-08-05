@@ -3,7 +3,7 @@ from typing import Union, Dict, Optional
 
 
 class AuthGroupResponse(BaseModel):
-    id: str
+    id: int
     name: str
     input_schema: Optional[Dict] = {}
     locale: Optional[str] = ""
@@ -19,7 +19,7 @@ class AuthUser(BaseModel):
 
 
 class BatchResponse(BaseModel):
-    id: str
+    id: int
     name: str
     contact_hours_per_week: Optional[int] = None
     batch_id: str
@@ -31,7 +31,7 @@ class BatchResponse(BaseModel):
 
 
 class EnrollmentRecordResponse(BaseModel):
-    id: str
+    id: int
     academic_year: str
     is_current: bool
     start_date: str
@@ -43,7 +43,7 @@ class EnrollmentRecordResponse(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    id: Optional[Union[str, int]] = None
+    id: Optional[int] = None
     session_id: Optional[str] = None
     name: Optional[str] = None
     start_time: Optional[str] = None

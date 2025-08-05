@@ -290,17 +290,6 @@ wheels = [
 ]
 
 [[package]]
-name = "fastapi-jwt"
-version = "0.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "fastapi" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/4a/60eb509cd08a591967fbdaab7f158c18d12172336432f3634ed4068b4101/fastapi_jwt-0.3.0-py3-none-any.whl", hash = "sha256:b4255ce929f1c59c2bbcf5295b485995c8263466aa733a0dd164b052b4a476a3", size = 9059 },
-]
-
-[[package]]
 name = "filelock"
 version = "3.18.0"
 source = { registry = "https://pypi.org/simple" }
@@ -484,7 +473,6 @@ dependencies = [
     { name = "charset-normalizer" },
     { name = "click" },
     { name = "fastapi" },
-    { name = "fastapi-jwt" },
     { name = "h11" },
     { name = "httptools" },
     { name = "idna" },
@@ -525,7 +513,6 @@ requires-dist = [
     { name = "charset-normalizer", specifier = ">=3.4.0" },
     { name = "click", specifier = ">=8.1.7" },
     { name = "fastapi", specifier = ">=0.116.1" },
-    { name = "fastapi-jwt", specifier = ">=0.2.0" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=7.1.1" },
     { name = "h11", specifier = ">=0.14.0" },
     { name = "httptools", specifier = ">=0.6.4" },

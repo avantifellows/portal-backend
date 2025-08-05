@@ -90,6 +90,15 @@ STUDENT_QUERY_PARAMS = [
 
 TEACHER_QUERY_PARAMS = ["teacher_id", "subject", "designation", "subject_id"]
 
+CANDIDATE_QUERY_PARAMS = [
+    "candidate_id",
+    "degree",
+    "college_name",
+    "branch_name",
+    "latest_cgpa",
+    "subject",
+]
+
 USER_QUERY_PARAMS = [
     "id",
     "first_name",

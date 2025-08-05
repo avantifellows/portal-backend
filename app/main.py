@@ -2,6 +2,7 @@ from router import (
     auth_group,
     auth,
     batch,
+    candidate,
     enrollment_record,
     form,
     group_session,
@@ -18,7 +19,6 @@ from router import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from mangum import Mangum
 import random
 import string
@@ -91,6 +91,7 @@ app.include_router(abtest.router)
 app.include_router(session.router)
 app.include_router(student.router)
 app.include_router(teacher.router)
+app.include_router(candidate.router)
 app.include_router(user_session.router)
 app.include_router(user.router)
 

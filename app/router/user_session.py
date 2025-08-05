@@ -12,6 +12,7 @@ from helpers import (
 from services.student_service import get_student_by_id
 from services.school_service import get_school_by_code
 from services.teacher_service import get_teacher_by_id
+from services.candidate_service import get_candidate_by_id
 from services.session_service import get_session_by_id
 from settings import settings
 import boto3
@@ -106,6 +107,26 @@ async def user_session(user_session: UserSession):
                     f"Failed to resolve teacher_id {query_params['user_id']}: {str(e)}"
                 )
                 raise HTTPException(status_code=404, detail="Teacher not found")
+
+        elif query_params["user_type"] == "candidate":
+            try:
+                user_id_response = get_candidate_by_id(query_params["user_id"])
+
+                candidate_data = safe_get_first_item(
+                    user_id_response, "Candidate not found"
+                )
+                if not isinstance(candidate_data, dict) or not candidate_data.get(
+                    "user", {}
+                ).get("id"):
+                    raise HTTPException(status_code=404, detail="Candidate not found")
+
+                query_params["user_id"] = candidate_data["user"]["id"]
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to resolve candidate_id {query_params['user_id']}: {str(e)}"
+                )
+                raise HTTPException(status_code=404, detail="Candidate not found")
 
         elif query_params["user_type"] == "school":
             try:

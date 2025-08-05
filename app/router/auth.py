@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi_jwt import JwtAccessBearer, JwtRefreshBearer, JwtAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models import AuthUser
 import datetime
 import jwt
@@ -7,9 +7,23 @@ import os
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# JWT bearers
-access_security = JwtAccessBearer(secret_key=os.getenv("JWT_SECRET_KEY"))
-refresh_security = JwtRefreshBearer(secret_key=os.getenv("JWT_SECRET_KEY"))
+# JWT bearer for token extraction
+security = HTTPBearer()
+
+
+def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Verify JWT token and return payload with proper error handling
+    """
+    try:
+        payload = jwt.decode(
+            credentials.credentials, os.getenv("JWT_SECRET_KEY"), algorithms=["HS256"]
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=422, detail="Signature has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 @router.get("/")
@@ -81,53 +95,40 @@ def create_access_token(auth_user: AuthUser):
 
 # generates refresh token
 @router.post("/refresh-token")
-def refresh_token(credentials: JwtAuthorizationCredentials = Depends(refresh_security)):
-    # Decode the refresh token to get user info
-    try:
-        payload = jwt.decode(
-            credentials.jwt_token, os.getenv("JWT_SECRET_KEY"), algorithms=["HS256"]
-        )
-        current_user = payload.get("sub")
-
-        # Create custom claims from old token
-        custom_claims = {}
-        if "group" in payload:
-            custom_claims = {"group": payload["group"]}
-
-        # Create new access token
-        new_payload = {
-            "sub": current_user,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
-            **custom_claims,
-        }
-        new_access_token = jwt.encode(
-            new_payload, os.getenv("JWT_SECRET_KEY"), algorithm="HS256"
-        )
-
-        return {"access_token": new_access_token}
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Refresh token has expired")
-    except jwt.InvalidTokenError:
+def refresh_token(payload: dict = Depends(verify_jwt)):
+    # Check if this is a refresh token
+    if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    current_user = payload.get("sub")
+
+    # Create custom claims from old token
+    custom_claims = {}
+    if "group" in payload:
+        custom_claims = {"group": payload["group"]}
+
+    # Create new access token
+    new_payload = {
+        "sub": current_user,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+        **custom_claims,
+    }
+    new_access_token = jwt.encode(
+        new_payload, os.getenv("JWT_SECRET_KEY"), algorithm="HS256"
+    )
+
+    return {"access_token": new_access_token}
 
 
 # verifies token
 @router.get("/verify")
-def verify_token(credentials: JwtAuthorizationCredentials = Depends(access_security)):
-    try:
-        payload = jwt.decode(
-            credentials.jwt_token, os.getenv("JWT_SECRET_KEY"), algorithms=["HS256"]
-        )
-        current_user = payload.get("sub")
-        return {"id": current_user, "data": payload}
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def verify_token(payload: dict = Depends(verify_jwt)):
+    current_user = payload.get("sub")
+    return {"id": current_user, "data": payload}
 
 
 @router.delete("/logout")
-def logout(credentials: JwtAuthorizationCredentials = Depends(access_security)):
+def logout(payload: dict = Depends(verify_jwt)):
     # With JWT, logout is typically handled client-side by removing the token
     # For server-side logout, you'd need to maintain a blacklist
     return {"message": "Successful logout"}
