@@ -10,6 +10,20 @@ from mapping import (
     USER_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
 )
+from services.exam_service import get_exam_by_name
+from services.school_service import get_school
+from services.group_user_service import (
+    create_auth_group_user_record,
+    create_batch_user_record,
+    create_school_user_record,
+    create_grade_user_record,
+)
+from services.grade_service import get_grade_by_number
+from services.user_service import get_user_by_email_and_phone
+from auth_group_classes import EnableStudents
+from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
+from helpers import validate_and_build_query_params
+from fastapi import HTTPException
 
 logger = get_logger()
 
@@ -57,7 +71,21 @@ async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Update student record."""
     logger.info("Updating student record")
 
-    response = requests.patch(student_db_url, json=data, headers=db_request_token())
+    try:
+        # Extract ID for URL path and remove from data payload
+        student_record_id = data.pop("id", None)
+        if not student_record_id:
+            logger.error("No student ID found in data for PATCH request")
+            return None
+
+        # Build URL with ID in path: /api/student/86081
+        patch_url = f"{student_db_url}/{student_record_id}"
+
+        response = requests.patch(patch_url, json=data, headers=db_request_token())
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"PATCH Request failed with exception: {e}")
+        raise
 
     if is_response_valid(response, "Student API could not patch the data!"):
         updated_data = is_response_empty(
@@ -71,21 +99,6 @@ async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 async def create_student(request_or_data):
     """Create student with full business logic - moved from router."""
-    from services.exam_service import get_exam_by_name
-    from services.school_service import get_school
-    from services.group_service import get_group_by_child_id_and_type
-    from services.group_user_service import (
-        create_auth_group_user_record,
-        create_batch_user_record,
-        create_school_user_record,
-        create_grade_user_record,
-    )
-    from services.grade_service import get_grade_by_number
-    from services.user_service import get_user_by_email_and_phone
-    from auth_group_classes import EnableStudents
-    from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
-    from helpers import validate_and_build_query_params, safe_get_first_item
-    from fastapi import HTTPException
 
     try:
         # Handle both Request objects (from API calls) and direct data (from internal calls)

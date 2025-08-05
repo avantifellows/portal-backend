@@ -1,23 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from auth_group_classes import EnableStudents
 from services.exam_service import get_exam_by_name
 from services.school_service import get_school
 from services.group_service import get_group_by_child_id_and_type
 from services.group_user_service import (
     get_group_user,
-    create_auth_group_user_record,
-    create_batch_user_record,
-    create_school_user_record,
-    create_grade_user_record,
 )
-from services.grade_service import get_grade_by_number
 from services.student_service import (
     get_student_by_id,
     update_student_data,
-    verify_student_by_id,
 )
-from services.user_service import get_user_by_email_and_phone
 from routes import student_db_url
 from helpers import (
     db_request_token,
@@ -31,9 +23,9 @@ from mapping import (
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
-    SCHOOL_QUERY_PARAMS,
     authgroup_state_mapping,
 )
+from services.student_service import create_student as create_student_service
 
 router = APIRouter(prefix="/student", tags=["Student"])
 logger = get_logger()
@@ -335,8 +327,6 @@ async def verify_student(request: Request, student_id: str):
 @router.post("/")
 async def create_student(request: Request):
     """Thin router layer - delegates to service."""
-    from services.student_service import create_student as create_student_service
-
     return await create_student_service(request)
 
 
@@ -389,6 +379,9 @@ async def complete_profile_details(request: Request):
             raise HTTPException(status_code=500, detail="Invalid student data")
 
         student_data["id"] = first_student["id"]
+        # Remove student_id from patch data as it's an identifier, not an updatable field
+        if "student_id" in student_data:
+            del student_data["student_id"]
         result = await update_student_data(student_data)
 
         logger.info("Successfully completed profile details")

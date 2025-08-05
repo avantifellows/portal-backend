@@ -17,11 +17,11 @@ from helpers import (
     is_response_valid,
     safe_get_first_item,
 )
-import logging
+from logger_config import get_logger
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 
 def is_user_attribute_empty(field, student_data):
@@ -52,17 +52,25 @@ def is_student_attribute_empty(field, student_data):
         "mother_education_level",
     ]
 
-    if key == "primary_contact" or key in guardian_keys or key in parent_keys:
+    if key == "primary_contact":
+        # For primary_contact, check if any guardian OR parent field is empty
         return any(
-            key not in student_data
-            or student_data[key] == ""
-            or student_data[key] is None
-            for key in guardian_keys
+            guardian_key not in student_data
+            or student_data[guardian_key] == ""
+            or student_data[guardian_key] is None
+            for guardian_key in guardian_keys
         ) and any(
+            parent_key not in student_data
+            or student_data[parent_key] == ""
+            or student_data[parent_key] is None
+            for parent_key in parent_keys
+        )
+    elif key in guardian_keys or key in parent_keys:
+        # For individual guardian/parent fields, check only that specific field
+        return (
             key not in student_data
             or student_data[key] == ""
             or student_data[key] is None
-            for key in parent_keys
         )
 
     if key == "grade":

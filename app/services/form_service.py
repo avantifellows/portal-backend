@@ -6,6 +6,7 @@ from logger_config import get_logger
 from routes import form_db_url, school_db_url
 from helpers import db_request_token, is_response_valid, safe_get_first_item
 from mapping import FORM_SCHEMA_QUERY_PARAMS, authgroup_state_mapping
+from services.school_service import get_states_list
 
 logger = get_logger()
 
@@ -281,8 +282,6 @@ def _enhance_with_colleges(attributes: Dict[str, Any]):
 def _enhance_with_states(attributes: Dict[str, Any]):
     """Enhance form with state options using school service."""
     try:
-        from services.school_service import get_states_list
-
         states_data = get_states_list()
         if not states_data or "states" not in states_data:
             logger.error("Failed to get states data from school service")

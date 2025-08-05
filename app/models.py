@@ -61,8 +61,8 @@ class SessionResponse(BaseModel):
     redirection: Optional[Union[str, bool]] = None
     popup_form: Optional[Union[str, bool]] = None
     signup_form_id: Optional[int] = None
-    popup_form_id: Optional[str] = None
-    session_occurrence_id: Optional[Union[str, int]] = None
+    popup_form_id: Optional[int] = None
+    session_occurrence_id: Optional[int] = None
 
 
 class UserSession(BaseModel):
