@@ -2,10 +2,10 @@
 
 import requests
 from typing import Dict, Any, Optional
-from app.logger_config import get_logger
-from app.routes import teacher_db_url
-from app.helpers import db_request_token, is_response_valid, safe_get_first_item
-from app.mapping import TEACHER_QUERY_PARAMS
+from logger_config import get_logger
+from routes import teacher_db_url
+from helpers import db_request_token, is_response_valid, safe_get_first_item
+from mapping import TEACHER_QUERY_PARAMS
 
 logger = get_logger()
 
@@ -48,14 +48,14 @@ async def verify_teacher_by_id(teacher_id: str, **params) -> bool:
 
 async def create_teacher(request_or_data):
     """Create teacher with full business logic - moved from router."""
-    from app.services.subject_service import get_subject_by_name
-    from app.services.group_user_service import (
+    from services.subject_service import get_subject_by_name
+    from services.group_user_service import (
         create_auth_group_user_record,
         create_batch_user_record,
         create_school_user_record,
     )
-    from app.helpers import validate_and_build_query_params, is_response_empty
-    from app.mapping import USER_QUERY_PARAMS, SCHOOL_QUERY_PARAMS
+    from helpers import validate_and_build_query_params, is_response_empty
+    from mapping import USER_QUERY_PARAMS, SCHOOL_QUERY_PARAMS
     from fastapi import HTTPException
     import requests
 
@@ -118,7 +118,7 @@ async def create_teacher(request_or_data):
                 )
 
         # Create new teacher record
-        from app.routes import teacher_db_url
+        from routes import teacher_db_url
 
         response = requests.post(
             teacher_db_url, json=query_params, headers=db_request_token()

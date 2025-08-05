@@ -1,27 +1,27 @@
 from fastapi import APIRouter, Request, HTTPException
 import requests
-from app.routes import teacher_db_url
-from app.helpers import (
+from routes import teacher_db_url
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
     safe_get_first_item,
 )
-from app.mapping import (
+from mapping import (
     USER_QUERY_PARAMS,
     TEACHER_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
     SCHOOL_QUERY_PARAMS,
 )
-from app.services.teacher_service import verify_teacher_by_id
-from app.services.subject_service import get_subject_by_name
-from app.services.group_user_service import (
+from services.teacher_service import verify_teacher_by_id
+from services.subject_service import get_subject_by_name
+from services.group_user_service import (
     create_auth_group_user_record,
     create_batch_user_record,
     create_school_user_record,
 )
-from app.logger_config import get_logger
+from logger_config import get_logger
 
 router = APIRouter(prefix="/teacher", tags=["Teacher"])
 logger = get_logger()
@@ -138,6 +138,6 @@ async def verify_teacher(request: Request, teacher_id: str):
 @router.post("/")
 async def create_teacher(request: Request):
     """Thin router layer - delegates to service."""
-    from app.services.teacher_service import create_teacher as create_teacher_service
+    from services.teacher_service import create_teacher as create_teacher_service
 
     return await create_teacher_service(request)

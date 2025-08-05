@@ -2,10 +2,10 @@
 
 import requests
 from typing import Dict, Any, Optional
-from app.logger_config import get_logger
-from app.routes import student_db_url
-from app.helpers import db_request_token, is_response_valid, is_response_empty
-from app.mapping import (
+from logger_config import get_logger
+from routes import student_db_url
+from helpers import db_request_token, is_response_valid, is_response_empty
+from mapping import (
     STUDENT_QUERY_PARAMS,
     USER_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
@@ -71,20 +71,20 @@ async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 async def create_student(request_or_data):
     """Create student with full business logic - moved from router."""
-    from app.services.exam_service import get_exam_by_name
-    from app.services.school_service import get_school
-    from app.services.group_service import get_group_by_child_id_and_type
-    from app.services.group_user_service import (
+    from services.exam_service import get_exam_by_name
+    from services.school_service import get_school
+    from services.group_service import get_group_by_child_id_and_type
+    from services.group_user_service import (
         create_auth_group_user_record,
         create_batch_user_record,
         create_school_user_record,
         create_grade_user_record,
     )
-    from app.services.grade_service import get_grade_by_number
-    from app.services.user_service import get_user_by_email_and_phone
-    from app.auth_group_classes import EnableStudents
-    from app.mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
-    from app.helpers import validate_and_build_query_params, safe_get_first_item
+    from services.grade_service import get_grade_by_number
+    from services.user_service import get_user_by_email_and_phone
+    from auth_group_classes import EnableStudents
+    from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
+    from helpers import validate_and_build_query_params, safe_get_first_item
     from fastapi import HTTPException
 
     try:

@@ -1,33 +1,33 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from app.auth_group_classes import EnableStudents
-from app.services.exam_service import get_exam_by_name
-from app.services.school_service import get_school
-from app.services.group_service import get_group_by_child_id_and_type
-from app.services.group_user_service import (
+from auth_group_classes import EnableStudents
+from services.exam_service import get_exam_by_name
+from services.school_service import get_school
+from services.group_service import get_group_by_child_id_and_type
+from services.group_user_service import (
     get_group_user,
     create_auth_group_user_record,
     create_batch_user_record,
     create_school_user_record,
     create_grade_user_record,
 )
-from app.services.grade_service import get_grade_by_number
-from app.services.student_service import (
+from services.grade_service import get_grade_by_number
+from services.student_service import (
     get_student_by_id,
     update_student_data,
     verify_student_by_id,
 )
-from app.services.user_service import get_user_by_email_and_phone
-from app.routes import student_db_url
-from app.helpers import (
+from services.user_service import get_user_by_email_and_phone
+from routes import student_db_url
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
     safe_get_first_item,
 )
-from app.logger_config import get_logger
-from app.mapping import (
+from logger_config import get_logger
+from mapping import (
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
@@ -335,7 +335,7 @@ async def verify_student(request: Request, student_id: str):
 @router.post("/")
 async def create_student(request: Request):
     """Thin router layer - delegates to service."""
-    from app.services.student_service import create_student as create_student_service
+    from services.student_service import create_student as create_student_service
 
     return await create_student_service(request)
 

@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from app.settings import settings
-from app.routes import session_db_url
-from app.models import SessionResponse
-from app.helpers import (
+from settings import settings
+from routes import session_db_url
+from models import SessionResponse
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
 )
-from app.mapping import SESSION_QUERY_PARAMS
+from mapping import SESSION_QUERY_PARAMS
 
 router = APIRouter(prefix="/session", tags=["Session"])
 

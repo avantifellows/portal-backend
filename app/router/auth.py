@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_jwt import JwtAccessBearer, JwtRefreshBearer, JwtAuthorizationCredentials
-from app.models import AuthUser
+from models import AuthUser
 import datetime
 import jwt
 import os

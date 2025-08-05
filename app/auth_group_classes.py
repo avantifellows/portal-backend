@@ -1,7 +1,7 @@
 import requests
-from app.logger_config import get_logger
-from app.routes import student_db_url
-from app.helpers import db_request_token
+from logger_config import get_logger
+from routes import student_db_url
+from helpers import db_request_token
 
 logger = get_logger()
 

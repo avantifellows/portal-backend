@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Request
 import requests
-from app.routes import enrollment_record_db_url
-from app.models import EnrollmentRecordResponse
-from app.helpers import (
+from routes import enrollment_record_db_url
+from models import EnrollmentRecordResponse
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
 )
-from app.mapping import ENROLLMENT_RECORD_PARAMS
+from mapping import ENROLLMENT_RECORD_PARAMS
 
 router = APIRouter(prefix="/enrollment-record", tags=["Enrollment Record"])
 

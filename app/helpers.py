@@ -1,6 +1,6 @@
 from fastapi import HTTPException
-from app.logger_config import get_logger
-from app.settings import settings
+from logger_config import get_logger
+from settings import settings
 from typing import Any, List, Dict, Union
 
 logger = get_logger()

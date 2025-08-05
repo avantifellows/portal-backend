@@ -1,7 +1,7 @@
 import random
 import datetime
 from dateutil.relativedelta import relativedelta
-from app.services.school_service import get_school_by_name_and_region
+from services.school_service import get_school_by_name_and_region
 
 
 class JNVIDGeneration:

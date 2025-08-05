@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Request
 import requests
-from app.routes import form_db_url
-from app.services.form_service import (
+from routes import form_db_url
+from services.form_service import (
     get_form_schema_by_id,
     enhance_form_schema_with_dynamic_data,
 )
-from app.services.student_service import get_student_by_id
-from app.mapping import (
+from services.student_service import get_student_by_id
+from mapping import (
     FORM_SCHEMA_QUERY_PARAMS,
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
 )
-from app.helpers import (
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,

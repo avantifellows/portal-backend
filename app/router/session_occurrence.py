@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
-from app.settings import settings
-from app.models import SessionResponse
-from app.helpers import db_request_token
-from app.logger_config import get_logger
+from settings import settings
+from models import SessionResponse
+from helpers import db_request_token
+from logger_config import get_logger
 
 router = APIRouter(prefix="/session-occurrence", tags=["Session Occurrence"])
 session_db_url = settings.db_url + "/session/"

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Request
 import requests
-from app.routes import grade_db_url
-from app.helpers import (
+from routes import grade_db_url
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     safe_get_first_item,
 )
-from app.logger_config import get_logger
+from logger_config import get_logger
 
 router = APIRouter(prefix="/grade", tags=["Grade"])
 logger = get_logger()

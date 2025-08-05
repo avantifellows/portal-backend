@@ -2,9 +2,9 @@
 
 import requests
 from typing import Dict, Any, Optional
-from app.logger_config import get_logger
-from app.routes import subject_db_url
-from app.helpers import db_request_token, is_response_valid, safe_get_first_item
+from logger_config import get_logger
+from routes import subject_db_url
+from helpers import db_request_token, is_response_valid, safe_get_first_item
 
 logger = get_logger()
 

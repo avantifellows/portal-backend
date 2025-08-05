@@ -2,10 +2,10 @@
 
 import requests
 from typing import Dict, Any, Optional
-from app.logger_config import get_logger
-from app.routes import auth_group_db_url
-from app.helpers import db_request_token, is_response_valid, safe_get_first_item
-from app.mapping import AUTH_GROUP_QUERY_PARAMS
+from logger_config import get_logger
+from routes import auth_group_db_url
+from helpers import db_request_token, is_response_valid, safe_get_first_item
+from mapping import AUTH_GROUP_QUERY_PARAMS
 
 logger = get_logger()
 

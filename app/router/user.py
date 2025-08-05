@@ -1,23 +1,23 @@
 from fastapi import APIRouter, Request, HTTPException
 import requests
-from app.services.student_service import create_student
-from app.services.teacher_service import create_teacher
+from services.student_service import create_student
+from services.teacher_service import create_teacher
 
-from app.routes import user_db_url
-from app.helpers import (
+from routes import user_db_url
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
 )
-from app.mapping import (
+from mapping import (
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
     SCHOOL_QUERY_PARAMS,
     TEACHER_QUERY_PARAMS,
 )
-from app.logger_config import get_logger
+from logger_config import get_logger
 
 router = APIRouter(prefix="/user", tags=["User"])
 logger = get_logger()

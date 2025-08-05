@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Request
 import requests
-from app.routes import group_user_db_url
-from app.router import enrollment_record
-from app.helpers import (
+from routes import group_user_db_url
+from router import enrollment_record
+from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
     is_response_empty,
 )
-from app.mapping import GROUP_USER_QUERY_PARAMS
-from app.logger_config import get_logger
+from mapping import GROUP_USER_QUERY_PARAMS
+from logger_config import get_logger
 
 router = APIRouter(prefix="/group-user", tags=["Group-User"])
 logger = get_logger()

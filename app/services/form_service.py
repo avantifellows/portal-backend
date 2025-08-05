@@ -2,10 +2,10 @@
 
 import requests
 from typing import Dict, Any, Optional
-from app.logger_config import get_logger
-from app.routes import form_db_url, school_db_url
-from app.helpers import db_request_token, is_response_valid, safe_get_first_item
-from app.mapping import FORM_SCHEMA_QUERY_PARAMS, authgroup_state_mapping
+from logger_config import get_logger
+from routes import form_db_url, school_db_url
+from helpers import db_request_token, is_response_valid, safe_get_first_item
+from mapping import FORM_SCHEMA_QUERY_PARAMS, authgroup_state_mapping
 
 logger = get_logger()
 
@@ -256,7 +256,7 @@ def _enhance_with_district_block_school_mapping(
 def _enhance_with_colleges(attributes: Dict[str, Any]):
     """Enhance form with college options using school service."""
     try:
-        from app.services.school_service import get_colleges_list
+        from services.school_service import get_colleges_list
 
         colleges_data = get_colleges_list()
         if not colleges_data or "colleges" not in colleges_data:
@@ -281,7 +281,7 @@ def _enhance_with_colleges(attributes: Dict[str, Any]):
 def _enhance_with_states(attributes: Dict[str, Any]):
     """Enhance form with state options using school service."""
     try:
-        from app.services.school_service import get_states_list
+        from services.school_service import get_states_list
 
         states_data = get_states_list()
         if not states_data or "states" not in states_data:

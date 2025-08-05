@@ -1,23 +1,23 @@
 from fastapi import APIRouter, HTTPException
 import requests
-from app.models import UserSession, AttendanceMessageSchema
+from models import UserSession, AttendanceMessageSchema
 from datetime import datetime
-from app.routes import user_session_db_url
-from app.helpers import (
+from routes import user_session_db_url
+from helpers import (
     db_request_token,
     is_response_valid,
     is_response_empty,
     safe_get_first_item,
 )
-from app.services.student_service import get_student_by_id
-from app.services.school_service import get_school_by_code
-from app.services.teacher_service import get_teacher_by_id
-from app.services.session_service import get_session_by_id
-from app.settings import settings
+from services.student_service import get_student_by_id
+from services.school_service import get_school_by_code
+from services.teacher_service import get_teacher_by_id
+from services.session_service import get_session_by_id
+from settings import settings
 import boto3
 from typing import Dict, Any
 import json
-from app.logger_config import get_logger
+from logger_config import get_logger
 
 logger = get_logger()
 
