@@ -36,6 +36,7 @@ SCHOOL_QUERY_PARAMS = [
     "region",
     "district",
     "state",
+    "block_name",
 ]
 
 SESSION_QUERY_PARAMS = ["id", "name", "session_id"]
@@ -87,7 +88,7 @@ STUDENT_QUERY_PARAMS = [
     "school_medium",
 ]
 
-TEACHER_QUERY_PARAMS = ["teacher_id", "subject_id", "designation"]
+TEACHER_QUERY_PARAMS = ["teacher_id", "subject", "designation", "subject_id"]
 
 USER_QUERY_PARAMS = [
     "id",

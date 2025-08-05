@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Request
 import requests
 from app.routes import form_db_url
-from app.services.form_service import get_form_schema_by_id
+from app.services.form_service import (
+    get_form_schema_by_id,
+    enhance_form_schema_with_dynamic_data,
+)
 from app.services.student_service import get_student_by_id
 from app.mapping import (
     FORM_SCHEMA_QUERY_PARAMS,
@@ -183,20 +186,35 @@ def find_children_fields(fields, parent_field):
 
 @router.get("/")
 def get_form_schema(request: Request):
+    """
+    Get form schema, enhanced with dynamic data by default.
+    auth_group parameter enables district/school mapping enhancement.
+    """
+    auth_group = request.query_params.get("auth_group")
+    filtered_params = dict(request.query_params)
+    if "auth_group" in filtered_params:
+        del filtered_params["auth_group"]
+
     query_params = validate_and_build_query_params(
-        request.query_params, FORM_SCHEMA_QUERY_PARAMS
+        filtered_params, FORM_SCHEMA_QUERY_PARAMS
     )
 
-    logger.info(f"Fetching form schema with params: {query_params}")
+    logger.info(
+        f"Fetching form schema with params: {query_params}, auth_group: {auth_group}"
+    )
 
     response = requests.get(
         form_db_url, params=query_params, headers=db_request_token()
     )
 
     if is_response_valid(response, "Form API could not fetch the data!"):
-        # Use safe_get_first_item instead of direct array access
         form_data = safe_get_first_item(response.json(), "Form does not exist!")
-        logger.info("Successfully retrieved form schema data")
+
+        # Always enhance the form with dynamic data
+        if auth_group:
+            form_data = enhance_form_schema_with_dynamic_data(form_data, auth_group)
+
+        logger.info("Successfully retrieved and enhanced form schema")
         return form_data
 
 

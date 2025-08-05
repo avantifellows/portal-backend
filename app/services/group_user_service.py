@@ -2,10 +2,20 @@
 
 import requests
 from typing import Dict, Any, Optional
+from datetime import datetime
+from fastapi import HTTPException
 from app.logger_config import get_logger
 from app.routes import group_user_db_url
 from app.helpers import db_request_token, is_response_valid
 from app.settings import settings
+from app.services.auth_group_service import get_auth_group_by_name
+from app.services.batch_service import get_batch_by_id
+from app.services.school_service import (
+    get_school_by_name_and_district,
+    get_school_by_name_district_state,
+)
+from app.services.group_service import get_group_by_child_id_and_type
+from app.mapping import authgroup_state_mapping
 
 logger = get_logger()
 
@@ -52,3 +62,113 @@ def get_group_user(**params) -> Optional[Dict[str, Any]]:
         return result
 
     return None
+
+
+async def create_auth_group_user_record(data, auth_group_name):
+    """Create auth group user record"""
+    auth_group_data = get_auth_group_by_name(auth_group_name)
+    if not auth_group_data or "id" not in auth_group_data:
+        raise HTTPException(status_code=404, detail="Auth group not found")
+
+    group_data = get_group_by_child_id_and_type(
+        child_id=auth_group_data["id"], group_type="auth_group"
+    )
+    if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
+        raise HTTPException(status_code=404, detail="Auth group group not found")
+
+    user_data = data.get("user", {})
+    if not isinstance(user_data, dict) or "id" not in user_data:
+        raise HTTPException(status_code=500, detail="Invalid user data")
+
+    await create_group_user(
+        group_id=group_data["id"],
+        user_id=user_data["id"],
+        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+        start_date=datetime.now().strftime("%Y-%m-%d"),
+    )
+
+
+async def create_batch_user_record(data, batch_id):
+    """Create batch user record"""
+    batch_data = get_batch_by_id(batch_id)
+    if not batch_data or "id" not in batch_data:
+        raise HTTPException(status_code=404, detail="Batch not found")
+
+    group_data = get_group_by_child_id_and_type(
+        child_id=batch_data["id"], group_type="batch"
+    )
+    if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
+        raise HTTPException(status_code=404, detail="Batch group not found")
+
+    user_data = data.get("user", {})
+    if not isinstance(user_data, dict) or "id" not in user_data:
+        raise HTTPException(status_code=500, detail="Invalid user data")
+
+    await create_group_user(
+        group_id=group_data["id"],
+        user_id=user_data["id"],
+        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+        start_date=datetime.now().strftime("%Y-%m-%d"),
+    )
+
+
+async def create_school_user_record(
+    data, school_name, district, auth_group_name=None, block_name=None
+):
+    """Create school user record"""
+    state = (
+        authgroup_state_mapping.get(auth_group_name, "") if auth_group_name else None
+    )
+
+    # Use the flexible get_school function to handle all parameters including block_name
+    school_params = {"name": str(school_name), "district": str(district)}
+    if state:
+        school_params["state"] = state
+    if block_name:
+        school_params["block_name"] = str(block_name)
+
+    from app.services.school_service import get_school
+
+    school_data = get_school(**school_params)
+
+    if not school_data or "id" not in school_data:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    group_data = get_group_by_child_id_and_type(
+        child_id=school_data["id"], group_type="school"
+    )
+    if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
+        raise HTTPException(status_code=404, detail="School group not found")
+
+    user_data = data.get("user", {})
+    if not isinstance(user_data, dict) or "id" not in user_data:
+        raise HTTPException(status_code=500, detail="Invalid user data")
+
+    await create_group_user(
+        group_id=group_data["id"],
+        user_id=user_data["id"],
+        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+        start_date=datetime.now().strftime("%Y-%m-%d"),
+    )
+
+
+async def create_grade_user_record(data):
+    """Create grade user record"""
+    grade_id = data.get("grade_id")
+    if not grade_id:
+        raise HTTPException(status_code=400, detail="Grade ID is required")
+
+    group_data = get_group_by_child_id_and_type(child_id=grade_id, group_type="grade")
+    if not group_data or not isinstance(group_data, dict) or "id" not in group_data:
+        raise HTTPException(status_code=404, detail="Grade group not found")
+
+    user_data = data.get("user", {})
+    if not isinstance(user_data, dict) or "id" not in user_data:
+        raise HTTPException(status_code=500, detail="Invalid user data")
+
+    await create_group_user(
+        group_id=group_data["id"],
+        user_id=user_data["id"],
+        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
+        start_date=datetime.now().strftime("%Y-%m-%d"),
+    )

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException
 import requests
 from app.services.student_service import create_student
+from app.services.teacher_service import create_teacher
 
 from app.routes import user_db_url
 from app.helpers import (
@@ -14,6 +15,7 @@ from app.mapping import (
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
     SCHOOL_QUERY_PARAMS,
+    TEACHER_QUERY_PARAMS,
 )
 from app.logger_config import get_logger
 
@@ -59,12 +61,12 @@ async def create_user(request: Request):
             + USER_QUERY_PARAMS
             + ENROLLMENT_RECORD_PARAMS
             + SCHOOL_QUERY_PARAMS
+            + TEACHER_QUERY_PARAMS
             + [
                 "id_generation",
                 "user_type",
                 "region",
                 "batch_registration",
-                "block_name",
             ],
         )
 
@@ -92,6 +94,30 @@ async def create_user(request: Request):
 
             return {
                 "user_id": student_id,
+                "already_exists": already_exists,
+            }
+        elif data.get("user_type") == "teacher":
+            teacher_data = {
+                "form_data": data["form_data"],
+                "id_generation": data.get("id_generation", False),
+                "auth_group": data.get("auth_group", ""),
+            }
+
+            create_teacher_response = await create_teacher(teacher_data)
+
+            if not create_teacher_response:
+                logger.error("Failed to create teacher - no response received")
+                raise HTTPException(status_code=500, detail="Failed to create teacher")
+
+            teacher_id = create_teacher_response.get("teacher_id", "unknown")
+            already_exists = create_teacher_response.get("already_exists", False)
+
+            logger.info(
+                f"Teacher creation result - ID: {teacher_id}, Already exists: {already_exists}"
+            )
+
+            return {
+                "user_id": teacher_id,
                 "already_exists": already_exists,
             }
         else:

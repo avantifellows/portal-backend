@@ -240,63 +240,6 @@ def get_schools_for_dropdown(
     return {"schools": []}
 
 
-@router.get("/colleges")
-def get_colleges():
-    """Get list of colleges/universities for forms (migrated from hardcoded frontend data)."""
-    colleges = [
-        "Central University of Kerala",
-        "Delhi University",
-        "Jadavpur University",
-        "NIT Calicut",
-        "NIT Delhi",
-        "NIT Durgapur",
-        "NIT Hamirpur",
-        "NIT Jalandhar",
-        "NIT Jamshedpur",
-        "NIT Kurukshetra",
-        "NIT Rourkela",
-        "NIT Silchar",
-        "NIT Srinagar",
-        "NITK Surathkal",
-        "NIT Trichy",
-        "NIT Uttarakhand",
-        "NIT Warangal",
-        "SVNIT Surat",
-        "IIT Jammu",
-        "Hindu College Delhi",
-        "PEC Chandigarh",
-        "Central University of Karnataka",
-        "Others",
-    ]
-
-    logger.info(f"Returning {len(colleges)} colleges")
-    return {"colleges": colleges}
-
-
-@router.get("/states")
-def get_states_list():
-    """Get list of unique states from schools database."""
-    logger.info("Fetching all unique states from schools database")
-
-    response = requests.get(school_db_url, headers=db_request_token())
-
-    if is_response_valid(response, "Could not fetch states from schools!"):
-        schools_data = response.json()
-        if not isinstance(schools_data, list):
-            schools_data = [schools_data]
-
-        # Extract unique states
-        states = list(
-            set(school.get("state") for school in schools_data if school.get("state"))
-        )
-        states.sort()
-
-        logger.info(f"Found {len(states)} unique states from database")
-        return {"states": states}
-
-    return {"states": []}
-
-
 @router.get("/dependant-mapping/{auth_group}")
 def get_dependant_field_mapping(auth_group: str, include_blocks: bool = False):
     """
