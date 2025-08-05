@@ -113,14 +113,7 @@ async def get_session_occurrence_data(request: Request):
             else:
                 logger.info(f"Session {session_id} exists but is currently closed")
         else:
-            if is_continuous_session:
-                logger.info(
-                    f"Session {session_id} exists but no active occurrences found"
-                )
-            else:
-                logger.info(
-                    f"Session {session_id} exists but no occurrences found for today"
-                )
+            logger.info(f"Session {session_id} exists but no active occurrences found")
             # Session exists but no active occurrences - "no class/quiz right now"
             session_data["is_session_open"] = False
 
