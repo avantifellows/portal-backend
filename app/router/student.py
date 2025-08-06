@@ -209,11 +209,24 @@ def get_students(request: Request):
 
 
 @router.get("/verify")
-async def verify_student(request: Request, student_id: str):
+async def verify_student(request: Request):
     query_params = validate_and_build_query_params(
         request.query_params,
         STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group_id"],
     )
+
+    # Check if we have either student_id or phone for identification
+    student_id = query_params.get("student_id")
+    phone = query_params.get("phone")
+
+    if not student_id and not phone:
+        raise HTTPException(
+            status_code=400, detail="Either student_id or phone is required"
+        )
+
+    # Use phone as student_id if no student_id provided
+    if not student_id and phone:
+        student_id = phone
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
 
@@ -264,6 +277,27 @@ async def verify_student(request: Request, student_id: str):
                 )
                 found_via_apaar_id = True
 
+    # If still no student found and we have phone, try searching by phone
+    found_via_phone = False
+    if not student_record and phone and phone != student_id:
+        logger.info(f"Trying phone search for: {phone}")
+
+        response = requests.get(
+            student_db_url,
+            params={"phone": phone},
+            headers=db_request_token(),
+        )
+
+        if is_response_valid(response):
+            student_data = is_response_empty(response.json(), False)
+            if student_data:
+                student_record = (
+                    safe_get_first_item(student_data)
+                    if isinstance(student_data, list)
+                    else student_data
+                )
+                found_via_phone = True
+
     # Now verify the student record against all query params
     if not student_record:
         logger.warning(f"No student found for: {student_id}")
@@ -281,9 +315,11 @@ async def verify_student(request: Request, student_id: str):
                 return False
 
         elif key in STUDENT_QUERY_PARAMS:
-            # Skip student_id verification if we found the student via apaar_id
-            if key == "student_id" and found_via_apaar_id:
-                logger.info("Skipping student_id verification - found via apaar_id")
+            # Skip student_id verification if we found the student via apaar_id or phone
+            if key == "student_id" and (found_via_apaar_id or found_via_phone):
+                logger.info(
+                    "Skipping student_id verification - found via alternative method"
+                )
                 continue
             if student_record.get(key) != value:
                 logger.info(f"Student verification failed for key: {key}")
