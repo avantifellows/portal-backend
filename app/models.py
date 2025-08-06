@@ -3,7 +3,7 @@ from typing import Union, Dict, Optional
 
 
 class AuthGroupResponse(BaseModel):
-    id: str
+    id: int
     name: str
     input_schema: Optional[Dict] = {}
     locale: Optional[str] = ""
@@ -19,7 +19,7 @@ class AuthUser(BaseModel):
 
 
 class BatchResponse(BaseModel):
-    id: str
+    id: int
     name: str
     contact_hours_per_week: Optional[int] = None
     batch_id: str
@@ -31,7 +31,7 @@ class BatchResponse(BaseModel):
 
 
 class EnrollmentRecordResponse(BaseModel):
-    id: str
+    id: int
     academic_year: str
     is_current: bool
     start_date: str
@@ -43,7 +43,7 @@ class EnrollmentRecordResponse(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    id: Optional[str] = None
+    id: Optional[int] = None
     session_id: Optional[str] = None
     name: Optional[str] = None
     start_time: Optional[str] = None
@@ -56,13 +56,13 @@ class SessionResponse(BaseModel):
     is_session_open: bool
     type: Optional[str] = None
     auth_type: Optional[str] = None
-    signup_form: Optional[str] = None
-    id_generation: Optional[str] = None
-    redirection: Optional[str] = None
-    popup_form: Optional[str] = None
-    signup_form_id: Optional[str] = None
-    popup_form_id: Optional[str] = None
-    session_occurrence_id: Optional[str] = None
+    signup_form: Optional[Union[str, bool]] = None
+    id_generation: Optional[Union[str, bool]] = None
+    redirection: Optional[Union[str, bool]] = None
+    popup_form: Optional[Union[str, bool]] = None
+    signup_form_id: Optional[int] = None
+    popup_form_id: Optional[int] = None
+    session_occurrence_id: Optional[int] = None
 
 
 class UserSession(BaseModel):

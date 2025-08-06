@@ -1,23 +1,27 @@
 from fastapi import APIRouter, Request
 import requests
 from routes import form_db_url
-from settings import settings
-from router import student, enrollment_record
-from request import build_request
-from mapping import FORM_SCHEMA_QUERY_PARAMS, USER_QUERY_PARAMS, STUDENT_QUERY_PARAMS
+from services.form_service import (
+    get_form_schema_by_id,
+    enhance_form_schema_with_dynamic_data,
+)
+from services.student_service import get_student_by_id
+from mapping import (
+    FORM_SCHEMA_QUERY_PARAMS,
+    USER_QUERY_PARAMS,
+    STUDENT_QUERY_PARAMS,
+)
 from helpers import (
     db_request_token,
     validate_and_build_query_params,
     is_response_valid,
-    is_response_empty,
     safe_get_first_item,
 )
-import json
-import logging
+from logger_config import get_logger
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 
 def is_user_attribute_empty(field, student_data):
@@ -48,17 +52,25 @@ def is_student_attribute_empty(field, student_data):
         "mother_education_level",
     ]
 
-    if key == "primary_contact" or key in guardian_keys or key in parent_keys:
+    if key == "primary_contact":
+        # For primary_contact, check if any guardian OR parent field is empty
         return any(
-            key not in student_data
-            or student_data[key] == ""
-            or student_data[key] is None
-            for key in guardian_keys
+            guardian_key not in student_data
+            or student_data[guardian_key] == ""
+            or student_data[guardian_key] is None
+            for guardian_key in guardian_keys
         ) and any(
+            parent_key not in student_data
+            or student_data[parent_key] == ""
+            or student_data[parent_key] is None
+            for parent_key in parent_keys
+        )
+    elif key in guardian_keys or key in parent_keys:
+        # For individual guardian/parent fields, check only that specific field
+        return (
             key not in student_data
             or student_data[key] == ""
             or student_data[key] is None
-            for key in parent_keys
         )
 
     if key == "grade":
@@ -97,9 +109,9 @@ def district_in_returned_form_schema_data(
     ]
     district_form_field["dependant"] = False
 
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = district_form_field
+    returned_form_schema[total_number_of_fields - number_of_fields_left] = (
+        district_form_field
+    )
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -119,9 +131,9 @@ def school_name_in_returned_form_schema_data(
     ]
     school_form_field["dependant"] = False
 
-    returned_form_schema[
-        total_number_of_fields - number_of_fields_left
-    ] = school_form_field
+    returned_form_schema[total_number_of_fields - number_of_fields_left] = (
+        school_form_field
+    )
     number_of_fields_left -= 1
     return (returned_form_schema, number_of_fields_left)
 
@@ -182,20 +194,35 @@ def find_children_fields(fields, parent_field):
 
 @router.get("/")
 def get_form_schema(request: Request):
+    """
+    Get form schema, enhanced with dynamic data by default.
+    auth_group parameter enables district/school mapping enhancement.
+    """
+    auth_group = request.query_params.get("auth_group")
+    filtered_params = dict(request.query_params)
+    if "auth_group" in filtered_params:
+        del filtered_params["auth_group"]
+
     query_params = validate_and_build_query_params(
-        request.query_params, FORM_SCHEMA_QUERY_PARAMS
+        filtered_params, FORM_SCHEMA_QUERY_PARAMS
     )
 
-    logger.info(f"Fetching form schema with params: {query_params}")
+    logger.info(
+        f"Fetching form schema with params: {query_params}, auth_group: {auth_group}"
+    )
 
     response = requests.get(
         form_db_url, params=query_params, headers=db_request_token()
     )
 
     if is_response_valid(response, "Form API could not fetch the data!"):
-        # Use safe_get_first_item instead of direct array access
         form_data = safe_get_first_item(response.json(), "Form does not exist!")
-        logger.info("Successfully retrieved form schema data")
+
+        # Always enhance the form with dynamic data
+        if auth_group:
+            form_data = enhance_form_schema_with_dynamic_data(form_data, auth_group)
+
+        logger.info("Successfully retrieved and enhanced form schema")
         return form_data
 
 
@@ -206,11 +233,12 @@ async def get_student_fields(request: Request):
         ["number_of_fields_in_popup_form", "form_id", "student_id"],
     )
 
-    form = get_form_schema(build_request(query_params={"id": query_params["form_id"]}))
+    form = get_form_schema_by_id(query_params["form_id"])
 
-    student_data = student.get_students(
-        build_request(query_params={"student_id": query_params["student_id"]})
-    )[0]
+    student_response = get_student_by_id(query_params["student_id"])
+    student_data = (
+        student_response[0] if student_response and len(student_response) > 0 else {}
+    )
 
     # get the priorities for all fields and sort them
     priority_order = sorted([eval(i) for i in form["attributes"].keys()])

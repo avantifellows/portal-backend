@@ -9,8 +9,11 @@ from helpers import (
     is_response_empty,
     safe_get_first_item,
 )
-from router import student, session, teacher, school
-from request import build_request
+from services.student_service import get_student_by_id
+from services.school_service import get_school_by_code
+from services.teacher_service import get_teacher_by_id
+from services.candidate_service import get_candidate_by_id
+from services.session_service import get_session_by_id
 from settings import settings
 import boto3
 from typing import Dict, Any
@@ -67,9 +70,7 @@ async def user_session(user_session: UserSession):
         # Simple ID resolution without extensive validation
         if query_params["user_type"] == "student":
             try:
-                user_id_response = student.get_students(
-                    build_request(query_params={"student_id": query_params["user_id"]})
-                )
+                user_id_response = get_student_by_id(query_params["user_id"])
 
                 student_data = safe_get_first_item(
                     user_id_response, "Student not found"
@@ -89,9 +90,7 @@ async def user_session(user_session: UserSession):
 
         elif query_params["user_type"] == "teacher":
             try:
-                user_id_response = teacher.get_teachers(
-                    build_request(query_params={"teacher_id": query_params["user_id"]})
-                )
+                user_id_response = get_teacher_by_id(query_params["user_id"])
 
                 teacher_data = safe_get_first_item(
                     user_id_response, "Teacher not found"
@@ -109,11 +108,29 @@ async def user_session(user_session: UserSession):
                 )
                 raise HTTPException(status_code=404, detail="Teacher not found")
 
+        elif query_params["user_type"] == "candidate":
+            try:
+                user_id_response = get_candidate_by_id(query_params["user_id"])
+
+                candidate_data = safe_get_first_item(
+                    user_id_response, "Candidate not found"
+                )
+                if not isinstance(candidate_data, dict) or not candidate_data.get(
+                    "user", {}
+                ).get("id"):
+                    raise HTTPException(status_code=404, detail="Candidate not found")
+
+                query_params["user_id"] = candidate_data["user"]["id"]
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to resolve candidate_id {query_params['user_id']}: {str(e)}"
+                )
+                raise HTTPException(status_code=404, detail="Candidate not found")
+
         elif query_params["user_type"] == "school":
             try:
-                user_id_response = school.get_school(
-                    build_request(query_params={"code": query_params["user_id"]})
-                )
+                user_id_response = get_school_by_code(query_params["user_id"])
 
                 if not isinstance(user_id_response, dict) or not user_id_response.get(
                     "user", {}
@@ -135,9 +152,7 @@ async def user_session(user_session: UserSession):
 
         # Simple session validation
         try:
-            session_pk_id_response = await session.get_session(
-                build_request(query_params={"session_id": query_params["session_id"]})
-            )
+            session_pk_id_response = await get_session_by_id(query_params["session_id"])
 
             session_data = safe_get_first_item(
                 session_pk_id_response, "Session not found"

@@ -2,6 +2,7 @@ from router import (
     auth_group,
     auth,
     batch,
+    candidate,
     enrollment_record,
     form,
     group_session,
@@ -18,10 +19,7 @@ from router import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi_jwt_auth.exceptions import AuthJWTException
 from mangum import Mangum
-import settings
 import random
 import string
 import time
@@ -79,11 +77,6 @@ app.add_middleware(
 )
 
 
-@app.exception_handler(AuthJWTException)
-def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
-
-
 app.include_router(auth_group.router)
 app.include_router(auth.router)
 app.include_router(batch.router)
@@ -98,6 +91,7 @@ app.include_router(abtest.router)
 app.include_router(session.router)
 app.include_router(student.router)
 app.include_router(teacher.router)
+app.include_router(candidate.router)
 app.include_router(user_session.router)
 app.include_router(user.router)
 

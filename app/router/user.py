@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException
 import requests
-from router import student
-from request import build_request
+from services.student_service import create_student
+from services.teacher_service import create_teacher
+from services.candidate_service import create_candidate
 from routes import user_db_url
 from helpers import (
     db_request_token,
@@ -14,6 +15,8 @@ from mapping import (
     STUDENT_QUERY_PARAMS,
     ENROLLMENT_RECORD_PARAMS,
     SCHOOL_QUERY_PARAMS,
+    TEACHER_QUERY_PARAMS,
+    CANDIDATE_QUERY_PARAMS,
 )
 from logger_config import get_logger
 
@@ -59,12 +62,13 @@ async def create_user(request: Request):
             + USER_QUERY_PARAMS
             + ENROLLMENT_RECORD_PARAMS
             + SCHOOL_QUERY_PARAMS
+            + TEACHER_QUERY_PARAMS
+            + CANDIDATE_QUERY_PARAMS
             + [
                 "id_generation",
                 "user_type",
                 "region",
                 "batch_registration",
-                "block_name",
             ],
         )
 
@@ -76,8 +80,8 @@ async def create_user(request: Request):
                 "auth_group": data.get("auth_group", ""),
             }
 
-            # Call student.create_student directly with the data
-            create_student_response = await student.create_student(student_data)
+            # Call create_student service function directly with the data
+            create_student_response = await create_student(student_data)
 
             if not create_student_response:
                 logger.error("Failed to create student - no response received")
@@ -92,6 +96,54 @@ async def create_user(request: Request):
 
             return {
                 "user_id": student_id,
+                "already_exists": already_exists,
+            }
+        elif data.get("user_type") == "teacher":
+            teacher_data = {
+                "form_data": data["form_data"],
+                "id_generation": data.get("id_generation", False),
+                "auth_group": data.get("auth_group", ""),
+            }
+
+            create_teacher_response = await create_teacher(teacher_data)
+
+            if not create_teacher_response:
+                logger.error("Failed to create teacher - no response received")
+                raise HTTPException(status_code=500, detail="Failed to create teacher")
+
+            teacher_id = create_teacher_response.get("teacher_id", "unknown")
+            already_exists = create_teacher_response.get("already_exists", False)
+
+            logger.info(
+                f"Teacher creation result - ID: {teacher_id}, Already exists: {already_exists}"
+            )
+
+            return {
+                "user_id": teacher_id,
+                "already_exists": already_exists,
+            }
+        elif data.get("user_type") == "candidate":
+            candidate_data = {
+                "form_data": data["form_data"],
+                "id_generation": data.get("id_generation", False),
+                "auth_group": data.get("auth_group", ""),
+            }
+            create_candidate_response = await create_candidate(candidate_data)
+            if not create_candidate_response:
+                logger.error("Failed to create candidate - no response received")
+                raise HTTPException(
+                    status_code=500, detail="Failed to create candidate"
+                )
+
+            candidate_id = create_candidate_response.get("candidate_id", "unknown")
+            already_exists = create_candidate_response.get("already_exists", False)
+
+            logger.info(
+                f"Candidate creation result - ID: {candidate_id}, Already exists: {already_exists}"
+            )
+
+            return {
+                "user_id": candidate_id,
                 "already_exists": already_exists,
             }
         else:

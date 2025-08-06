@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from fastapi_jwt_auth import AuthJWT
 import os
 
 if "JWT_SECRET_KEY" not in os.environ:
@@ -25,11 +24,12 @@ class Settings(BaseModel):
     SQS_SECRET_ACCESS_KEY: str = os.environ.get("SQS_SECRET_ACCESS_KEY")
     AWS_SQS_URL: str = os.environ.get("AWS_SQS_URL")
 
+    # Business logic configuration
+    DEFAULT_ACADEMIC_YEAR: str = os.environ.get("DEFAULT_ACADEMIC_YEAR", "2025-2026")
 
-# callback to get the configuration
-@AuthJWT.load_config
-def get_config():
-    return Settings()
+
+# JWT settings
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 
 settings = Settings()

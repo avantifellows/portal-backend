@@ -100,12 +100,12 @@ async def get_session_occurrence_data(request: Request):
                 detail="Invalid response format from session occurrence service",
             )
 
-        # Session exists - check if there are occurrences today
+        # Session exists - check if there are active occurrences
         if len(session_occurrences) > 0:
             logger.info(
                 f"Found {len(session_occurrences)} session occurrences for session {session_id}"
             )
-            # Session has occurrences today - check if active
+            # Session has active occurrences - check if session is enabled
             session_data["is_session_open"] = bool(session_data.get("is_active", False))
             if session_data["is_session_open"]:
                 session_data["session_occurrence_id"] = session_occurrences[0].get("id")
@@ -113,10 +113,8 @@ async def get_session_occurrence_data(request: Request):
             else:
                 logger.info(f"Session {session_id} exists but is currently closed")
         else:
-            logger.info(
-                f"Session {session_id} exists but no occurrences found for today"
-            )
-            # Session exists but no occurrences today - "no class right now"
+            logger.info(f"Session {session_id} exists but no active occurrences found")
+            # Session exists but no active occurrences - "no class/quiz right now"
             session_data["is_session_open"] = False
 
         return session_data

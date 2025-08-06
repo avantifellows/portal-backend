@@ -1,9 +1,7 @@
-from settings import settings
 import random
-from router import school
 import datetime
 from dateutil.relativedelta import relativedelta
-from request import build_request
+from services.school_service import get_school_by_name_and_region
 
 
 class JNVIDGeneration:
@@ -24,11 +22,10 @@ class JNVIDGeneration:
         return str(graduating_year.year)[-2:]
 
     def get_jnv_code(self):
-        return school.get_school(
-            build_request(
-                query_params={"region": self.region, "name": self.school_name}
-            )
+        school_data = get_school_by_name_and_region(
+            name=self.school_name, region=self.region
         )
+        return school_data.get("code") if school_data else None
 
     def generate_three_digit_code(code=""):
         for _ in range(3):
