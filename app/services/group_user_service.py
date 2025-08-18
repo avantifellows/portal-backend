@@ -10,12 +10,9 @@ from helpers import db_request_token, is_response_valid
 from settings import settings
 from services.auth_group_service import get_auth_group_by_name
 from services.batch_service import get_batch_by_id
-from services.school_service import (
-    get_school_by_name_and_district,
-    get_school_by_name_district_state,
-)
 from services.group_service import get_group_by_child_id_and_type
 from mapping import authgroup_state_mapping
+from services.school_service import get_school
 
 logger = get_logger()
 
@@ -126,8 +123,6 @@ async def create_school_user_record(
         school_params["state"] = state
     if block_name:
         school_params["block_name"] = str(block_name)
-
-    from services.school_service import get_school
 
     school_data = get_school(**school_params)
 

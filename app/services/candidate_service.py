@@ -4,15 +4,19 @@ import requests
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import candidate_db_url
-from helpers import db_request_token, is_response_valid, safe_get_first_item
-from mapping import CANDIDATE_QUERY_PARAMS
+from helpers import (
+    db_request_token,
+    is_response_valid,
+    safe_get_first_item,
+    validate_and_build_query_params,
+    is_response_empty,
+)
+from mapping import CANDIDATE_QUERY_PARAMS, USER_QUERY_PARAMS
 from services.subject_service import get_subject_by_name
 from services.group_user_service import (
     create_auth_group_user_record,
     create_batch_user_record,
 )
-from helpers import validate_and_build_query_params, is_response_empty
-from mapping import USER_QUERY_PARAMS
 from fastapi import HTTPException
 
 logger = get_logger()
@@ -57,7 +61,7 @@ async def verify_candidate_by_id(candidate_id: str, **params) -> bool:
 
 
 async def create_candidate(request_or_data):
-    """Create candidate with full business logic - moved from router."""
+    """Create candidate with full business logic"""
     try:
         # Handle both Request objects (from API calls) and direct data (from internal calls)
         if hasattr(request_or_data, "json"):
@@ -144,3 +148,53 @@ async def create_candidate(request_or_data):
     except Exception as e:
         logger.error(f"Error in create_candidate: {str(e)}")
         raise HTTPException(status_code=500, detail="Error creating candidate")
+
+
+async def verify_candidate_comprehensive(
+    candidate_id: str, query_params: Dict[str, Any]
+) -> bool:
+    """Comprehensive candidate verification."""
+    logger.info(f"Verifying candidate: {candidate_id} with params: {query_params}")
+
+    response = requests.get(
+        candidate_db_url,
+        params={"candidate_id": candidate_id},
+        headers=db_request_token(),
+    )
+
+    if is_response_valid(response):
+        data = is_response_empty(response.json(), False)
+
+        if data:
+            candidate_record = (
+                safe_get_first_item(data) if isinstance(data, list) else data
+            )
+
+            if not candidate_record:
+                logger.warning(
+                    f"No candidate data found for candidate_id: {candidate_id}"
+                )
+                return False
+
+            for key, value in query_params.items():
+                if key in USER_QUERY_PARAMS:
+                    user_data = candidate_record.get("user", {})
+                    if not isinstance(user_data, dict):
+                        logger.warning(
+                            f"Invalid user data structure for candidate: {candidate_id}"
+                        )
+                        return False
+                    if user_data.get(key) != value:
+                        logger.info(f"User verification failed for key: {key}")
+                        return False
+
+                if key in CANDIDATE_QUERY_PARAMS:
+                    if candidate_record.get(key) != value:
+                        logger.info(f"Candidate verification failed for key: {key}")
+                        return False
+
+            logger.info(f"Candidate verification successful for: {candidate_id}")
+            return True
+
+    logger.warning(f"Candidate verification failed for: {candidate_id}")
+    return False
