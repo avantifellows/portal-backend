@@ -391,12 +391,23 @@ def get_dependant_field_mapping_for_auth_group(
 
     # Apply same filtering logic as get_districts_by_filters for consistency
     filtered_schools = []
+    chhattisgarh_districts = "Bastar+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
+        "+"
+    )
+    maharashtra_districts = ["Gadchiroli", "Bhandara"]
     for school in schools_data:
-        if state == "Punjab":
-            if school.get("af_school_category") in ["SoE", "RSMS"]:
+        if school.get("district"):
+            if auth_group == "PunjabTeachers":
+                if school.get("af_school_category") in ["SoE", "RSMS"]:
+                    filtered_schools.append(school)
+            elif auth_group == "ChhattisgarhStudents":
+                if school.get("district") in chhattisgarh_districts:
+                    filtered_schools.append(school)
+            elif auth_group == "MaharashtraStudents":
+                if school.get("district") in maharashtra_districts:
+                    filtered_schools.append(school)
+            else:
                 filtered_schools.append(school)
-        else:
-            filtered_schools.append(school)
 
     if include_blocks:
         # District -> Block -> School hierarchy
