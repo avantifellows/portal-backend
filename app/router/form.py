@@ -251,6 +251,8 @@ async def get_student_fields(request: Request):
 
     returned_form_schema = {}
 
+    print("*****")
+
     for priority in priority_order:
         if number_of_fields_in_form_schema <= total_number_of_fields:
             children_fields = find_children_fields(fields, fields[str(priority)])
