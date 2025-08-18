@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Request
-import requests
-from routes import school_db_url
-from helpers import (
-    db_request_token,
-    validate_and_build_query_params,
-    is_response_valid,
-    is_response_empty,
-    safe_get_first_item,
-)
+from helpers import validate_and_build_query_params
 from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS
+from services.school_service import (
+    get_school,
+    verify_school_comprehensive,
+    get_districts_by_filters,
+    get_blocks_by_filters,
+    get_schools_for_dropdown_by_filters,
+    get_dependant_field_mapping_for_auth_group,
+)
 from logger_config import get_logger
 
 router = APIRouter(prefix="/school", tags=["School"])
@@ -16,91 +16,48 @@ logger = get_logger()
 
 
 @router.get("/")
-def get_school(request: Request):
+def get_school_endpoint(request: Request):
+    """Get school"""
     query_params = validate_and_build_query_params(
         request.query_params, SCHOOL_QUERY_PARAMS
     )
 
     logger.info(f"Fetching school with params: {query_params}")
-
-    response = requests.get(
-        school_db_url, params=query_params, headers=db_request_token()
-    )
-
-    if is_response_valid(response, "School API could not fetch the data!"):
-        # Use safe_get_first_item instead of direct array access
-        school_data = safe_get_first_item(response.json(), "School does not exist")
-        return school_data
+    return get_school(**query_params)
 
 
 @router.get("/verify")
 async def verify_school(request: Request, code: str):
+    """Verify school"""
     query_params = validate_and_build_query_params(
         request.query_params, SCHOOL_QUERY_PARAMS + USER_QUERY_PARAMS
     )
+    return await verify_school_comprehensive(code, query_params)
 
-    logger.info(f"Verifying school with code: {code} and params: {query_params}")
 
-    # Try school code first
-    school_record = None
-    found_via_udise_code = False
+@router.get("/districts")
+def get_districts(auth_group: str = None, state: str = None):
+    """Get list of unique districts"""
+    return get_districts_by_filters(auth_group=auth_group, state=state)
 
-    response = requests.get(
-        school_db_url,
-        params={"code": code},
-        headers=db_request_token(),
+
+@router.get("/blocks")
+def get_blocks(auth_group: str = None, state: str = None, district: str = None):
+    """Get list of unique blocks"""
+    return get_blocks_by_filters(auth_group=auth_group, state=state, district=district)
+
+
+@router.get("/schools")
+def get_schools_for_dropdown(
+    auth_group: str = None, state: str = None, district: str = None, block: str = None
+):
+    """Get list of schools for dropdown"""
+    return get_schools_for_dropdown_by_filters(
+        auth_group=auth_group, state=state, district=district, block=block
     )
 
-    if is_response_valid(response):
-        data = is_response_empty(response.json(), False)
-        if data:
-            school_record = (
-                safe_get_first_item(data) if isinstance(data, list) else data
-            )
 
-    # If no school found with school code, try udise_code
-    if not school_record:
-        logger.info(f"No school found with code, trying udise_code for: {code}")
-
-        response = requests.get(
-            school_db_url,
-            params={"udise_code": code},
-            headers=db_request_token(),
-        )
-
-        if is_response_valid(response):
-            data = is_response_empty(response.json(), False)
-            if data:
-                school_record = (
-                    safe_get_first_item(data) if isinstance(data, list) else data
-                )
-                found_via_udise_code = True
-
-    # Now verify the school record against all query params
-    if not school_record:
-        logger.warning(f"No school found for code: {code}")
-        return False
-
-    # Verify all query parameters
-    for key, value in query_params.items():
-        if key in USER_QUERY_PARAMS:
-            # Safe access to nested user object
-            user_data = school_record.get("user", {})
-            if not isinstance(user_data, dict):
-                logger.warning(f"Invalid user data structure for school code: {code}")
-                return False
-            if user_data.get(key) != value:
-                logger.info(f"User verification failed for key: {key}")
-                return False
-
-        elif key in SCHOOL_QUERY_PARAMS:
-            # Skip code verification if we found the school via udise_code
-            if key == "code" and found_via_udise_code:
-                logger.info("Skipping code verification - found via udise_code")
-                continue
-            if school_record.get(key) != value:
-                logger.info(f"School verification failed for key: {key}")
-                return False
-
-    logger.info(f"School verification successful for code: {code}")
-    return True
+@router.get("/dependant-mapping/{auth_group}")
+def get_dependant_field_mapping(auth_group: str, include_blocks: bool = False):
+    """Generate dependantFieldMapping - thin router layer."""
+    return get_dependant_field_mapping_for_auth_group(auth_group, include_blocks)

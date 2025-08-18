@@ -34,8 +34,9 @@ Resources:
       FunctionName: "PortalBackendProd"
       CodeUri: ../app
       Handler: main.handler
-      Runtime: python3.9
-      Timeout: 10
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 512
       Environment:
         Variables:
           JWT_SECRET_KEY: !Ref JwtSecretKey

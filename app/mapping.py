@@ -36,6 +36,7 @@ SCHOOL_QUERY_PARAMS = [
     "region",
     "district",
     "state",
+    "block_name",
 ]
 
 SESSION_QUERY_PARAMS = ["id", "name", "session_id"]
@@ -87,7 +88,16 @@ STUDENT_QUERY_PARAMS = [
     "school_medium",
 ]
 
-TEACHER_QUERY_PARAMS = ["teacher_id", "subject_id", "designation"]
+TEACHER_QUERY_PARAMS = ["teacher_id", "subject", "designation", "subject_id"]
+
+CANDIDATE_QUERY_PARAMS = [
+    "candidate_id",
+    "degree",
+    "college_name",
+    "branch_name",
+    "latest_cgpa",
+    "subject",
+]
 
 USER_QUERY_PARAMS = [
     "id",
@@ -116,4 +126,10 @@ authgroup_state_mapping = {
     "PunjabStudents": "Punjab",
     "MaharashtraStudents": "Maharashtra",
     "TNStudents": "Tamil Nadu",
+    "PunjabTeachers": "Punjab",
+    "TNTeachers": "Tamil Nadu",
+    "ChhattisgarhStudents": "Chhattisgarh",
 }
+
+# Reverse mapping for state to authgroup lookup
+state_authgroup_mapping = {v: k for k, v in authgroup_state_mapping.items()}
