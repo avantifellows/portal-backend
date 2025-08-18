@@ -94,25 +94,50 @@ def get_colleges_list() -> Dict[str, Any]:
 
 def get_states_list() -> Dict[str, Any]:
     """Get list of unique states from schools database."""
-    logger.info("Fetching all unique states from schools database")
+    logger.info("Directly returning fixed states list")
 
-    response = requests.get(school_db_url, headers=db_request_token())
+    states = [
+        "Andaman and Nicobar Islands",
+        "Andhra Pradesh",
+        "Arunachal Pradesh",
+        "Assam",
+        "Bihar",
+        "Chandigarh",
+        "Chhattisgarh",
+        "Dadra and Nagar Haveli",
+        "Daman and Diu",
+        "Delhi",
+        "Goa",
+        "Gujarat",
+        "Haryana",
+        "Himachal Pradesh",
+        "Jammu and Kashmir",
+        "Jharkhand",
+        "Karnataka",
+        "Kerala",
+        "Ladakh",
+        "Lakshadweep",
+        "Madhya Pradesh",
+        "Maharashtra",
+        "Manipur",
+        "Meghalaya",
+        "Mizoram",
+        "Nagaland",
+        "Odisha",
+        "Puducherry",
+        "Punjab",
+        "Rajasthan",
+        "Sikkim",
+        "Tamil Nadu",
+        "Telangana",
+        "Tripura",
+        "Uttar Pradesh",
+        "Uttarakhand",
+        "West Bengal",
+    ]
+    states.sort()
 
-    if is_response_valid(response, "Could not fetch states from schools!"):
-        schools_data = response.json()
-        if not isinstance(schools_data, list):
-            schools_data = [schools_data]
-
-        # Extract unique states
-        states = list(
-            set(school.get("state") for school in schools_data if school.get("state"))
-        )
-        states.sort()
-
-        logger.info(f"Found {len(states)} unique states from database")
-        return {"states": states}
-
-    return {"states": []}
+    return {"states": states}
 
 
 async def verify_school_comprehensive(code: str, query_params: Dict[str, Any]) -> bool:
