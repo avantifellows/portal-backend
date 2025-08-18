@@ -233,11 +233,17 @@ def get_districts_by_filters(
             schools_data = [schools_data]
 
         districts = []
+        chhattisgarh_districts = "Bastar+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
+            "+"
+        )
         for school in schools_data:
             if school.get("district"):
                 if query_params["state"] == "Punjab":
                     if school.get("af_school_category") in ["SoE", "RSMS"]:
                         districts.append(school.get("district"))
+                elif query_params["state"] == "Chhattisgarh":
+                    if school.get("district") in chhattisgarh_districts:
+                        districts.append(school.get("district"))  # change later
                 else:
                     districts.append(school.get("district"))
 
