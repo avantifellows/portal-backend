@@ -40,6 +40,8 @@ def create_access_token(auth_user: AuthUser):
 
     if auth_user.data is None:
         data = {}
+    else:
+        data = {k: v for k, v in auth_user.data.items() if v is not None}
 
     if auth_user.type not in ["user", "organization"]:
         raise HTTPException(
@@ -103,9 +105,11 @@ def refresh_token(payload: dict = Depends(verify_jwt)):
     current_user = payload.get("sub")
 
     # Create custom claims from old token
-    custom_claims = {}
-    if "group" in payload:
-        custom_claims = {"group": payload["group"]}
+    custom_claims = {
+        key: value
+        for key, value in payload.items()
+        if key not in {"sub", "exp", "type", "iat"}
+    }
 
     # Create new access token
     new_payload = {

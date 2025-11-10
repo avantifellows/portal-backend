@@ -36,7 +36,8 @@ class SQSService:
     async def send_message(self, message: AttendanceMessageSchema) -> Dict[str, Any]:
         try:
             response = self.sqs_client.send_message(
-                QueueUrl=self.queue_url, MessageBody=json.dumps([message.dict()])
+                QueueUrl=self.queue_url,
+                MessageBody=json.dumps([message.dict()]),
             )
             print(f"Message sent. MessageId: {response['MessageId']}")
             return {"success": True, "message_id": response["MessageId"]}

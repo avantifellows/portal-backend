@@ -198,9 +198,11 @@ def create_new_teacher_record(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 async def verify_teacher_comprehensive(
     teacher_id: str, query_params: Dict[str, Any]
-) -> bool:
-    """Comprehensive teacher verification."""
+) -> Dict[str, Any]:
+    """Comprehensive teacher verification returning identifiers."""
     logger.info(f"Verifying teacher: {teacher_id} with params: {query_params}")
+
+    invalid_response = {"is_valid": False}
 
     response = requests.get(
         teacher_db_url,
@@ -218,7 +220,7 @@ async def verify_teacher_comprehensive(
 
             if not teacher_record:
                 logger.warning(f"No teacher data found for teacher_id: {teacher_id}")
-                return False
+                return invalid_response
 
             for key, value in query_params.items():
                 if key in USER_QUERY_PARAMS:
@@ -227,18 +229,36 @@ async def verify_teacher_comprehensive(
                         logger.warning(
                             f"Invalid user data structure for teacher: {teacher_id}"
                         )
-                        return False
+                        return invalid_response
                     if user_data.get(key) != value:
                         logger.info(f"User verification failed for key: {key}")
-                        return False
+                        return invalid_response
 
                 if key in TEACHER_QUERY_PARAMS:
                     if teacher_record.get(key) != value:
                         logger.info(f"Teacher verification failed for key: {key}")
-                        return False
+                        return invalid_response
+
+            identifiers: Dict[str, Any] = {
+                "user_id": None,
+                "display_id": None,
+                "display_id_type": "teacher_id",
+            }
+
+            teacher_identifier = teacher_record.get("teacher_id") or teacher_id
+            if teacher_identifier is not None:
+                identifiers["display_id"] = str(teacher_identifier)
+
+            user_data = teacher_record.get("user", {})
+            if isinstance(user_data, dict):
+                user_pk = user_data.get("id")
+                if user_pk is not None:
+                    identifiers["user_id"] = str(user_pk)
+
+            identifiers = {k: v for k, v in identifiers.items() if v is not None}
 
             logger.info(f"Teacher verification successful for: {teacher_id}")
-            return True
+            return {"is_valid": True, **identifiers}
 
     logger.warning(f"Teacher verification failed for: {teacher_id}")
-    return False
+    return invalid_response

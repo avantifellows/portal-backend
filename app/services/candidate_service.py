@@ -152,9 +152,11 @@ async def create_candidate(request_or_data):
 
 async def verify_candidate_comprehensive(
     candidate_id: str, query_params: Dict[str, Any]
-) -> bool:
-    """Comprehensive candidate verification."""
+) -> Dict[str, Any]:
+    """Comprehensive candidate verification returning identifiers."""
     logger.info(f"Verifying candidate: {candidate_id} with params: {query_params}")
+
+    invalid_response = {"is_valid": False}
 
     response = requests.get(
         candidate_db_url,
@@ -174,7 +176,7 @@ async def verify_candidate_comprehensive(
                 logger.warning(
                     f"No candidate data found for candidate_id: {candidate_id}"
                 )
-                return False
+                return invalid_response
 
             for key, value in query_params.items():
                 if key in USER_QUERY_PARAMS:
@@ -183,18 +185,36 @@ async def verify_candidate_comprehensive(
                         logger.warning(
                             f"Invalid user data structure for candidate: {candidate_id}"
                         )
-                        return False
+                        return invalid_response
                     if user_data.get(key) != value:
                         logger.info(f"User verification failed for key: {key}")
-                        return False
+                        return invalid_response
 
                 if key in CANDIDATE_QUERY_PARAMS:
                     if candidate_record.get(key) != value:
                         logger.info(f"Candidate verification failed for key: {key}")
-                        return False
+                        return invalid_response
+
+            identifiers: Dict[str, Any] = {
+                "user_id": None,
+                "display_id": None,
+                "display_id_type": "candidate_id",
+            }
+
+            candidate_identifier = candidate_record.get("candidate_id") or candidate_id
+            if candidate_identifier is not None:
+                identifiers["display_id"] = str(candidate_identifier)
+
+            user_data = candidate_record.get("user", {})
+            if isinstance(user_data, dict):
+                user_pk = user_data.get("id")
+                if user_pk is not None:
+                    identifiers["user_id"] = str(user_pk)
+
+            identifiers = {k: v for k, v in identifiers.items() if v is not None}
 
             logger.info(f"Candidate verification successful for: {candidate_id}")
-            return True
+            return {"is_valid": True, **identifiers}
 
     logger.warning(f"Candidate verification failed for: {candidate_id}")
-    return False
+    return invalid_response
