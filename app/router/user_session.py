@@ -9,10 +9,6 @@ from helpers import (
     is_response_empty,
     safe_get_first_item,
 )
-from services.student_service import get_student_by_id
-from services.school_service import get_school_by_code
-from services.teacher_service import get_teacher_by_id
-from services.candidate_service import get_candidate_by_id
 from services.session_service import get_session_by_id
 from settings import settings
 import boto3
@@ -68,88 +64,18 @@ async def user_session(user_session: UserSession):
             f"Creating user session for user_type: {query_params.get('user_type')}, user_id: {query_params.get('user_id')}"
         )
 
-        # Simple ID resolution without extensive validation
-        if query_params["user_type"] == "student":
-            try:
-                user_id_response = get_student_by_id(query_params["user_id"])
-
-                student_data = safe_get_first_item(
-                    user_id_response, "Student not found"
-                )
-                if not isinstance(student_data, dict) or not student_data.get(
-                    "user", {}
-                ).get("id"):
-                    raise HTTPException(status_code=404, detail="Student not found")
-
-                query_params["user_id"] = student_data["user"]["id"]
-
-            except Exception as e:
-                logger.error(
-                    f"Failed to resolve student_id {query_params['user_id']}: {str(e)}"
-                )
-                raise HTTPException(status_code=404, detail="Student not found")
-
-        elif query_params["user_type"] == "teacher":
-            try:
-                user_id_response = get_teacher_by_id(query_params["user_id"])
-
-                teacher_data = safe_get_first_item(
-                    user_id_response, "Teacher not found"
-                )
-                if not isinstance(teacher_data, dict) or not teacher_data.get(
-                    "user", {}
-                ).get("id"):
-                    raise HTTPException(status_code=404, detail="Teacher not found")
-
-                query_params["user_id"] = teacher_data["user"]["id"]
-
-            except Exception as e:
-                logger.error(
-                    f"Failed to resolve teacher_id {query_params['user_id']}: {str(e)}"
-                )
-                raise HTTPException(status_code=404, detail="Teacher not found")
-
-        elif query_params["user_type"] == "candidate":
-            try:
-                user_id_response = get_candidate_by_id(query_params["user_id"])
-
-                candidate_data = safe_get_first_item(
-                    user_id_response, "Candidate not found"
-                )
-                if not isinstance(candidate_data, dict) or not candidate_data.get(
-                    "user", {}
-                ).get("id"):
-                    raise HTTPException(status_code=404, detail="Candidate not found")
-
-                query_params["user_id"] = candidate_data["user"]["id"]
-
-            except Exception as e:
-                logger.error(
-                    f"Failed to resolve candidate_id {query_params['user_id']}: {str(e)}"
-                )
-                raise HTTPException(status_code=404, detail="Candidate not found")
-
-        elif query_params["user_type"] == "school":
-            try:
-                user_id_response = get_school_by_code(query_params["user_id"])
-
-                if not isinstance(user_id_response, dict) or not user_id_response.get(
-                    "user", {}
-                ).get("id"):
-                    raise HTTPException(status_code=404, detail="School not found")
-
-                query_params["user_id"] = user_id_response["user"]["id"]
-
-            except Exception as e:
-                logger.error(
-                    f"Failed to resolve school code {query_params['user_id']}: {str(e)}"
-                )
-                raise HTTPException(status_code=404, detail="School not found")
-        else:
+        # Validate user_type is supported
+        supported_user_types = ["student", "teacher", "candidate", "school"]
+        if query_params["user_type"] not in supported_user_types:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported user_type: {query_params['user_type']}",
+                detail=f"Unsupported user_type: {query_params['user_type']}. Supported types: {supported_user_types}",
             )
+
+        # user_id is canonical and already validated by frontend token
+        logger.info(
+            f"Using canonical user_id: {query_params.get('user_id')} for user_type: {query_params['user_type']}"
+        )
 
         # Simple session validation
         try:
