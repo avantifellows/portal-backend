@@ -233,7 +233,7 @@ def get_districts_by_filters(
             schools_data = [schools_data]
 
         districts = []
-        chhattisgarh_districts = "Bastar+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
+        chhattisgarh_districts = "Bastar+DANTEWADA+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
             "+"
         )
         maharashtra_districts = ["Gadchiroli", "Bhandara"]
