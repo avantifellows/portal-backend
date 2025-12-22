@@ -63,6 +63,13 @@ async def user_session(user_session: UserSession):
         query_params = user_session.dict()
         query_params["timestamp"] = datetime.now().isoformat()
 
+        # Validate user_id is not empty
+        if (
+            not query_params.get("user_id")
+            or str(query_params["user_id"]).strip() == ""
+        ):
+            raise HTTPException(status_code=400, detail="user_id cannot be empty")
+
         logger.info(
             f"Creating user session for user_type: {query_params.get('user_type')}, user_id: {query_params.get('user_id')}"
         )
