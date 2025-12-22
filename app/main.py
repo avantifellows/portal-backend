@@ -61,6 +61,7 @@ async def error_handling(request: Request, call_next):
 
 origins = [
     "http://localhost:8080",
+    "http://localhost:8081",
     "http://localhost:3000",
     "https://staging-auth.avantifellows.org",
     "https://auth.avantifellows.org",
