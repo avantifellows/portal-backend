@@ -237,6 +237,7 @@ def get_districts_by_filters(
             "+"
         )
         maharashtra_districts = ["Gadchiroli", "Bhandara"]
+        bihar_districts = ["Begusarai"]
         for school in schools_data:
             if school.get("district"):
                 if auth_group == "PunjabTeachers":
@@ -247,6 +248,9 @@ def get_districts_by_filters(
                         districts.append(school.get("district"))  # change later
                 elif auth_group == "MaharashtraStudents":
                     if school.get("district") in maharashtra_districts:
+                        districts.append(school.get("district"))  # change later
+                elif auth_group == "BiharStudents":
+                    if school.get("district") in bihar_districts:
                         districts.append(school.get("district"))  # change later
                 else:
                     districts.append(school.get("district"))
@@ -395,6 +399,7 @@ def get_dependant_field_mapping_for_auth_group(
         "+"
     )
     maharashtra_districts = ["Gadchiroli", "Bhandara"]
+    bihar_districts = ["Begusarai"]
     for school in schools_data:
         if school.get("district"):
             if auth_group == "PunjabTeachers":
@@ -405,6 +410,9 @@ def get_dependant_field_mapping_for_auth_group(
                     filtered_schools.append(school)
             elif auth_group == "MaharashtraStudents":
                 if school.get("district") in maharashtra_districts:
+                    filtered_schools.append(school)
+            elif auth_group == "BiharStudents":
+                if school.get("district") in bihar_districts:
                     filtered_schools.append(school)
             else:
                 filtered_schools.append(school)
