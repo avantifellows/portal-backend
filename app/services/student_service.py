@@ -522,6 +522,7 @@ async def create_student(request_or_data):
                 "HimachalStudents",
                 "AllIndiaStudents",
                 "ChhattisgarhStudents",
+                "BiharStudents",
                 "MaharashtraStudents",
             ]:
                 phone = query_params.get("phone")

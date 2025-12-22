@@ -129,6 +129,7 @@ authgroup_state_mapping = {
     "PunjabTeachers": "Punjab",
     "TNTeachers": "Tamil Nadu",
     "ChhattisgarhStudents": "Chhattisgarh",
+    "BiharStudents": "Bihar",
 }
 
 # Reverse mapping for state to authgroup lookup
