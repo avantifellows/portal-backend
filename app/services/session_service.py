@@ -10,9 +10,9 @@ from mapping import SESSION_QUERY_PARAMS
 logger = get_logger()
 
 
-def get_session_by_id(session_id: str) -> Optional[Dict[str, Any]]:
+async def get_session_by_id(session_id: str) -> Optional[Dict[str, Any]]:
     """Get session by session_id."""
-    return get_session(session_id=session_id)
+    return await get_session(session_id=session_id)
 
 
 async def get_session(**params) -> Optional[Dict[str, Any]]:
