@@ -25,6 +25,7 @@ import string
 import time
 from logger_config import setup_logger
 from error_middleware import error_handling_middleware
+from settings import Settings
 
 logger = setup_logger()
 
@@ -59,14 +60,15 @@ async def error_handling(request: Request, call_next):
     return await error_handling_middleware(request, call_next)
 
 
-origins = [
-    "http://localhost:8080",
-    "http://localhost:3000",
-    "https://staging-auth.avantifellows.org",
-    "https://auth.avantifellows.org",
-    "https://staging-gurukul.avantifellows.org",
-    "https://gurukul.avantifellows.org",
-]
+# origins = [
+#     "http://localhost:8080",
+#     "http://localhost:3000",
+#     "https://staging-auth.avantifellows.org",
+#     "https://auth.avantifellows.org",
+#     "https://staging-gurukul.avantifellows.org",
+#     "https://gurukul.avantifellows.org",
+# ]
+origins = Settings.get_allowed_origins()
 
 app.add_middleware(
     CORSMiddleware,

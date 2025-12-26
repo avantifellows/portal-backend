@@ -27,6 +27,43 @@ class Settings(BaseModel):
     # Business logic configuration
     DEFAULT_ACADEMIC_YEAR: str = os.environ.get("DEFAULT_ACADEMIC_YEAR", "2025-2026")
 
+    # Environment
+    ENV: str = os.environ.get("ENV", "local")
+
+    # Allowed CORS origins
+    # Local
+    LOCAL_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:8080",
+    ]
+
+    # Staging
+    STAGING_ORIGINS: list[str] = [
+        "https://staging-auth.avantifellows.org",
+        "https://staging-gurukul.avantifellows.org",
+    ]
+
+    # Production
+    PROD_ORIGINS: list[str] = [
+        "https://auth.avantifellows.org",
+        "https://gurukul.avantifellows.org",
+    ]
+
+    def get_allowed_origins(self) -> list[str]:
+        if self.ENV == "prod":
+            return self.PROD_ORIGINS
+        if self.ENV == "staging":
+            return self.STAGING_ORIGINS
+        return self.LOCAL_ORIGINS
+
+    # Base URL for outbound HTTP requests (future use)
+    PORTAL_BASE_URL: str = os.environ.get(
+        "PORTAL_BASE_URL",
+        "http://localhost:8080"
+    )
+
+    REQUEST_TIMEOUT: int = int(os.environ.get("REQUEST_TIMEOUT", 10))
+
 
 # JWT settings
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
