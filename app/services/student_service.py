@@ -509,13 +509,28 @@ async def create_student(request_or_data):
                 return {"student_id": student_id, "already_exists": True}
         else:
             if data["auth_group"] == "EnableStudents":
-                student_id = EnableStudents(query_params).get_student_id()
+                try:
+                    student_id = EnableStudents(query_params).get_student_id()
+                except HTTPException as e:
+                    raise e
+                except Exception as e:
+                    logger.error(f"Error creating EnableStudents instance: {str(e)}")
+                    raise HTTPException(status_code=400, detail=f"Error in student ID generation: {str(e)}")
+
                 query_params["student_id"] = student_id
                 if student_id == "":
                     return {
                         "student_id": query_params["student_id"],
                         "already_exists": True,
-                    }
+                    } 
+            # if data["auth_group"] == "EnableStudents":
+            #     student_id = EnableStudents(query_params).get_student_id()
+            #     query_params["student_id"] = student_id
+            #     if student_id == "":
+            #         return {
+            #             "student_id": query_params["student_id"],
+            #             "already_exists": True,
+            #         }
             elif data["auth_group"] in [
                 "FeedingIndiaStudents",
                 "UttarakhandStudents",
