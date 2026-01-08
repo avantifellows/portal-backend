@@ -17,6 +17,7 @@ from services.school_service import (
     get_dependant_field_mapping_for_auth_group,
 )
 from services.student_service import get_student_by_id
+from services.user_service import get_user_by_id
 
 logger = get_logger()
 
@@ -274,10 +275,14 @@ def is_user_attribute_empty(
 ) -> bool:
     """Check if user attribute is empty."""
 
-    return field["key"] in USER_QUERY_PARAMS and (
-        student_data["user"][field["key"]] is None
-        or student_data["user"][field["key"]] == ""
-    )
+    if field["key"] not in USER_QUERY_PARAMS:
+        return False
+
+    user_data = student_data.get("user") if isinstance(student_data, dict) else None
+    if not user_data:
+        return True
+
+    return user_data.get(field["key"]) in (None, "")
 
 
 def is_student_attribute_empty(
@@ -359,10 +364,17 @@ def district_in_returned_form_schema_data(
     district_form_field = [
         x for x in list(form_attributes.values()) if x["key"] == "district"
     ][0]
-    district_form_field["options"] = district_form_field["dependantFieldMapping"][
-        student_data["user"]["state"]
-    ]
-    district_form_field["dependant"] = False
+    user_data = student_data.get("user") if isinstance(student_data, dict) else {}
+    state = user_data.get("state") if isinstance(user_data, dict) else None
+    if (
+        state
+        and "dependantFieldMapping" in district_form_field
+        and state in district_form_field["dependantFieldMapping"]
+    ):
+        district_form_field["options"] = district_form_field["dependantFieldMapping"][
+            state
+        ]
+        district_form_field["dependant"] = False
 
     returned_form_schema[total_number_of_fields - number_of_fields_left] = (
         district_form_field
@@ -382,10 +394,17 @@ def school_name_in_returned_form_schema_data(
     school_form_field = [
         x for x in list(form_attributes.values()) if x["key"] == "school_name"
     ][0]
-    school_form_field["options"] = school_form_field["dependantFieldMapping"][
-        student_data["user"]["district"]
-    ]
-    school_form_field["dependant"] = False
+    user_data = student_data.get("user") if isinstance(student_data, dict) else {}
+    district = user_data.get("district") if isinstance(user_data, dict) else None
+    if (
+        district
+        and "dependantFieldMapping" in school_form_field
+        and district in school_form_field["dependantFieldMapping"]
+    ):
+        school_form_field["options"] = school_form_field["dependantFieldMapping"][
+            district
+        ]
+        school_form_field["dependant"] = False
 
     returned_form_schema[total_number_of_fields - number_of_fields_left] = (
         school_form_field
@@ -478,6 +497,20 @@ def get_student_fields_for_form(
         student_response[0] if student_response and len(student_response) > 0 else {}
     )
 
+    if isinstance(student_data, dict) and not isinstance(
+        student_data.get("user"), dict
+    ):
+        user_lookup = None
+        user_id = student_data.get("user_id")
+        if user_id:
+            user_lookup = get_user_by_id(user_id)
+
+        if user_lookup:
+            if isinstance(user_lookup, list):
+                user_lookup = user_lookup[0]
+            if isinstance(user_lookup, dict):
+                student_data["user"] = user_lookup
+
     priority_order = sorted([eval(i) for i in form["attributes"].keys()])
     fields = form["attributes"]
     total_number_of_fields = int(number_of_fields_in_popup_form)
@@ -485,7 +518,7 @@ def get_student_fields_for_form(
     returned_form_schema = {}
 
     for priority in priority_order:
-        if number_of_fields_in_form_schema <= total_number_of_fields:
+        if number_of_fields_in_form_schema < total_number_of_fields:
             children_fields = find_children_fields(fields, fields[str(priority)])
             children_fields.append(priority)
 

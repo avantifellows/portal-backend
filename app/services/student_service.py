@@ -59,7 +59,12 @@ def get_students(**params) -> Optional[Dict[str, Any]]:
 
 def get_student_by_id(student_id: str) -> Optional[Dict[str, Any]]:
     """Get student by student_id."""
-    return get_students(student_id=student_id)
+    students = get_students(student_id=student_id)
+    if students:
+        return students
+
+    # Fallback to apaar_id for auth groups where student_id may map to apaar_id
+    return get_students(apaar_id=student_id)
 
 
 async def verify_student_by_id(student_id: str, **params) -> bool:
