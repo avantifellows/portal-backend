@@ -619,13 +619,13 @@ async def create_student(request_or_data):
         ):
             grade_value = query_params["grade"]
             if data["auth_group"] == "HimachalStudents":
-                batch_id = f"HP-{grade_value}-Selection-25"
+                batch_id = f"HimachalStudents_{grade_value}_25_A001"
             elif data["auth_group"] == "UttarakhandStudents":
-                batch_id = f"UK-{grade_value}-Selection-25"
+                batch_id = f"UttarakhandStudents_{grade_value}_25_A001"
             elif data["auth_group"] == "DelhiStudents":
-                batch_id = f"DL-{grade_value}-Selection-25"
+                batch_id = f"DelhiStudents_{grade_value}_25_A001"
             elif data["auth_group"] == "PunjabStudents":
-                batch_id = f"PB-{grade_value}-Selection-25"
+                batch_id = f"PunjabStudents_{grade_value}_25_A001"
             await create_batch_user_record(new_student_data, batch_id)
 
         if "grade_id" in new_student_data:
