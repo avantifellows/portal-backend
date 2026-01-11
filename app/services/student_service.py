@@ -269,8 +269,12 @@ def check_if_student_id_is_part_of_request(query_params: Dict[str, Any]) -> None
         )
 
 
-async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
-    """Comprehensive student verification with multiple fallback methods."""
+async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str, Any]:
+    """Comprehensive student verification with multiple fallback methods.
+
+    Returns a payload containing verification status and core identifiers so that
+    clients don't have to re-fetch the student record after validation.
+    """
     student_id = query_params.get("student_id")
     phone = query_params.get("phone")
     auth_group_id = query_params.get("auth_group_id")
@@ -284,6 +288,8 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
         student_id = phone
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
+
+    invalid_response = {"is_valid": False}
 
     is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
     if is_enable_students:
@@ -353,7 +359,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
 
     if not student_record:
         logger.warning(f"No student found for: {student_id}")
-        return False
+        return invalid_response
 
     # Verify all query parameters
     for key, value in query_params.items():
@@ -361,10 +367,10 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
             user_data = student_record.get("user", {})
             if not isinstance(user_data, dict):
                 logger.warning(f"Invalid user data structure for student: {student_id}")
-                return False
+                return invalid_response
             if user_data.get(key) != value:
                 logger.info(f"User verification failed for key: {key}")
-                return False
+                return invalid_response
 
         elif key in STUDENT_QUERY_PARAMS:
             # Skip student_id verification if we found the student via apaar_id or phone
@@ -375,7 +381,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
                 continue
             if student_record.get(key) != value:
                 logger.info(f"Student verification failed for key: {key}")
-                return False
+                return invalid_response
 
         elif key == "auth_group_id":
             # Verify user belongs to the auth group
@@ -389,27 +395,43 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
                 and "id" in group_response
             ):
                 logger.warning(f"Group not found for auth_group_id: {value}")
-                return False
+                return invalid_response
 
             group_record = group_response
             if not (isinstance(group_record, dict) and "id" in group_record):
                 logger.warning("Invalid group record structure")
-                return False
+                return invalid_response
 
             user_data = student_record.get("user", {})
             if not (isinstance(user_data, dict) and "id" in user_data):
                 logger.warning("Invalid user data in student record")
-                return False
+                return invalid_response
 
             group_user_response = get_group_user(
                 group_id=group_record["id"], user_id=user_data["id"]
             )
             if not group_user_response or group_user_response == []:
                 logger.info("User not found in auth group")
-                return False
+                return invalid_response
+
+    identifiers = {
+        "student_id": student_record.get("student_id"),
+        "apaar_id": student_record.get("apaar_id"),
+        "user_id": None,
+    }
+
+    for key, value in list(identifiers.items()):
+        if value is not None:
+            identifiers[key] = str(value)
+
+    user_data = student_record.get("user", {})
+    if isinstance(user_data, dict):
+        user_id = user_data.get("id")
+        if user_id is not None:
+            identifiers["user_id"] = str(user_id)
 
     logger.info(f"Student verification successful for: {student_id}")
-    return True
+    return {"is_valid": True, **identifiers}
 
 
 async def complete_profile_details_service(
@@ -529,6 +551,7 @@ async def create_student(request_or_data):
                 "ChhattisgarhStudents",
                 "BiharStudents",
                 "MaharashtraStudents",
+                "BiharStudents",
             ]:
                 phone = query_params.get("phone")
                 if not phone:
