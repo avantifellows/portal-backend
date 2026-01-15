@@ -9,9 +9,30 @@ from helpers import db_request_token, is_response_valid, safe_get_first_item
 logger = get_logger()
 
 
+def _exam_name_candidates(name: str) -> list:
+    if not name:
+        return []
+
+    normalized = name.strip()
+    if not normalized:
+        return []
+
+    candidates = [normalized]
+    if "|" in normalized:
+        primary = normalized.split("|", 1)[0].strip()
+        if primary and primary not in candidates:
+            candidates.append(primary)
+
+    return candidates
+
+
 def get_exam_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Get exam by name."""
-    return get_exam(name=name)
+    for candidate in _exam_name_candidates(name):
+        exam_data = get_exam(name=candidate)
+        if exam_data:
+            return exam_data
+    return None
 
 
 def get_exam_by_id(exam_id: str) -> Optional[Dict[str, Any]]:
