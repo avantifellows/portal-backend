@@ -28,10 +28,17 @@ def _exam_name_candidates(name: str) -> list:
 
 def get_exam_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Get exam by name."""
-    for candidate in _exam_name_candidates(name):
-        exam_data = get_exam(name=candidate)
+    candidates = _exam_name_candidates(name)
+    for candidate in candidates:
+        exam_data = get_exam(name=candidate, log_missing=False)
         if exam_data:
             return exam_data
+
+    if candidates:
+        logger.warning(
+            "Exam record does not exist for name candidates: %s",
+            candidates,
+        )
     return None
 
 
@@ -43,6 +50,7 @@ def get_exam_by_id(exam_id: str) -> Optional[Dict[str, Any]]:
 def get_exam(**params) -> Optional[Dict[str, Any]]:
     """Get exam with flexible parameters."""
     # Filter out None values
+    log_missing = params.pop("log_missing", True)
     query_params = {k: v for k, v in params.items() if v is not None}
 
     logger.info(f"Fetching exam with params: {query_params}")
@@ -52,8 +60,11 @@ def get_exam(**params) -> Optional[Dict[str, Any]]:
     )
 
     if is_response_valid(response, "Exam API could not fetch the data!"):
-        exam_data = safe_get_first_item(response.json(), "Exam record does not exist!")
-        logger.info("Successfully retrieved exam data")
+        exam_data = safe_get_first_item(response.json())
+        if exam_data:
+            logger.info("Successfully retrieved exam data")
+        elif log_missing:
+            logger.warning(f"Exam record does not exist for params: {query_params}")
         return exam_data
 
     return None
