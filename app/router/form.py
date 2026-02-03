@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from services.form_service import (
     get_form_schema_with_enhancement,
     get_student_fields_for_form,
@@ -39,15 +39,25 @@ async def get_student_fields(request: Request):
     """Get student form fields"""
     query_params = validate_and_build_query_params(
         request.query_params,
-        ["number_of_fields_in_popup_form", "form_id", "student_id"],
+        ["number_of_fields_in_popup_form", "form_id", "student_id", "user_id"],
     )
 
+    student_identifier = query_params.get("user_id") or query_params.get("student_id")
+    identifier_type = "user_id" if query_params.get("user_id") else "student_id"
+
+    if not student_identifier:
+        raise HTTPException(
+            status_code=400,
+            detail="user_id or student_id is required for student form fields",
+        )
+
     logger.info(
-        f"Getting student fields for form: {query_params['form_id']}, student: {query_params['student_id']}"
+        f"Getting student fields for form: {query_params['form_id']}, {identifier_type}: {student_identifier}"
     )
 
     return get_student_fields_for_form(
         query_params["form_id"],
-        query_params["student_id"],
+        student_identifier,
         int(query_params["number_of_fields_in_popup_form"]),
+        identifier_type,
     )
