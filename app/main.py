@@ -67,6 +67,8 @@ origins = [
     "https://auth.avantifellows.org",
     "https://staging-gurukul.avantifellows.org",
     "https://gurukul.avantifellows.org",
+    "https://staging-quiz.avantifellows.org",
+    "https://quiz.avantifellows.org",
 ]
 
 app.add_middleware(
