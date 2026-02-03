@@ -76,7 +76,52 @@ async def verify_student_by_id(student_id: str, **params) -> bool:
         )
     except Exception as e:
         logger.error(f"Error verifying student {student_id}: {str(e)}")
-        return False
+    return False
+
+
+def normalize_student_record(student_response: Any) -> Dict[str, Any]:
+    """Normalize student response into a single dict record."""
+    if isinstance(student_response, list):
+        return student_response[0] if len(student_response) > 0 else {}
+    if isinstance(student_response, dict):
+        return student_response
+    return {}
+
+
+def build_student_signup_response(
+    student_record: Dict[str, Any], student_id: Optional[str], already_exists: bool
+) -> Dict[str, Any]:
+    """Build a consistent signup response with canonical identifiers."""
+    apaar_id = None
+    user_id = None
+    resolved_student_id = student_id
+
+    if isinstance(student_record, dict):
+        if not resolved_student_id:
+            resolved_student_id = student_record.get("student_id")
+        apaar_id = student_record.get("apaar_id")
+        user_id = student_record.get("user_id")
+        user_data = student_record.get("user")
+        if user_id is None and isinstance(user_data, dict):
+            user_id = user_data.get("id")
+
+    display_id = resolved_student_id or apaar_id
+    display_id_type = None
+    if resolved_student_id:
+        display_id_type = "student_id"
+    elif apaar_id:
+        display_id_type = "apaar_id"
+
+    return {
+        "user_id": str(user_id) if user_id is not None else None,
+        "student_id": (
+            str(resolved_student_id) if resolved_student_id is not None else None
+        ),
+        "apaar_id": str(apaar_id) if apaar_id is not None else None,
+        "display_id": str(display_id) if display_id is not None else None,
+        "display_id_type": display_id_type,
+        "already_exists": already_exists,
+    }
 
 
 async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -439,20 +484,34 @@ async def complete_profile_details_service(
 ) -> Optional[Dict[str, Any]]:
     """Complete profile details - business logic."""
     try:
+        student_identifier = data.get("user_id") or data.get("student_id")
+        identifier_type = "user_id" if data.get("user_id") else "student_id"
+
         logger.info(
-            f"Completing profile details for student: {data.get('student_id', 'unknown')}"
+            f"Completing profile details for student ({identifier_type}): {student_identifier}"
         )
+
+        if not student_identifier:
+            raise HTTPException(
+                status_code=400,
+                detail="user_id or student_id is required to complete profile details",
+            )
 
         student_data = build_student_and_user_data(data)
 
-        student_response = get_student_by_id(data["student_id"])
+        if identifier_type == "user_id":
+            student_response = get_students(user_id=student_identifier)
+        else:
+            student_response = get_student_by_id(student_identifier)
 
         if (
             not student_response
             or not isinstance(student_response, list)
             or len(student_response) == 0
         ):
-            logger.error(f"Student not found for ID: {data.get('student_id')}")
+            logger.error(
+                f"Student not found for {identifier_type}: {student_identifier}"
+            )
             raise HTTPException(status_code=404, detail="Student not found")
 
         # Safe access to first student
@@ -465,6 +524,8 @@ async def complete_profile_details_service(
         # Remove student_id from patch data as it's an identifier, not an updatable field
         if "student_id" in student_data:
             del student_data["student_id"]
+        if "user_id" in student_data:
+            del student_data["user_id"]
         result = await update_student_data(student_data)
 
         logger.info("Successfully completed profile details")
@@ -533,16 +594,14 @@ async def create_student(request_or_data):
                 raise HTTPException(status_code=400, detail="Student ID is required")
 
             if await verify_student_by_id(student_id):
-                return {"student_id": student_id, "already_exists": True}
+                student_record = normalize_student_record(get_student_by_id(student_id))
+                return build_student_signup_response(student_record, student_id, True)
         else:
             if data["auth_group"] == "EnableStudents":
                 student_id = EnableStudents(query_params).get_student_id()
                 query_params["student_id"] = student_id
                 if student_id == "":
-                    return {
-                        "student_id": query_params["student_id"],
-                        "already_exists": True,
-                    }
+                    return build_student_signup_response({}, student_id, True)
             elif data["auth_group"] in [
                 "FeedingIndiaStudents",
                 "UttarakhandStudents",
@@ -561,7 +620,8 @@ async def create_student(request_or_data):
                     )
                 query_params["student_id"] = phone
                 if await verify_student_by_id(phone):
-                    return {"student_id": phone, "already_exists": True}
+                    student_record = normalize_student_record(get_student_by_id(phone))
+                    return build_student_signup_response(student_record, phone, True)
             else:
                 if not (query_params.get("email") or query_params.get("phone")):
                     raise HTTPException(
@@ -570,10 +630,22 @@ async def create_student(request_or_data):
                 if get_user_by_email_and_phone(
                     email=query_params.get("email"), phone=query_params.get("phone")
                 ):
-                    return {
-                        "student_id": query_params.get("student_id", "unknown"),
-                        "already_exists": True,
-                    }
+                    existing_user = get_user_by_email_and_phone(
+                        email=query_params.get("email"),
+                        phone=query_params.get("phone"),
+                    )
+                    student_record = {}
+                    if isinstance(existing_user, dict):
+                        user_id = existing_user.get("id")
+                        if user_id is not None:
+                            student_record = normalize_student_record(
+                                get_students(user_id=user_id)
+                            )
+                    return build_student_signup_response(
+                        student_record,
+                        query_params.get("student_id"),
+                        True,
+                    )
 
         # Process grade
         if "grade" in query_params:
@@ -665,7 +737,8 @@ async def create_student(request_or_data):
 
         final_student_id = query_params.get("student_id", "unknown")
         logger.info(f"Successfully created student: {final_student_id}")
-        return {"student_id": final_student_id, "already_exists": False}
+        student_record = normalize_student_record(new_student_data)
+        return build_student_signup_response(student_record, final_student_id, False)
 
     except HTTPException:
         raise

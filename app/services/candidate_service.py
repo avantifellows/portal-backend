@@ -57,7 +57,29 @@ async def verify_candidate_by_id(candidate_id: str, **params) -> bool:
         return bool(candidate_data)
     except Exception as e:
         logger.error(f"Error verifying candidate {candidate_id}: {str(e)}")
-        return False
+    return False
+
+
+def build_candidate_signup_response(
+    candidate_record: Optional[Dict[str, Any]],
+    candidate_id: Optional[str],
+    already_exists: bool,
+) -> Dict[str, Any]:
+    """Build a consistent signup response with canonical identifiers."""
+    user_id = None
+    if isinstance(candidate_record, dict):
+        user_id = candidate_record.get("user_id")
+        user_data = candidate_record.get("user")
+        if user_id is None and isinstance(user_data, dict):
+            user_id = user_data.get("id")
+
+    return {
+        "user_id": str(user_id) if user_id is not None else None,
+        "candidate_id": str(candidate_id) if candidate_id is not None else None,
+        "display_id": str(candidate_id) if candidate_id is not None else None,
+        "display_id_type": "candidate_id" if candidate_id else None,
+        "already_exists": already_exists,
+    }
 
 
 async def create_candidate(request_or_data):
@@ -95,7 +117,10 @@ async def create_candidate(request_or_data):
 
             if candidate_already_exists:
                 logger.info(f"Candidate already exists: {candidate_id}")
-                return {"candidate_id": candidate_id, "already_exists": True}
+                candidate_record = get_candidate_by_id(candidate_id)
+                return build_candidate_signup_response(
+                    candidate_record, candidate_id, True
+                )
 
         # Map subject name to subject_id like grade/grade_id in student.py
         if "subject" in query_params:
@@ -141,7 +166,9 @@ async def create_candidate(request_or_data):
 
         final_candidate_id = query_params.get("candidate_id", "unknown")
         logger.info(f"Successfully created candidate: {final_candidate_id}")
-        return {"candidate_id": final_candidate_id, "already_exists": False}
+        return build_candidate_signup_response(
+            new_candidate_data, final_candidate_id, False
+        )
 
     except HTTPException:
         raise
