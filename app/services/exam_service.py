@@ -9,9 +9,37 @@ from helpers import db_request_token, is_response_valid, safe_get_first_item
 logger = get_logger()
 
 
+def _exam_name_candidates(name: str) -> list:
+    if not name:
+        return []
+
+    normalized = name.strip()
+    if not normalized:
+        return []
+
+    candidates = [normalized]
+    if "|" in normalized:
+        primary = normalized.split("|", 1)[0].strip()
+        if primary and primary not in candidates:
+            candidates.append(primary)
+
+    return candidates
+
+
 def get_exam_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Get exam by name."""
-    return get_exam(name=name)
+    candidates = _exam_name_candidates(name)
+    for candidate in candidates:
+        exam_data = get_exam(name=candidate, log_missing=False)
+        if exam_data:
+            return exam_data
+
+    if candidates:
+        logger.warning(
+            "Exam record does not exist for name candidates: %s",
+            candidates,
+        )
+    return None
 
 
 def get_exam_by_id(exam_id: str) -> Optional[Dict[str, Any]]:
@@ -22,6 +50,7 @@ def get_exam_by_id(exam_id: str) -> Optional[Dict[str, Any]]:
 def get_exam(**params) -> Optional[Dict[str, Any]]:
     """Get exam with flexible parameters."""
     # Filter out None values
+    log_missing = params.pop("log_missing", True)
     query_params = {k: v for k, v in params.items() if v is not None}
 
     logger.info(f"Fetching exam with params: {query_params}")
@@ -31,8 +60,11 @@ def get_exam(**params) -> Optional[Dict[str, Any]]:
     )
 
     if is_response_valid(response, "Exam API could not fetch the data!"):
-        exam_data = safe_get_first_item(response.json(), "Exam record does not exist!")
-        logger.info("Successfully retrieved exam data")
+        exam_data = safe_get_first_item(response.json())
+        if exam_data:
+            logger.info("Successfully retrieved exam data")
+        elif log_missing:
+            logger.warning(f"Exam record does not exist for params: {query_params}")
         return exam_data
 
     return None

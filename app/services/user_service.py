@@ -41,3 +41,12 @@ def get_user_by_email_and_phone(
     if phone:
         params["phone"] = phone
     return get_users(**params)
+
+
+def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Get user by ID."""
+    if not user_id:
+        return None
+
+    users = get_users(id=user_id)
+    return users
