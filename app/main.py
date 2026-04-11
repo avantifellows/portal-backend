@@ -20,6 +20,10 @@ from router import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 from mangum import Mangum
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from limiter import limiter
 import random
 import string
 import time
@@ -29,6 +33,12 @@ from error_middleware import error_handling_middleware
 logger = setup_logger()
 
 app = FastAPI()
+
+# SlowAPI rate limiter wiring (see ``limiter.py``). Critical routes opt in
+# via ``@limiter.limit(...)`` decorators in their respective routers.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 
 @app.middleware("http")

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models import AuthUser
+from limiter import limiter
 import datetime
 import jwt
 import os
@@ -33,7 +34,8 @@ def index():
 
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
-def create_access_token(auth_user: AuthUser):
+@limiter.limit("2/second")
+def create_access_token(request: Request, auth_user: AuthUser):
     access_token = ""
     refresh_token = ""
     data = auth_user.data
@@ -95,7 +97,8 @@ def create_access_token(auth_user: AuthUser):
 
 # generates refresh token
 @router.post("/refresh-token")
-def refresh_token(payload: dict = Depends(verify_jwt)):
+@limiter.limit("2/second")
+def refresh_token(request: Request, payload: dict = Depends(verify_jwt)):
     # Check if this is a refresh token
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Invalid refresh token")
