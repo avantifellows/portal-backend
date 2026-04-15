@@ -2,6 +2,7 @@ import requests
 from logger_config import get_logger
 from routes import student_db_url
 from helpers import db_request_token
+from fastapi import HTTPException
 
 logger = get_logger()
 
@@ -10,6 +11,7 @@ COUNTER_FOR_JNV_ID_GENERATION = 1000
 
 class EnableStudents:
     def __init__(self, data):
+        missing_params = []
         for param in [
             "grade",
             "date_of_birth",
@@ -20,9 +22,14 @@ class EnableStudents:
             "region",
         ]:
             if param not in data:
+                missing_params.append(param)
                 logger.error(f"{param} is required")
-                raise ValueError(f"{param} is required")
-
+                # raise ValueError(f"{param} is required")
+        if missing_params:
+            error_msg = f"Missing required parameters: {','.join(missing_params)}"
+            logger.error(error_msg)
+            raise HTTPException(status_code=400, detail=error_msg)
+        
         self.data = data
         self.student_id = self.generate_student_id()
 
