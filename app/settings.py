@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import date
 import os
 
 if "JWT_SECRET_KEY" not in os.environ:
@@ -33,3 +34,12 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 
 settings = Settings()
+
+
+def get_current_academic_year(reference_date: date = None) -> str:
+    """Return the current academic year using April as the rollover month."""
+    current_date = reference_date or date.today()
+    ay_start_year = (
+        current_date.year if current_date.month >= 4 else current_date.year - 1
+    )
+    return f"{ay_start_year}-{ay_start_year + 1}"
