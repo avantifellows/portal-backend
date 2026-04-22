@@ -20,7 +20,10 @@ def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     try:
         payload = jwt.decode(
-            credentials.credentials, os.getenv("JWT_SECRET_KEY"), algorithms=["HS256"]
+            credentials.credentials,
+            os.getenv("JWT_SECRET_KEY"),
+            algorithms=["HS256"],
+            options={"verify_aud": False},
         )
         return payload
     except jwt.ExpiredSignatureError:
