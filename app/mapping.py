@@ -84,6 +84,7 @@ STUDENT_QUERY_PARAMS = [
     "percentage_in_grade_10_science",
     "percentage_in_grade_10_math",
     "percentage_in_grade_10_english",
+    "g12_graduating_year",
     "grade_10_marksheet",
     "photo",
     "school_medium",

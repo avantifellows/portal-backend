@@ -1,5 +1,7 @@
 """Student service for business logic without HTTP dependencies."""
 
+from datetime import date
+
 import requests
 from typing import Dict, Any, Optional
 from logger_config import get_logger
@@ -27,12 +29,59 @@ from services.group_user_service import (
 )
 from services.grade_service import get_grade_by_number
 from services.user_service import get_user_by_email_and_phone
+from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
 from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
 from helpers import validate_and_build_query_params
 from fastapi import HTTPException
 
 logger = get_logger()
+
+
+def get_current_academic_year_start_year(reference_date: Optional[date] = None) -> int:
+    """Return the academic year start year using April as the rollover month."""
+    current_date = reference_date or date.today()
+    return current_date.year if current_date.month >= 4 else current_date.year - 1
+
+
+def resolve_delhi_registration_grade_and_batch(
+    g12_graduating_year: Any, reference_date: Optional[date] = None
+) -> Dict[str, Any]:
+    """Resolve Delhi default grade and batch from g12 graduating year."""
+    try:
+        g12_year = int(g12_graduating_year)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="g12_graduating_year must be a valid year for DelhiStudents",
+        ) from exc
+
+    ay_start_year = get_current_academic_year_start_year(reference_date)
+    delta = g12_year - ay_start_year
+
+    if delta == 0:
+        return {
+            "grade": "13",
+            "batch_id": f"DelhiStudents_DP_{g12_year + 1}_engg_A001",
+        }
+    if delta == 1:
+        return {
+            "grade": "12",
+            "batch_id": f"DelhiStudents_TP_{g12_year}_common_A001",
+        }
+    if delta == 2:
+        return {
+            "grade": "11",
+            "batch_id": f"DelhiStudents_TP_{g12_year}_common_A001",
+        }
+
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "Unsupported g12_graduating_year for DelhiStudents registration. "
+            f"Expected {ay_start_year}, {ay_start_year + 1}, or {ay_start_year + 2}."
+        ),
+    )
 
 
 def get_students(**params) -> Optional[Dict[str, Any]]:
@@ -647,6 +696,28 @@ async def create_student(request_or_data):
                         True,
                     )
 
+        if data["auth_group"] == "DelhiStudents":
+            if query_params.get("g12_graduating_year") in (None, ""):
+                raise HTTPException(
+                    status_code=400,
+                    detail="g12_graduating_year is required for DelhiStudents",
+                )
+            delhi_registration_data = resolve_delhi_registration_grade_and_batch(
+                query_params["g12_graduating_year"]
+            )
+            query_params["grade"] = delhi_registration_data["grade"]
+            if query_params.get("batch_registration"):
+                batch_id = delhi_registration_data["batch_id"]
+                if not get_batch_by_id(batch_id):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Default Delhi registration batch "
+                            f"'{batch_id}' does not exist. Create the batch first "
+                            "or disable batch registration for this form."
+                        ),
+                    )
+
         # Process grade
         if "grade" in query_params:
             try:
@@ -701,14 +772,16 @@ async def create_student(request_or_data):
             batch_id = f"AllIndiaStudents_{grade_value}_24_A001"
             await create_batch_user_record(new_student_data, batch_id)
 
-        if (
+        if data["auth_group"] == "DelhiStudents" and query_params.get(
+            "batch_registration"
+        ):
+            batch_id = delhi_registration_data["batch_id"]
+
+            await create_batch_user_record(new_student_data, batch_id)
+
+        elif (
             data["auth_group"]
-            in [
-                "HimachalStudents",
-                "DelhiStudents",
-                "UttarakhandStudents",
-                "PunjabStudents",
-            ]
+            in ["HimachalStudents", "UttarakhandStudents", "PunjabStudents"]
             and "grade" in query_params
             and query_params.get("batch_registration")
         ):
@@ -717,8 +790,6 @@ async def create_student(request_or_data):
                 batch_id = f"HimachalStudents_{grade_value}_25_A001"
             elif data["auth_group"] == "UttarakhandStudents":
                 batch_id = f"UttarakhandStudents_{grade_value}_25_A001"
-            elif data["auth_group"] == "DelhiStudents":
-                batch_id = f"DelhiStudents_{grade_value}_25_A001"
             elif data["auth_group"] == "PunjabStudents":
                 batch_id = f"PunjabStudents_{grade_value}_25_A001"
             await create_batch_user_record(new_student_data, batch_id)

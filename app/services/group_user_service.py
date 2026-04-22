@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from logger_config import get_logger
 from routes import group_user_db_url
 from helpers import db_request_token, is_response_valid
-from settings import settings
+from settings import get_current_academic_year
 from services.auth_group_service import get_auth_group_by_name
 from services.batch_service import get_batch_by_id
 from services.group_service import get_group_by_child_id_and_type
@@ -24,7 +24,7 @@ async def create_group_user(
     data = {
         "group_id": group_id,
         "user_id": user_id,
-        "academic_year": academic_year or settings.DEFAULT_ACADEMIC_YEAR,
+        "academic_year": academic_year or get_current_academic_year(),
     }
 
     if start_date:
@@ -80,7 +80,6 @@ async def create_auth_group_user_record(data, auth_group_name):
     await create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
-        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
 
@@ -104,7 +103,6 @@ async def create_batch_user_record(data, batch_id):
     await create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
-        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
 
@@ -142,7 +140,6 @@ async def create_school_user_record(
     await create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
-        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
 
@@ -164,6 +161,5 @@ async def create_grade_user_record(data):
     await create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
-        academic_year=settings.DEFAULT_ACADEMIC_YEAR,
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
