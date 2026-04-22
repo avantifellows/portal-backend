@@ -140,9 +140,12 @@ def get_states_list() -> Dict[str, Any]:
     return {"states": states}
 
 
-async def verify_school_comprehensive(code: str, query_params: Dict[str, Any]) -> bool:
-    """Comprehensive school verification with fallback logic."""
+async def verify_school_comprehensive(
+    code: str, query_params: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Comprehensive school verification returning canonical identifiers."""
     logger.info(f"Verifying school with code: {code} and params: {query_params}")
+    invalid_response = {"is_valid": False}
 
     # Try school code first
     school_record = None
@@ -181,7 +184,7 @@ async def verify_school_comprehensive(code: str, query_params: Dict[str, Any]) -
 
     if not school_record:
         logger.warning(f"No school found for code: {code}")
-        return False
+        return invalid_response
 
     # Verify all query parameters
     for key, value in query_params.items():
@@ -189,10 +192,10 @@ async def verify_school_comprehensive(code: str, query_params: Dict[str, Any]) -
             user_data = school_record.get("user", {})
             if not isinstance(user_data, dict):
                 logger.warning(f"Invalid user data structure for school code: {code}")
-                return False
+                return invalid_response
             if user_data.get(key) != value:
                 logger.info(f"User verification failed for key: {key}")
-                return False
+                return invalid_response
 
         elif key in SCHOOL_QUERY_PARAMS:
             if key == "code" and found_via_udise_code:
@@ -200,10 +203,29 @@ async def verify_school_comprehensive(code: str, query_params: Dict[str, Any]) -
                 continue
             if school_record.get(key) != value:
                 logger.info(f"School verification failed for key: {key}")
-                return False
+                return invalid_response
 
     logger.info(f"School verification successful for code: {code}")
-    return True
+    identifiers: Dict[str, Any] = {
+        "user_id": None,
+        "display_id": None,
+        "display_id_type": "school_code",
+        "school_code": None,
+    }
+
+    school_code = school_record.get("code") or code
+    if school_code is not None:
+        identifiers["display_id"] = str(school_code)
+        identifiers["school_code"] = str(school_code)
+
+    user_data = school_record.get("user", {})
+    if isinstance(user_data, dict):
+        user_pk = user_data.get("id")
+        if user_pk is not None:
+            identifiers["user_id"] = str(user_pk)
+
+    identifiers = {k: v for k, v in identifiers.items() if v is not None}
+    return {"is_valid": True, **identifiers}
 
 
 def get_districts_by_filters(
