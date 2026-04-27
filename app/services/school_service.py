@@ -14,8 +14,8 @@ from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapp
 
 logger = get_logger()
 
-# Extracted from production school.district values for state = "Tamil Nadu".
-# This is intentionally Tamil Nadu specific and preserves DB spelling variants.
+# Canonical Tamil Nadu district list for the TN Govt Hiring Form.
+# This is intentionally Tamil Nadu specific and removes duplicate DB spelling variants.
 TAMIL_NADU_SCHOOL_DISTRICTS = [
     "Ariyalur",
     "Chengalpattu",
@@ -26,7 +26,6 @@ TAMIL_NADU_SCHOOL_DISTRICTS = [
     "Dindigul",
     "Erode",
     "Kallakurichi",
-    "Kancheepuram",
     "Kanchipuram",
     "Kanniyakumari",
     "Karur",
@@ -40,7 +39,6 @@ TAMIL_NADU_SCHOOL_DISTRICTS = [
     "Ramanathapuram",
     "Ranipet",
     "Salem",
-    "Sivaganga",
     "Sivagangai",
     "Tenkasi",
     "Thanjavur",
@@ -54,10 +52,8 @@ TAMIL_NADU_SCHOOL_DISTRICTS = [
     "Tirupathur",
     "Tiruppur",
     "Tiruvannamalai",
-    "Tuticorin",
     "Vellore",
     "Villupuram",
-    "Viluppuram",
     "Virudhunagar",
 ]
 
