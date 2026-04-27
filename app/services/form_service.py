@@ -87,7 +87,12 @@ def enhance_form_schema_with_dynamic_data(
     )
     needs_colleges = _has_field(attributes, "college_name")
     needs_states = _has_field(attributes, "state")
-    is_tamil_nadu_hiring_form = form_data.get("name") == "TN Govt Hiring Form"
+    is_hiring_candidate_district_form = (
+        auth_group == "HiringCandidates"
+        and _has_field(attributes, "district")
+        and not needs_district_school
+        and not needs_district_block_school
+    )
 
     # For district/school mappings, we need the auth_group to be in the mapping
     if auth_group in authgroup_state_mapping:
@@ -99,7 +104,7 @@ def enhance_form_schema_with_dynamic_data(
             _enhance_with_district_school_mapping(attributes, auth_group, state)
         elif _has_field(attributes, "district") and state == "Tamil Nadu":
             _enhance_with_tamil_nadu_district_options(attributes, auth_group=auth_group)
-    elif _has_field(attributes, "district") and is_tamil_nadu_hiring_form:
+    elif is_hiring_candidate_district_form:
         _enhance_with_tamil_nadu_district_options(attributes, state="Tamil Nadu")
     else:
         logger.warning(
