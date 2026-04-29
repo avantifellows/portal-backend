@@ -14,6 +14,49 @@ from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapp
 
 logger = get_logger()
 
+# Canonical Tamil Nadu district list for the TN Govt Hiring Form.
+# This is intentionally Tamil Nadu specific and removes duplicate DB spelling variants.
+TAMIL_NADU_SCHOOL_DISTRICTS = [
+    "Ariyalur",
+    "Chengalpattu",
+    "Chennai",
+    "Coimbatore",
+    "Cuddalore",
+    "Dharmapuri",
+    "Dindigul",
+    "Erode",
+    "Kallakurichi",
+    "Kanchipuram",
+    "Kanniyakumari",
+    "Karur",
+    "Krishnagiri",
+    "Madurai",
+    "Mayiladuthurai",
+    "Nagapattinam",
+    "Namakkal",
+    "Perambalur",
+    "Pudukkottai",
+    "Ramanathapuram",
+    "Ranipet",
+    "Salem",
+    "Sivagangai",
+    "Tenkasi",
+    "Thanjavur",
+    "The Nilgiris",
+    "Theni",
+    "Thiruvallur",
+    "Thiruvarur",
+    "Thoothukkudi",
+    "Tiruchirappalli",
+    "Tirunelveli",
+    "Tirupathur",
+    "Tiruppur",
+    "Tiruvannamalai",
+    "Vellore",
+    "Villupuram",
+    "Virudhunagar",
+]
+
 
 def get_school_by_name_and_region(name: str, region: str) -> Optional[Dict[str, Any]]:
     """Get school by name and region."""
@@ -242,6 +285,9 @@ def get_districts_by_filters(
         )
     elif state:
         query_params["state"] = state
+
+    if query_params.get("state") == "Tamil Nadu":
+        return {"districts": TAMIL_NADU_SCHOOL_DISTRICTS}
 
     logger.info(f"Fetching districts with params: {query_params}")
 

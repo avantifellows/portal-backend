@@ -14,6 +14,7 @@ from mapping import (
 from services.school_service import (
     get_states_list,
     get_colleges_list,
+    get_districts_by_filters,
     get_dependant_field_mapping_for_auth_group,
 )
 from services.student_service import get_student_by_id, get_students
@@ -86,6 +87,12 @@ def enhance_form_schema_with_dynamic_data(
     )
     needs_colleges = _has_field(attributes, "college_name")
     needs_states = _has_field(attributes, "state")
+    is_hiring_candidate_district_form = (
+        auth_group == "HiringCandidates"
+        and _has_field(attributes, "district")
+        and not needs_district_school
+        and not needs_district_block_school
+    )
 
     # For district/school mappings, we need the auth_group to be in the mapping
     if auth_group in authgroup_state_mapping:
@@ -95,6 +102,10 @@ def enhance_form_schema_with_dynamic_data(
             _enhance_with_district_block_school_mapping(attributes, auth_group, state)
         elif needs_district_school:
             _enhance_with_district_school_mapping(attributes, auth_group, state)
+        elif _has_field(attributes, "district") and state == "Tamil Nadu":
+            _enhance_with_tamil_nadu_district_options(attributes, auth_group=auth_group)
+    elif is_hiring_candidate_district_form:
+        _enhance_with_tamil_nadu_district_options(attributes, state="Tamil Nadu")
     else:
         logger.warning(
             f"Unknown auth_group for school/district enhancement: {auth_group}"
@@ -222,6 +233,35 @@ def _enhance_with_district_block_school_mapping(
 
     except Exception as e:
         logger.error(f"Error enhancing district-block-school mapping: {e}")
+
+
+def _enhance_with_tamil_nadu_district_options(
+    attributes: Dict[str, Any],
+    auth_group: Optional[str] = None,
+    state: Optional[str] = None,
+):
+    """Enhance standalone district field with Tamil Nadu districts from school data."""
+    try:
+        districts_data = get_districts_by_filters(auth_group=auth_group, state=state)
+        districts = districts_data.get("districts", [])
+
+        district_field = _find_field_by_key(attributes, "district")
+        if district_field:
+            district_field["options"] = {
+                "en": [
+                    {"label": district, "value": district} for district in districts
+                ],
+                "hi": [
+                    {"label": district, "value": district} for district in districts
+                ],
+            }
+
+        logger.info(
+            f"Enhanced standalone Tamil Nadu district options with {len(districts)} districts"
+        )
+
+    except Exception as e:
+        logger.error(f"Error enhancing Tamil Nadu district options: {e}")
 
 
 def _enhance_with_colleges(attributes: Dict[str, Any]):

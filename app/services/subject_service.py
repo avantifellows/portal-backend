@@ -11,7 +11,15 @@ logger = get_logger()
 
 def get_subject_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Get subject by name."""
-    return get_subject(name=name)
+    subject = get_subject(name=name)
+    if subject or not isinstance(name, str):
+        return subject
+
+    normalized_name = name.strip().lower()
+    if normalized_name != name:
+        return get_subject(name=normalized_name)
+
+    return None
 
 
 def get_subject_by_id(subject_id: str) -> Optional[Dict[str, Any]]:
@@ -31,7 +39,7 @@ def get_subject(**params) -> Optional[Dict[str, Any]]:
     )
 
     if is_response_valid(response, "Subject API could not fetch the data!"):
-        subject_data = safe_get_first_item(response.json(), "Subject does not exist!")
+        subject_data = safe_get_first_item(response.json())
         logger.info("Successfully retrieved subject data")
         return subject_data
 
