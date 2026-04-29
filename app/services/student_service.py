@@ -125,7 +125,52 @@ async def verify_student_by_id(student_id: str, **params) -> bool:
         )
     except Exception as e:
         logger.error(f"Error verifying student {student_id}: {str(e)}")
-        return False
+    return False
+
+
+def normalize_student_record(student_response: Any) -> Dict[str, Any]:
+    """Normalize student response into a single dict record."""
+    if isinstance(student_response, list):
+        return student_response[0] if len(student_response) > 0 else {}
+    if isinstance(student_response, dict):
+        return student_response
+    return {}
+
+
+def build_student_signup_response(
+    student_record: Dict[str, Any], student_id: Optional[str], already_exists: bool
+) -> Dict[str, Any]:
+    """Build a consistent signup response with canonical identifiers."""
+    apaar_id = None
+    user_id = None
+    resolved_student_id = student_id
+
+    if isinstance(student_record, dict):
+        if not resolved_student_id:
+            resolved_student_id = student_record.get("student_id")
+        apaar_id = student_record.get("apaar_id")
+        user_id = student_record.get("user_id")
+        user_data = student_record.get("user")
+        if user_id is None and isinstance(user_data, dict):
+            user_id = user_data.get("id")
+
+    display_id = resolved_student_id or apaar_id
+    display_id_type = None
+    if resolved_student_id:
+        display_id_type = "student_id"
+    elif apaar_id:
+        display_id_type = "apaar_id"
+
+    return {
+        "user_id": str(user_id) if user_id is not None else None,
+        "student_id": (
+            str(resolved_student_id) if resolved_student_id is not None else None
+        ),
+        "apaar_id": str(apaar_id) if apaar_id is not None else None,
+        "display_id": str(display_id) if display_id is not None else None,
+        "display_id_type": display_id_type,
+        "already_exists": already_exists,
+    }
 
 
 async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -318,8 +363,12 @@ def check_if_student_id_is_part_of_request(query_params: Dict[str, Any]) -> None
         )
 
 
-async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
-    """Comprehensive student verification with multiple fallback methods."""
+async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str, Any]:
+    """Comprehensive student verification with multiple fallback methods.
+
+    Returns a payload containing verification status and core identifiers so that
+    clients don't have to re-fetch the student record after validation.
+    """
     student_id = query_params.get("student_id")
     phone = query_params.get("phone")
     auth_group_id = query_params.get("auth_group_id")
@@ -333,6 +382,8 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
         student_id = phone
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
+
+    invalid_response = {"is_valid": False}
 
     is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
     if is_enable_students:
@@ -402,7 +453,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
 
     if not student_record:
         logger.warning(f"No student found for: {student_id}")
-        return False
+        return invalid_response
 
     # Verify all query parameters
     for key, value in query_params.items():
@@ -410,10 +461,10 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
             user_data = student_record.get("user", {})
             if not isinstance(user_data, dict):
                 logger.warning(f"Invalid user data structure for student: {student_id}")
-                return False
+                return invalid_response
             if user_data.get(key) != value:
                 logger.info(f"User verification failed for key: {key}")
-                return False
+                return invalid_response
 
         elif key in STUDENT_QUERY_PARAMS:
             # Skip student_id verification if we found the student via apaar_id or phone
@@ -424,7 +475,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
                 continue
             if student_record.get(key) != value:
                 logger.info(f"Student verification failed for key: {key}")
-                return False
+                return invalid_response
 
         elif key == "auth_group_id":
             # Verify user belongs to the auth group
@@ -438,27 +489,43 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> bool:
                 and "id" in group_response
             ):
                 logger.warning(f"Group not found for auth_group_id: {value}")
-                return False
+                return invalid_response
 
             group_record = group_response
             if not (isinstance(group_record, dict) and "id" in group_record):
                 logger.warning("Invalid group record structure")
-                return False
+                return invalid_response
 
             user_data = student_record.get("user", {})
             if not (isinstance(user_data, dict) and "id" in user_data):
                 logger.warning("Invalid user data in student record")
-                return False
+                return invalid_response
 
             group_user_response = get_group_user(
                 group_id=group_record["id"], user_id=user_data["id"]
             )
             if not group_user_response or group_user_response == []:
                 logger.info("User not found in auth group")
-                return False
+                return invalid_response
+
+    identifiers = {
+        "student_id": student_record.get("student_id"),
+        "apaar_id": student_record.get("apaar_id"),
+        "user_id": None,
+    }
+
+    for key, value in list(identifiers.items()):
+        if value is not None:
+            identifiers[key] = str(value)
+
+    user_data = student_record.get("user", {})
+    if isinstance(user_data, dict):
+        user_id = user_data.get("id")
+        if user_id is not None:
+            identifiers["user_id"] = str(user_id)
 
     logger.info(f"Student verification successful for: {student_id}")
-    return True
+    return {"is_valid": True, **identifiers}
 
 
 async def complete_profile_details_service(
@@ -466,20 +533,34 @@ async def complete_profile_details_service(
 ) -> Optional[Dict[str, Any]]:
     """Complete profile details - business logic."""
     try:
+        student_identifier = data.get("user_id") or data.get("student_id")
+        identifier_type = "user_id" if data.get("user_id") else "student_id"
+
         logger.info(
-            f"Completing profile details for student: {data.get('student_id', 'unknown')}"
+            f"Completing profile details for student ({identifier_type}): {student_identifier}"
         )
+
+        if not student_identifier:
+            raise HTTPException(
+                status_code=400,
+                detail="user_id or student_id is required to complete profile details",
+            )
 
         student_data = build_student_and_user_data(data)
 
-        student_response = get_student_by_id(data["student_id"])
+        if identifier_type == "user_id":
+            student_response = get_students(user_id=student_identifier)
+        else:
+            student_response = get_student_by_id(student_identifier)
 
         if (
             not student_response
             or not isinstance(student_response, list)
             or len(student_response) == 0
         ):
-            logger.error(f"Student not found for ID: {data.get('student_id')}")
+            logger.error(
+                f"Student not found for {identifier_type}: {student_identifier}"
+            )
             raise HTTPException(status_code=404, detail="Student not found")
 
         # Safe access to first student
@@ -492,6 +573,8 @@ async def complete_profile_details_service(
         # Remove student_id from patch data as it's an identifier, not an updatable field
         if "student_id" in student_data:
             del student_data["student_id"]
+        if "user_id" in student_data:
+            del student_data["user_id"]
         result = await update_student_data(student_data)
 
         logger.info("Successfully completed profile details")
@@ -560,16 +643,14 @@ async def create_student(request_or_data):
                 raise HTTPException(status_code=400, detail="Student ID is required")
 
             if await verify_student_by_id(student_id):
-                return {"student_id": student_id, "already_exists": True}
+                student_record = normalize_student_record(get_student_by_id(student_id))
+                return build_student_signup_response(student_record, student_id, True)
         else:
             if data["auth_group"] == "EnableStudents":
                 student_id = EnableStudents(query_params).get_student_id()
                 query_params["student_id"] = student_id
                 if student_id == "":
-                    return {
-                        "student_id": query_params["student_id"],
-                        "already_exists": True,
-                    }
+                    return build_student_signup_response({}, student_id, True)
             elif data["auth_group"] in [
                 "FeedingIndiaStudents",
                 "UttarakhandStudents",
@@ -578,6 +659,7 @@ async def create_student(request_or_data):
                 "ChhattisgarhStudents",
                 "BiharStudents",
                 "MaharashtraStudents",
+                "BiharStudents",
             ]:
                 phone = query_params.get("phone")
                 if not phone:
@@ -587,7 +669,8 @@ async def create_student(request_or_data):
                     )
                 query_params["student_id"] = phone
                 if await verify_student_by_id(phone):
-                    return {"student_id": phone, "already_exists": True}
+                    student_record = normalize_student_record(get_student_by_id(phone))
+                    return build_student_signup_response(student_record, phone, True)
             else:
                 if not (query_params.get("email") or query_params.get("phone")):
                     raise HTTPException(
@@ -596,10 +679,22 @@ async def create_student(request_or_data):
                 if get_user_by_email_and_phone(
                     email=query_params.get("email"), phone=query_params.get("phone")
                 ):
-                    return {
-                        "student_id": query_params.get("student_id", "unknown"),
-                        "already_exists": True,
-                    }
+                    existing_user = get_user_by_email_and_phone(
+                        email=query_params.get("email"),
+                        phone=query_params.get("phone"),
+                    )
+                    student_record = {}
+                    if isinstance(existing_user, dict):
+                        user_id = existing_user.get("id")
+                        if user_id is not None:
+                            student_record = normalize_student_record(
+                                get_students(user_id=user_id)
+                            )
+                    return build_student_signup_response(
+                        student_record,
+                        query_params.get("student_id"),
+                        True,
+                    )
 
         if data["auth_group"] == "DelhiStudents":
             if query_params.get("g12_graduating_year") in (None, ""):
@@ -713,7 +808,8 @@ async def create_student(request_or_data):
 
         final_student_id = query_params.get("student_id", "unknown")
         logger.info(f"Successfully created student: {final_student_id}")
-        return {"student_id": final_student_id, "already_exists": False}
+        student_record = normalize_student_record(new_student_data)
+        return build_student_signup_response(student_record, final_student_id, False)
 
     except HTTPException:
         raise

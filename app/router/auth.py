@@ -9,6 +9,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # JWT bearer for token extraction
 security = HTTPBearer()
+PERSISTENT_SESSION_MODE = "persistent"
+LAUNCH_SESSION_MODE = "launch"
+ALLOWED_SESSION_MODES = {PERSISTENT_SESSION_MODE, LAUNCH_SESSION_MODE}
 
 
 def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -17,7 +20,10 @@ def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     try:
         payload = jwt.decode(
-            credentials.credentials, os.getenv("JWT_SECRET_KEY"), algorithms=["HS256"]
+            credentials.credentials,
+            os.getenv("JWT_SECRET_KEY"),
+            algorithms=["HS256"],
+            options={"verify_aud": False},
         )
         return payload
     except jwt.ExpiredSignatureError:
@@ -31,15 +37,43 @@ def index():
     return "Portal Authentication!"
 
 
+def _build_access_payload(
+    auth_user: AuthUser, data: dict, expires_in: datetime.timedelta
+) -> dict:
+    payload = {
+        "sub": auth_user.id,
+        "exp": datetime.datetime.utcnow() + expires_in,
+        **data,
+    }
+
+    session_mode = auth_user.session_mode or PERSISTENT_SESSION_MODE
+    payload["session_mode"] = session_mode
+    payload["persist"] = session_mode == PERSISTENT_SESSION_MODE
+
+    if auth_user.audience:
+        payload["aud"] = auth_user.audience
+
+    return payload
+
+
 # if user is valid, generates both access token and refresh token. Otherwise, only an access token.
 @router.post("/create-access-token")
 def create_access_token(auth_user: AuthUser):
     access_token = ""
     refresh_token = ""
     data = auth_user.data
+    session_mode = auth_user.session_mode or PERSISTENT_SESSION_MODE
 
     if auth_user.data is None:
         data = {}
+    else:
+        data = {k: v for k, v in auth_user.data.items() if v is not None}
+
+    if session_mode not in ALLOWED_SESSION_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid session_mode. Must be 'persistent' or 'launch'",
+        )
 
     if auth_user.type not in ["user", "organization"]:
         raise HTTPException(
@@ -68,18 +102,19 @@ def create_access_token(auth_user: AuthUser):
                 detail="Data Parameter {} is missing!".format("is_user_valid"),
             )
 
-        # Create access token
-        access_payload = {
-            "sub": auth_user.id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
-            **data,
-        }
+        access_expires_in = (
+            datetime.timedelta(minutes=15)
+            if session_mode == LAUNCH_SESSION_MODE
+            else datetime.timedelta(hours=1)
+        )
+
+        access_payload = _build_access_payload(auth_user, data, access_expires_in)
         access_token = jwt.encode(
             access_payload, os.getenv("JWT_SECRET_KEY"), algorithm="HS256"
         )
 
-        # Create refresh token if user is valid
-        if auth_user.is_user_valid:
+        # Create refresh token only for persistent user sessions
+        if auth_user.is_user_valid and session_mode == PERSISTENT_SESSION_MODE:
             refresh_payload = {
                 "sub": auth_user.id,
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(days=30),
@@ -90,7 +125,11 @@ def create_access_token(auth_user: AuthUser):
                 refresh_payload, os.getenv("JWT_SECRET_KEY"), algorithm="HS256"
             )
 
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "session_mode": session_mode,
+    }
 
 
 # generates refresh token
@@ -103,9 +142,11 @@ def refresh_token(payload: dict = Depends(verify_jwt)):
     current_user = payload.get("sub")
 
     # Create custom claims from old token
-    custom_claims = {}
-    if "group" in payload:
-        custom_claims = {"group": payload["group"]}
+    custom_claims = {
+        key: value
+        for key, value in payload.items()
+        if key not in {"sub", "exp", "type", "iat"}
+    }
 
     # Create new access token
     new_payload = {

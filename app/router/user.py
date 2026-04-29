@@ -87,17 +87,11 @@ async def create_user(request: Request):
                 logger.error("Failed to create student - no response received")
                 raise HTTPException(status_code=500, detail="Failed to create student")
 
-            student_id = create_student_response.get("student_id", "unknown")
             already_exists = create_student_response.get("already_exists", False)
 
-            logger.info(
-                f"Student creation result - ID: {student_id}, Already exists: {already_exists}"
-            )
+            logger.info(f"Student creation result - Already exists: {already_exists}")
 
-            return {
-                "user_id": student_id,
-                "already_exists": already_exists,
-            }
+            return create_student_response
         elif data.get("user_type") == "teacher":
             teacher_data = {
                 "form_data": data["form_data"],
@@ -111,17 +105,11 @@ async def create_user(request: Request):
                 logger.error("Failed to create teacher - no response received")
                 raise HTTPException(status_code=500, detail="Failed to create teacher")
 
-            teacher_id = create_teacher_response.get("teacher_id", "unknown")
             already_exists = create_teacher_response.get("already_exists", False)
 
-            logger.info(
-                f"Teacher creation result - ID: {teacher_id}, Already exists: {already_exists}"
-            )
+            logger.info(f"Teacher creation result - Already exists: {already_exists}")
 
-            return {
-                "user_id": teacher_id,
-                "already_exists": already_exists,
-            }
+            return create_teacher_response
         elif data.get("user_type") == "candidate":
             candidate_data = {
                 "form_data": data["form_data"],
@@ -135,17 +123,11 @@ async def create_user(request: Request):
                     status_code=500, detail="Failed to create candidate"
                 )
 
-            candidate_id = create_candidate_response.get("candidate_id", "unknown")
             already_exists = create_candidate_response.get("already_exists", False)
 
-            logger.info(
-                f"Candidate creation result - ID: {candidate_id}, Already exists: {already_exists}"
-            )
+            logger.info(f"Candidate creation result - Already exists: {already_exists}")
 
-            return {
-                "user_id": candidate_id,
-                "already_exists": already_exists,
-            }
+            return create_candidate_response
         else:
             logger.warning(f"Unsupported user type: {data.get('user_type')}")
             raise HTTPException(status_code=400, detail="Unsupported user type")

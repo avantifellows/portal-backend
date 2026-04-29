@@ -17,7 +17,7 @@ from services.school_service import (
     get_districts_by_filters,
     get_dependant_field_mapping_for_auth_group,
 )
-from services.student_service import get_student_by_id
+from services.student_service import get_student_by_id, get_students
 from services.user_service import get_user_by_id
 
 logger = get_logger()
@@ -523,7 +523,10 @@ def find_children_fields(fields: Dict[str, Any], parent_field: Dict[str, Any]) -
 
 
 def get_student_fields_for_form(
-    form_id: str, student_id: str, number_of_fields_in_popup_form: int
+    form_id: str,
+    student_identifier: str,
+    number_of_fields_in_popup_form: int,
+    identifier_type: str = "student_id",
 ) -> Dict[int, Any]:
     """Get student fields for form"""
 
@@ -532,7 +535,10 @@ def get_student_fields_for_form(
         logger.error(f"Form not found with ID: {form_id}")
         return {}
 
-    student_response = get_student_by_id(student_id)
+    if identifier_type == "user_id":
+        student_response = get_students(user_id=student_identifier)
+    else:
+        student_response = get_student_by_id(student_identifier)
     student_data = (
         student_response[0] if student_response and len(student_response) > 0 else {}
     )

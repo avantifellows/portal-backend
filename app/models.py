@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Union, Dict, Optional
+from typing import Union, Dict, Optional, Any
 
 
 class AuthGroupResponse(BaseModel):
@@ -15,7 +15,9 @@ class AuthUser(BaseModel):
     type: str
     name: Optional[str] = None
     is_user_valid: Optional[bool] = None
-    data: Union[Dict[str, str], None]
+    data: Optional[Dict[str, Any]] = None
+    session_mode: Optional[str] = "persistent"
+    audience: Optional[str] = None
 
 
 class BatchResponse(BaseModel):
