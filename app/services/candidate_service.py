@@ -57,7 +57,29 @@ async def verify_candidate_by_id(candidate_id: str, **params) -> bool:
         return bool(candidate_data)
     except Exception as e:
         logger.error(f"Error verifying candidate {candidate_id}: {str(e)}")
-        return False
+    return False
+
+
+def build_candidate_signup_response(
+    candidate_record: Optional[Dict[str, Any]],
+    candidate_id: Optional[str],
+    already_exists: bool,
+) -> Dict[str, Any]:
+    """Build a consistent signup response with canonical identifiers."""
+    user_id = None
+    if isinstance(candidate_record, dict):
+        user_id = candidate_record.get("user_id")
+        user_data = candidate_record.get("user")
+        if user_id is None and isinstance(user_data, dict):
+            user_id = user_data.get("id")
+
+    return {
+        "user_id": str(user_id) if user_id is not None else None,
+        "candidate_id": str(candidate_id) if candidate_id is not None else None,
+        "display_id": str(candidate_id) if candidate_id is not None else None,
+        "display_id_type": "candidate_id" if candidate_id else None,
+        "already_exists": already_exists,
+    }
 
 
 async def create_candidate(request_or_data):
@@ -95,7 +117,10 @@ async def create_candidate(request_or_data):
 
             if candidate_already_exists:
                 logger.info(f"Candidate already exists: {candidate_id}")
-                return {"candidate_id": candidate_id, "already_exists": True}
+                candidate_record = get_candidate_by_id(candidate_id)
+                return build_candidate_signup_response(
+                    candidate_record, candidate_id, True
+                )
 
         # Map subject name to subject_id like grade/grade_id in student.py
         if "subject" in query_params:
@@ -141,7 +166,9 @@ async def create_candidate(request_or_data):
 
         final_candidate_id = query_params.get("candidate_id", "unknown")
         logger.info(f"Successfully created candidate: {final_candidate_id}")
-        return {"candidate_id": final_candidate_id, "already_exists": False}
+        return build_candidate_signup_response(
+            new_candidate_data, final_candidate_id, False
+        )
 
     except HTTPException:
         raise
@@ -152,9 +179,11 @@ async def create_candidate(request_or_data):
 
 async def verify_candidate_comprehensive(
     candidate_id: str, query_params: Dict[str, Any]
-) -> bool:
-    """Comprehensive candidate verification."""
+) -> Dict[str, Any]:
+    """Comprehensive candidate verification returning identifiers."""
     logger.info(f"Verifying candidate: {candidate_id} with params: {query_params}")
+
+    invalid_response = {"is_valid": False}
 
     response = requests.get(
         candidate_db_url,
@@ -174,7 +203,7 @@ async def verify_candidate_comprehensive(
                 logger.warning(
                     f"No candidate data found for candidate_id: {candidate_id}"
                 )
-                return False
+                return invalid_response
 
             for key, value in query_params.items():
                 if key in USER_QUERY_PARAMS:
@@ -183,18 +212,36 @@ async def verify_candidate_comprehensive(
                         logger.warning(
                             f"Invalid user data structure for candidate: {candidate_id}"
                         )
-                        return False
+                        return invalid_response
                     if user_data.get(key) != value:
                         logger.info(f"User verification failed for key: {key}")
-                        return False
+                        return invalid_response
 
                 if key in CANDIDATE_QUERY_PARAMS:
                     if candidate_record.get(key) != value:
                         logger.info(f"Candidate verification failed for key: {key}")
-                        return False
+                        return invalid_response
+
+            identifiers: Dict[str, Any] = {
+                "user_id": None,
+                "display_id": None,
+                "display_id_type": "candidate_id",
+            }
+
+            candidate_identifier = candidate_record.get("candidate_id") or candidate_id
+            if candidate_identifier is not None:
+                identifiers["display_id"] = str(candidate_identifier)
+
+            user_data = candidate_record.get("user", {})
+            if isinstance(user_data, dict):
+                user_pk = user_data.get("id")
+                if user_pk is not None:
+                    identifiers["user_id"] = str(user_pk)
+
+            identifiers = {k: v for k, v in identifiers.items() if v is not None}
 
             logger.info(f"Candidate verification successful for: {candidate_id}")
-            return True
+            return {"is_valid": True, **identifiers}
 
     logger.warning(f"Candidate verification failed for: {candidate_id}")
-    return False
+    return invalid_response
