@@ -44,16 +44,16 @@ def get_current_academic_year_start_year(reference_date: Optional[date] = None) 
     return current_date.year if current_date.month >= 4 else current_date.year - 1
 
 
-def resolve_delhi_registration_grade_and_batch(
-    g12_graduating_year: Any, reference_date: Optional[date] = None
+def resolve_g12_registration_grade_and_batch(
+    auth_group: str, g12_graduating_year: Any, reference_date: Optional[date] = None
 ) -> Dict[str, Any]:
-    """Resolve Delhi default grade and batch from g12 graduating year."""
+    """Resolve default grade and batch from g12 graduating year."""
     try:
         g12_year = int(g12_graduating_year)
     except (TypeError, ValueError) as exc:
         raise HTTPException(
             status_code=400,
-            detail="g12_graduating_year must be a valid year for DelhiStudents",
+            detail=f"g12_graduating_year must be a valid year for {auth_group}",
         ) from exc
 
     ay_start_year = get_current_academic_year_start_year(reference_date)
@@ -62,25 +62,34 @@ def resolve_delhi_registration_grade_and_batch(
     if delta == 0:
         return {
             "grade": "13",
-            "batch_id": f"DelhiStudents_DP_{g12_year + 1}_engg_A001",
+            "batch_id": f"{auth_group}_DP_{g12_year + 1}_engg_A001",
         }
     if delta == 1:
         return {
             "grade": "12",
-            "batch_id": f"DelhiStudents_TP_{g12_year}_common_A001",
+            "batch_id": f"{auth_group}_TP_{g12_year}_common_A001",
         }
     if delta == 2:
         return {
             "grade": "11",
-            "batch_id": f"DelhiStudents_TP_{g12_year}_common_A001",
+            "batch_id": f"{auth_group}_TP_{g12_year}_common_A001",
         }
 
     raise HTTPException(
         status_code=400,
         detail=(
-            "Unsupported g12_graduating_year for DelhiStudents registration. "
+            f"Unsupported g12_graduating_year for {auth_group} registration. "
             f"Expected {ay_start_year}, {ay_start_year + 1}, or {ay_start_year + 2}."
         ),
+    )
+
+
+def resolve_delhi_registration_grade_and_batch(
+    g12_graduating_year: Any, reference_date: Optional[date] = None
+) -> Dict[str, Any]:
+    """Resolve Delhi default grade and batch from g12 graduating year."""
+    return resolve_g12_registration_grade_and_batch(
+        "DelhiStudents", g12_graduating_year, reference_date
     )
 
 
@@ -696,23 +705,30 @@ async def create_student(request_or_data):
                         True,
                     )
 
-        if data["auth_group"] == "DelhiStudents":
+        g12_registration_data = None
+        g12_registration_auth_groups = [
+            "DelhiStudents",
+            "UttarakhandStudents",
+            "PunjabStudents",
+        ]
+        if data["auth_group"] in g12_registration_auth_groups:
             if query_params.get("g12_graduating_year") in (None, ""):
                 raise HTTPException(
                     status_code=400,
-                    detail="g12_graduating_year is required for DelhiStudents",
+                    detail=f"g12_graduating_year is required for {data['auth_group']}",
                 )
-            delhi_registration_data = resolve_delhi_registration_grade_and_batch(
-                query_params["g12_graduating_year"]
+            g12_registration_data = resolve_g12_registration_grade_and_batch(
+                data["auth_group"],
+                query_params["g12_graduating_year"],
             )
-            query_params["grade"] = delhi_registration_data["grade"]
+            query_params["grade"] = g12_registration_data["grade"]
             if query_params.get("batch_registration"):
-                batch_id = delhi_registration_data["batch_id"]
+                batch_id = g12_registration_data["batch_id"]
                 if not get_batch_by_id(batch_id):
                     raise HTTPException(
                         status_code=400,
                         detail=(
-                            "Default Delhi registration batch "
+                            f"Default {data['auth_group']} registration batch "
                             f"'{batch_id}' does not exist. Create the batch first "
                             "or disable batch registration for this form."
                         ),
@@ -772,30 +788,28 @@ async def create_student(request_or_data):
             batch_id = f"AllIndiaStudents_{grade_value}_24_A001"
             await create_batch_user_record(new_student_data, batch_id)
 
-        if data["auth_group"] == "DelhiStudents" and query_params.get(
+        if data["auth_group"] in g12_registration_auth_groups and query_params.get(
             "batch_registration"
         ):
-            batch_id = delhi_registration_data["batch_id"]
+            batch_id = g12_registration_data["batch_id"]
 
             await create_batch_user_record(new_student_data, batch_id)
 
         elif (
-            data["auth_group"]
-            in ["HimachalStudents", "UttarakhandStudents", "PunjabStudents"]
+            data["auth_group"] == "HimachalStudents"
             and "grade" in query_params
             and query_params.get("batch_registration")
         ):
             grade_value = query_params["grade"]
-            if data["auth_group"] == "HimachalStudents":
-                batch_id = f"HimachalStudents_{grade_value}_25_A001"
-            elif data["auth_group"] == "UttarakhandStudents":
-                batch_id = f"UttarakhandStudents_{grade_value}_25_A001"
-            elif data["auth_group"] == "PunjabStudents":
-                batch_id = f"PunjabStudents_{grade_value}_25_A001"
+            batch_id = f"HimachalStudents_{grade_value}_25_A001"
             await create_batch_user_record(new_student_data, batch_id)
 
-        if "grade_id" in new_student_data:
-            await create_grade_user_record(new_student_data)
+        grade_user_data = dict(new_student_data)
+        if query_params.get("grade_id"):
+            grade_user_data["grade_id"] = query_params["grade_id"]
+
+        if grade_user_data.get("grade_id"):
+            await create_grade_user_record(grade_user_data)
 
         if "school_name" in query_params:
             await create_school_user_record(
