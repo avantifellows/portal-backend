@@ -38,6 +38,34 @@ from fastapi import HTTPException
 logger = get_logger()
 
 
+G12_REGISTRATION_AUTH_GROUPS = {
+    "DelhiStudents",
+    "UttarakhandStudents",
+    "PunjabStudents",
+    "ChhattisgarhStudents",
+    "AllIndiaStudents",
+    "HimachalStudents",
+    "BiharStudents",
+    "MaharashtraStudents",
+}
+
+G12_REGISTRATION_BATCH_OVERRIDES = {
+    "AllIndiaStudents": {
+        2026: "AllIndiaStudents_DP_2028_common_Z001",
+        2027: "AllIndiaStudents_TP_2027_common_Z001",
+        2028: "AllIndiaStudents_TP_2028_common_Z001",
+    },
+    "BiharStudents": {
+        2027: "BiharStudents_TP_2027_common_A001",
+        2028: "BiharStudents_TP_2028_common_A001",
+    },
+    "MaharashtraStudents": {
+        2027: "MaharashtraStudents_TP_2027_common_A001",
+        2028: "MaharashtraStudents_TP_2028_common_A001",
+    },
+}
+
+
 def get_current_academic_year_start_year(reference_date: Optional[date] = None) -> int:
     """Return the academic year start year using April as the rollover month."""
     current_date = reference_date or date.today()
@@ -59,29 +87,38 @@ def resolve_g12_registration_grade_and_batch(
     ay_start_year = get_current_academic_year_start_year(reference_date)
     delta = g12_year - ay_start_year
 
-    if delta == 0:
-        return {
-            "grade": "13",
-            "batch_id": f"{auth_group}_DP_{g12_year + 1}_engg_A001",
-        }
-    if delta == 1:
-        return {
-            "grade": "12",
-            "batch_id": f"{auth_group}_TP_{g12_year}_common_A001",
-        }
-    if delta == 2:
-        return {
-            "grade": "11",
-            "batch_id": f"{auth_group}_TP_{g12_year}_common_A001",
-        }
+    batch_overrides = G12_REGISTRATION_BATCH_OVERRIDES.get(auth_group, {})
+    if batch_overrides and g12_year not in batch_overrides:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported g12_graduating_year for {auth_group} registration. "
+                f"Expected one of: {', '.join(map(str, batch_overrides))}."
+            ),
+        )
 
-    raise HTTPException(
-        status_code=400,
-        detail=(
-            f"Unsupported g12_graduating_year for {auth_group} registration. "
-            f"Expected {ay_start_year}, {ay_start_year + 1}, or {ay_start_year + 2}."
-        ),
-    )
+    if delta == 0:
+        grade = "13"
+        batch_id = f"{auth_group}_DP_{g12_year + 1}_engg_A001"
+    elif delta == 1:
+        grade = "12"
+        batch_id = f"{auth_group}_TP_{g12_year}_common_A001"
+    elif delta == 2:
+        grade = "11"
+        batch_id = f"{auth_group}_TP_{g12_year}_common_A001"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported g12_graduating_year for {auth_group} registration. "
+                f"Expected {ay_start_year}, {ay_start_year + 1}, or {ay_start_year + 2}."
+            ),
+        )
+
+    return {
+        "grade": grade,
+        "batch_id": batch_overrides.get(g12_year, batch_id),
+    }
 
 
 def resolve_delhi_registration_grade_and_batch(
@@ -706,12 +743,7 @@ async def create_student(request_or_data):
                     )
 
         g12_registration_data = None
-        g12_registration_auth_groups = [
-            "DelhiStudents",
-            "UttarakhandStudents",
-            "PunjabStudents",
-        ]
-        if data["auth_group"] in g12_registration_auth_groups:
+        if data["auth_group"] in G12_REGISTRATION_AUTH_GROUPS:
             if query_params.get("g12_graduating_year") in (None, ""):
                 raise HTTPException(
                     status_code=400,
@@ -783,25 +815,10 @@ async def create_student(request_or_data):
         # Create related records
         await create_auth_group_user_record(new_student_data, data["auth_group"])
 
-        if data["auth_group"] == "AllIndiaStudents":
-            grade_value = query_params.get("grade", "unknown")
-            batch_id = f"AllIndiaStudents_{grade_value}_24_A001"
-            await create_batch_user_record(new_student_data, batch_id)
-
-        if data["auth_group"] in g12_registration_auth_groups and query_params.get(
+        if data["auth_group"] in G12_REGISTRATION_AUTH_GROUPS and query_params.get(
             "batch_registration"
         ):
             batch_id = g12_registration_data["batch_id"]
-
-            await create_batch_user_record(new_student_data, batch_id)
-
-        elif (
-            data["auth_group"] == "HimachalStudents"
-            and "grade" in query_params
-            and query_params.get("batch_registration")
-        ):
-            grade_value = query_params["grade"]
-            batch_id = f"HimachalStudents_{grade_value}_25_A001"
             await create_batch_user_record(new_student_data, batch_id)
 
         grade_user_data = dict(new_student_data)
