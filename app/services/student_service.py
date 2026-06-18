@@ -22,7 +22,6 @@ from services.school_service import get_school
 from services.group_service import get_group_by_child_id_and_type
 from services.group_user_service import (
     get_group_user,
-    create_auth_group_user_record,
     create_batch_user_record,
     create_school_user_record,
     create_grade_user_record,
@@ -132,8 +131,16 @@ def resolve_delhi_registration_grade_and_batch(
 
 def get_students(**params) -> Optional[Dict[str, Any]]:
     """Get students with flexible parameters."""
-    # Filter out None values and validate against allowed params
-    valid_params = STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ENROLLMENT_RECORD_PARAMS
+    # Filter out None values and validate against allowed params.
+    # `auth_group`/`auth_group_id` scope the lookup to a single auth group, because
+    # `student_id` is only unique within an auth group (db-service joins the auth_group
+    # enrollment record when these are supplied).
+    valid_params = (
+        STUDENT_QUERY_PARAMS
+        + USER_QUERY_PARAMS
+        + ENROLLMENT_RECORD_PARAMS
+        + ["auth_group", "auth_group_id"]
+    )
     query_params = {
         k: v for k, v in params.items() if v is not None and k in valid_params
     }
@@ -152,18 +159,24 @@ def get_students(**params) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_student_by_id(student_id: str) -> Optional[Dict[str, Any]]:
-    """Get student by student_id."""
-    students = get_students(student_id=student_id)
+def get_student_by_id(
+    student_id: str, auth_group: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Get student by student_id, optionally scoped to an auth group."""
+    students = get_students(student_id=student_id, auth_group=auth_group)
     if students:
         return students
 
     # Fallback to apaar_id for auth groups where student_id may map to apaar_id
-    return get_students(apaar_id=student_id)
+    return get_students(apaar_id=student_id, auth_group=auth_group)
 
 
 async def verify_student_by_id(student_id: str, **params) -> bool:
-    """Verify student exists - simplified version for internal use."""
+    """Verify student exists - simplified version for internal use.
+
+    Pass `auth_group=<name>` to scope the check to a single auth group; without it the
+    check is global (legacy behavior).
+    """
     try:
         student_data = get_students(student_id=student_id, **params)
         return bool(
@@ -688,8 +701,10 @@ async def create_student(request_or_data):
             if not student_id:
                 raise HTTPException(status_code=400, detail="Student ID is required")
 
-            if await verify_student_by_id(student_id):
-                student_record = normalize_student_record(get_student_by_id(student_id))
+            if await verify_student_by_id(student_id, auth_group=data["auth_group"]):
+                student_record = normalize_student_record(
+                    get_student_by_id(student_id, auth_group=data["auth_group"])
+                )
                 return build_student_signup_response(student_record, student_id, True)
         else:
             if data["auth_group"] == "EnableStudents":
@@ -714,8 +729,10 @@ async def create_student(request_or_data):
                         detail="Phone number is required for this auth group",
                     )
                 query_params["student_id"] = phone
-                if await verify_student_by_id(phone):
-                    student_record = normalize_student_record(get_student_by_id(phone))
+                if await verify_student_by_id(phone, auth_group=data["auth_group"]):
+                    student_record = normalize_student_record(
+                        get_student_by_id(phone, auth_group=data["auth_group"])
+                    )
                     return build_student_signup_response(student_record, phone, True)
             else:
                 if not (query_params.get("email") or query_params.get("phone")):
@@ -799,7 +816,11 @@ async def create_student(request_or_data):
                 "true" if query_params["physically_handicapped"] == "Yes" else "false"
             )
 
-        # Create student record
+        # Create student record. Send the auth_group so db-service scopes the
+        # (student_id, auth_group) lookup and creates the auth_group ownership
+        # enrollment record + group_user atomically within the same request.
+        query_params["auth_group"] = data["auth_group"]
+
         response = requests.post(
             student_db_url, json=query_params, headers=db_request_token()
         )
@@ -812,8 +833,8 @@ async def create_student(request_or_data):
             response.json(), True, "Student API could not fetch the created student"
         )
 
-        # Create related records
-        await create_auth_group_user_record(new_student_data, data["auth_group"])
+        # Auth_group ownership (enrollment record + group_user) is now established by
+        # db-service inside POST /student, so it is no longer created here.
 
         if data["auth_group"] in G12_REGISTRATION_AUTH_GROUPS and query_params.get(
             "batch_registration"
