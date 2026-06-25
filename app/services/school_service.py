@@ -11,6 +11,7 @@ from helpers import (
     is_response_empty,
 )
 from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapping
+from services.school_mapping_constants import GUJARAT_DISTRICT_SCHOOL_MAPPING
 
 logger = get_logger()
 
@@ -306,6 +307,7 @@ def get_districts_by_filters(
         )
         maharashtra_districts = ["Gadchiroli", "Bhandara"]
         bihar_districts = ["Begusarai"]
+        gujarat_districts = set(GUJARAT_DISTRICT_SCHOOL_MAPPING)
         for school in schools_data:
             if school.get("district"):
                 if auth_group == "PunjabTeachers":
@@ -317,6 +319,9 @@ def get_districts_by_filters(
                 elif auth_group == "MaharashtraStudents":
                     if school.get("district") in maharashtra_districts:
                         districts.append(school.get("district"))  # change later
+                elif auth_group == "GujaratStudents":
+                    if school.get("district") in gujarat_districts:
+                        districts.append(school.get("district"))
                 elif auth_group == "BiharStudents":
                     if school.get("district") in bihar_districts:
                         districts.append(school.get("district"))  # change later
@@ -468,6 +473,7 @@ def get_dependant_field_mapping_for_auth_group(
     )
     maharashtra_districts = ["Gadchiroli", "Bhandara"]
     bihar_districts = ["Begusarai"]
+    gujarat_districts = set(GUJARAT_DISTRICT_SCHOOL_MAPPING)
     for school in schools_data:
         if school.get("district"):
             if auth_group == "PunjabTeachers":
@@ -478,6 +484,13 @@ def get_dependant_field_mapping_for_auth_group(
                     filtered_schools.append(school)
             elif auth_group == "MaharashtraStudents":
                 if school.get("district") in maharashtra_districts:
+                    filtered_schools.append(school)
+            elif auth_group == "GujaratStudents":
+                district = school.get("district")
+                if (
+                    district in gujarat_districts
+                    and school.get("name") in GUJARAT_DISTRICT_SCHOOL_MAPPING[district]
+                ):
                     filtered_schools.append(school)
             elif auth_group == "BiharStudents":
                 if school.get("district") in bihar_districts:
@@ -544,8 +557,9 @@ def get_dependant_field_mapping_for_auth_group(
             if district not in district_school_mapping:
                 district_school_mapping[district] = {"en": [], "hi": []}
 
-            district_school_mapping[district]["en"].append(school_name)
-            district_school_mapping[district]["hi"].append(school_name)
+            if school_name not in district_school_mapping[district]["en"]:
+                district_school_mapping[district]["en"].append(school_name)
+                district_school_mapping[district]["hi"].append(school_name)
 
         # Sort everything
         for district_data in district_school_mapping.values():
