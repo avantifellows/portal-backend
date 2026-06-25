@@ -703,6 +703,7 @@ async def create_student(request_or_data):
                 "UttarakhandStudents",
                 "HimachalStudents",
                 "AllIndiaStudents",
+                "GujaratStudents",
                 "ChhattisgarhStudents",
                 "BiharStudents",
                 "MaharashtraStudents",
