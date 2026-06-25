@@ -42,6 +42,7 @@ G12_REGISTRATION_AUTH_GROUPS = {
     "DelhiStudents",
     "UttarakhandStudents",
     "PunjabStudents",
+    "GujaratStudents",
     "ChhattisgarhStudents",
     "AllIndiaStudents",
     "HimachalStudents",
