@@ -58,6 +58,14 @@ TAMIL_NADU_SCHOOL_DISTRICTS = [
     "Virudhunagar",
 ]
 
+MAHARASHTRA_SCHOOL_DISTRICTS = [
+    "Bhandara",
+    "Chandrapur",
+    "Gadchiroli",
+    "Nagpur Zp",
+    "Wardha",
+]
+
 
 def get_school_by_name_and_region(name: str, region: str) -> Optional[Dict[str, Any]]:
     """Get school by name and region."""
@@ -305,7 +313,6 @@ def get_districts_by_filters(
         chhattisgarh_districts = "Bastar+DANTEWADA+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
             "+"
         )
-        maharashtra_districts = ["Gadchiroli", "Bhandara"]
         bihar_districts = ["Begusarai"]
         gujarat_districts = set(GUJARAT_DISTRICT_SCHOOL_MAPPING)
         for school in schools_data:
@@ -317,7 +324,7 @@ def get_districts_by_filters(
                     if school.get("district") in chhattisgarh_districts:
                         districts.append(school.get("district"))  # change later
                 elif auth_group == "MaharashtraStudents":
-                    if school.get("district") in maharashtra_districts:
+                    if school.get("district") in MAHARASHTRA_SCHOOL_DISTRICTS:
                         districts.append(school.get("district"))  # change later
                 elif auth_group == "GujaratStudents":
                     if school.get("district") in gujarat_districts:
@@ -471,7 +478,6 @@ def get_dependant_field_mapping_for_auth_group(
     chhattisgarh_districts = "Bastar+DANTEWADA+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
         "+"
     )
-    maharashtra_districts = ["Gadchiroli", "Bhandara"]
     bihar_districts = ["Begusarai"]
     gujarat_districts = set(GUJARAT_DISTRICT_SCHOOL_MAPPING)
     for school in schools_data:
@@ -483,7 +489,7 @@ def get_dependant_field_mapping_for_auth_group(
                 if school.get("district") in chhattisgarh_districts:
                     filtered_schools.append(school)
             elif auth_group == "MaharashtraStudents":
-                if school.get("district") in maharashtra_districts:
+                if school.get("district") in MAHARASHTRA_SCHOOL_DISTRICTS:
                     filtered_schools.append(school)
             elif auth_group == "GujaratStudents":
                 district = school.get("district")
