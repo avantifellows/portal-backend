@@ -25,6 +25,10 @@ class Settings(BaseModel):
     SQS_SECRET_ACCESS_KEY: str = os.environ.get("SQS_SECRET_ACCESS_KEY")
     AWS_SQS_URL: str = os.environ.get("AWS_SQS_URL")
     OTP_SERVICE_URL: str = os.environ.get("OTP_SERVICE_URL", "")
+    SASHAKT_API_URL: str = os.environ.get("SASHAKT_API_URL", "")
+    SASHAKT_WEBAPP_URL: str = os.environ.get("SASHAKT_WEBAPP_URL", "")
+    SASHAKT_ADMIN_EMAIL: str = os.environ.get("SASHAKT_ADMIN_EMAIL", "")
+    SASHAKT_ADMIN_PASSWORD: str = os.environ.get("SASHAKT_ADMIN_PASSWORD", "")
 
     # Business logic configuration
     DEFAULT_ACADEMIC_YEAR: str = os.environ.get("DEFAULT_ACADEMIC_YEAR", "2025-2026")
