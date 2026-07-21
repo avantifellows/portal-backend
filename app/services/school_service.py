@@ -62,6 +62,7 @@ MAHARASHTRA_SCHOOL_DISTRICTS = [
     "Bhandara",
     "Chandrapur",
     "Gadchiroli",
+    "Gondia",
     "Nagpur Zp",
     "Wardha",
 ]
