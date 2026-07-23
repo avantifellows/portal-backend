@@ -1,7 +1,7 @@
 """School service for business logic without HTTP dependencies."""
 
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from logger_config import get_logger
 from routes import school_db_url
 from helpers import (
@@ -14,6 +14,8 @@ from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapp
 from services.school_mapping_constants import GUJARAT_DISTRICT_SCHOOL_MAPPING
 
 logger = get_logger()
+
+DB_SERVICE_MAX_PAGE_SIZE = 10_000
 
 # Canonical Tamil Nadu district list for the TN Govt Hiring Form.
 # This is intentionally Tamil Nadu specific and removes duplicate DB spelling variants.
@@ -66,6 +68,39 @@ MAHARASHTRA_SCHOOL_DISTRICTS = [
     "Nagpur Zp",
     "Wardha",
 ]
+
+
+def _get_all_schools(
+    query_params: Dict[str, Any], error_message: str
+) -> Optional[List[Dict[str, Any]]]:
+    """Fetch every matching school page from DB Service."""
+    schools = []
+    offset = 0
+
+    while True:
+        response = requests.get(
+            school_db_url,
+            params={
+                **query_params,
+                "limit": DB_SERVICE_MAX_PAGE_SIZE,
+                "offset": offset,
+            },
+            headers=db_request_token(),
+        )
+
+        if not is_response_valid(response, error_message):
+            return None
+
+        page = response.json()
+        if not isinstance(page, list):
+            page = [page] if page else []
+
+        schools.extend(page)
+
+        if len(page) < DB_SERVICE_MAX_PAGE_SIZE:
+            return schools
+
+        offset += len(page)
 
 
 def get_school_by_name_and_region(name: str, region: str) -> Optional[Dict[str, Any]]:
@@ -301,15 +336,12 @@ def get_districts_by_filters(
 
     logger.info(f"Fetching districts with params: {query_params}")
 
-    response = requests.get(
-        school_db_url, params=query_params, headers=db_request_token()
+    schools_data = _get_all_schools(
+        query_params,
+        "Could not fetch districts!",
     )
 
-    if is_response_valid(response, "Could not fetch districts!"):
-        schools_data = response.json()
-        if not isinstance(schools_data, list):
-            schools_data = [schools_data]
-
+    if schools_data is not None:
         districts = []
         chhattisgarh_districts = "Bastar+DANTEWADA+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
             "+"
@@ -363,15 +395,12 @@ def get_blocks_by_filters(
 
     logger.info(f"Fetching blocks with params: {query_params}")
 
-    response = requests.get(
-        school_db_url, params=query_params, headers=db_request_token()
+    schools_data = _get_all_schools(
+        query_params,
+        "Could not fetch blocks!",
     )
 
-    if is_response_valid(response, "Could not fetch blocks!"):
-        schools_data = response.json()
-        if not isinstance(schools_data, list):
-            schools_data = [schools_data]
-
+    if schools_data is not None:
         # Extract unique blocks (block_name field)
         blocks = list(
             set(
@@ -411,15 +440,12 @@ def get_schools_for_dropdown_by_filters(
 
     logger.info(f"Fetching schools for dropdown with params: {query_params}")
 
-    response = requests.get(
-        school_db_url, params=query_params, headers=db_request_token()
+    schools_data = _get_all_schools(
+        query_params,
+        "Could not fetch schools!",
     )
 
-    if is_response_valid(response, "Could not fetch schools!"):
-        schools_data = response.json()
-        if not isinstance(schools_data, list):
-            schools_data = [schools_data]
-
+    if schools_data is not None:
         # Return simplified school data for dropdown
         schools = [
             {
@@ -460,19 +486,13 @@ def get_dependant_field_mapping_for_auth_group(
         f"Generating dependant mapping for '{auth_group}' -> '{state}', include_blocks: {include_blocks}"
     )
 
-    # Single API call to get all schools for this state
-    response = requests.get(
-        school_db_url, params={"state": state}, headers=db_request_token()
+    schools_data = _get_all_schools(
+        {"state": state},
+        "Could not fetch schools for dependant mapping!",
     )
 
-    if not is_response_valid(
-        response, "Could not fetch schools for dependant mapping!"
-    ):
+    if schools_data is None:
         return {"error": "Database error"}
-
-    schools_data = response.json()
-    if not isinstance(schools_data, list):
-        schools_data = [schools_data]
 
     # Apply same filtering logic as get_districts_by_filters for consistency
     filtered_schools = []
