@@ -171,6 +171,52 @@ def get_student_by_id(
     return get_students(apaar_id=student_id, auth_group=auth_group)
 
 
+def select_student_record(
+    student_response: Any,
+    identifier: Optional[str] = None,
+    auth_group: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Pick a single student record from a lookup that may match several records.
+
+    `student_id` is no longer globally unique (db-service dropped the global unique
+    index), so a `student_id` lookup can legitimately return one record per auth group.
+    When the caller could not scope the lookup we mirror db-service's tie-break -
+    lowest `id` first, matching its `order_by: [asc: s.id], limit: 1` - so portal and
+    db-service resolve the same student instead of disagreeing on ordering.
+    """
+    records = (
+        [record for record in student_response if isinstance(record, dict)]
+        if isinstance(student_response, list)
+        else [student_response] if isinstance(student_response, dict) else []
+    )
+
+    if not records:
+        return {}
+
+    if len(records) > 1:
+        if auth_group:
+            # Scoped lookups should already be unambiguous; surface it if they aren't.
+            logger.warning(
+                f"{len(records)} student records matched {identifier} even when scoped "
+                f"to auth_group {auth_group}"
+            )
+        else:
+            logger.warning(
+                f"{len(records)} student records matched {identifier} across auth "
+                "groups; resolving by lowest id. Pass auth_group (or user_id) to "
+                "select a specific student."
+            )
+        records = sorted(
+            records,
+            key=lambda record: (
+                record.get("id") is None,
+                record.get("id"),
+            ),
+        )
+
+    return records[0]
+
+
 async def verify_student_by_id(student_id: str, **params) -> bool:
     """Verify student exists - simplified version for internal use.
 
@@ -608,6 +654,10 @@ async def complete_profile_details_service(
     try:
         student_identifier = data.get("user_id") or data.get("student_id")
         identifier_type = "user_id" if data.get("user_id") else "student_id"
+        # `student_id` is only unique within an auth group, so an auth_group (when the
+        # caller supplies one) scopes this to the right student. `auth_group` is not in
+        # STUDENT_QUERY_PARAMS, so it is filtered out of the patch payload below.
+        auth_group = data.get("auth_group")
 
         logger.info(
             f"Completing profile details for student ({identifier_type}): {student_identifier}"
@@ -621,24 +671,34 @@ async def complete_profile_details_service(
 
         student_data = build_student_and_user_data(data)
 
+        # Scope by auth_group whenever the caller supplied one, on both branches. A real
+        # user_id is globally unique and needs no scoping, but callers have been known to
+        # put a student_id in the user_id slot, and this is a write path - scoping
+        # defensively stops a mislabelled identifier from patching another auth group's
+        # student record.
         if identifier_type == "user_id":
-            student_response = get_students(user_id=student_identifier)
+            student_response = get_students(
+                user_id=student_identifier, auth_group=auth_group
+            )
         else:
-            student_response = get_student_by_id(student_identifier)
+            student_response = get_student_by_id(
+                student_identifier, auth_group=auth_group
+            )
 
-        if (
-            not student_response
-            or not isinstance(student_response, list)
-            or len(student_response) == 0
-        ):
+        if not student_response:
             logger.error(
                 f"Student not found for {identifier_type}: {student_identifier}"
             )
             raise HTTPException(status_code=404, detail="Student not found")
 
-        # Safe access to first student
-        first_student = student_response[0]
-        if not isinstance(first_student, dict) or "id" not in first_student:
+        # This is a write path: resolve the target record explicitly rather than
+        # assuming the lookup returned exactly one student.
+        first_student = select_student_record(
+            student_response,
+            identifier=str(student_identifier),
+            auth_group=auth_group,
+        )
+        if not first_student or "id" not in first_student:
             logger.error(f"Invalid student data structure: {first_student}")
             raise HTTPException(status_code=500, detail="Invalid student data")
 
