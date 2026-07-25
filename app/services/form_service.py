@@ -17,7 +17,11 @@ from services.school_service import (
     get_districts_by_filters,
     get_dependant_field_mapping_for_auth_group,
 )
-from services.student_service import get_student_by_id, get_students
+from services.student_service import (
+    get_student_by_id,
+    get_students,
+    select_student_record,
+)
 from services.user_service import get_user_by_id
 
 logger = get_logger()
@@ -527,6 +531,7 @@ def get_student_fields_for_form(
     student_identifier: str,
     number_of_fields_in_popup_form: int,
     identifier_type: str = "student_id",
+    auth_group: Optional[str] = None,
 ) -> Dict[int, Any]:
     """Get student fields for form"""
 
@@ -535,12 +540,22 @@ def get_student_fields_for_form(
         logger.error(f"Form not found with ID: {form_id}")
         return {}
 
+    # Scope by auth_group whenever the caller supplied one, on both branches. A real
+    # user_id is globally unique and needs no scoping, but callers have been known to put
+    # a student_id in the user_id slot, so scoping defensively costs nothing and stops a
+    # mislabelled identifier from resolving to another auth group's student.
     if identifier_type == "user_id":
-        student_response = get_students(user_id=student_identifier)
+        student_response = get_students(
+            user_id=student_identifier, auth_group=auth_group
+        )
     else:
-        student_response = get_student_by_id(student_identifier)
-    student_data = (
-        student_response[0] if student_response and len(student_response) > 0 else {}
+        # `student_id` is only unique within an auth group.
+        student_response = get_student_by_id(student_identifier, auth_group=auth_group)
+
+    student_data = select_student_record(
+        student_response,
+        identifier=str(student_identifier),
+        auth_group=auth_group,
     )
 
     if isinstance(student_data, dict) and not isinstance(
