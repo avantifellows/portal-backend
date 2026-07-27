@@ -28,7 +28,10 @@ logger = get_logger()
 def get_students(request: Request):
     query_params = validate_and_build_query_params(
         request.query_params,
-        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ENROLLMENT_RECORD_PARAMS,
+        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ENROLLMENT_RECORD_PARAMS
+        # `student_id` is only unique within an auth group; db-service scopes the lookup
+        # to the matching auth_group enrollment record when either of these is supplied.
+        + ["auth_group", "auth_group_id"],
     )
 
     logger.info(f"Fetching students with params: {query_params}")

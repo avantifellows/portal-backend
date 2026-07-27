@@ -10,7 +10,6 @@ from helpers import (
     db_request_token,
     is_response_valid,
     is_response_empty,
-    safe_get_first_item,
 )
 from mapping import (
     STUDENT_QUERY_PARAMS,
@@ -22,7 +21,6 @@ from services.school_service import get_school
 from services.group_service import get_group_by_child_id_and_type
 from services.group_user_service import (
     get_group_user,
-    create_auth_group_user_record,
     create_batch_user_record,
     create_school_user_record,
     create_grade_user_record,
@@ -133,8 +131,16 @@ def resolve_delhi_registration_grade_and_batch(
 
 def get_students(**params) -> Optional[Dict[str, Any]]:
     """Get students with flexible parameters."""
-    # Filter out None values and validate against allowed params
-    valid_params = STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ENROLLMENT_RECORD_PARAMS
+    # Filter out None values and validate against allowed params.
+    # `auth_group`/`auth_group_id` scope the lookup to a single auth group, because
+    # `student_id` is only unique within an auth group (db-service joins the auth_group
+    # enrollment record when these are supplied).
+    valid_params = (
+        STUDENT_QUERY_PARAMS
+        + USER_QUERY_PARAMS
+        + ENROLLMENT_RECORD_PARAMS
+        + ["auth_group", "auth_group_id"]
+    )
     query_params = {
         k: v for k, v in params.items() if v is not None and k in valid_params
     }
@@ -153,18 +159,70 @@ def get_students(**params) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_student_by_id(student_id: str) -> Optional[Dict[str, Any]]:
-    """Get student by student_id."""
-    students = get_students(student_id=student_id)
+def get_student_by_id(
+    student_id: str, auth_group: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Get student by student_id, optionally scoped to an auth group."""
+    students = get_students(student_id=student_id, auth_group=auth_group)
     if students:
         return students
 
     # Fallback to apaar_id for auth groups where student_id may map to apaar_id
-    return get_students(apaar_id=student_id)
+    return get_students(apaar_id=student_id, auth_group=auth_group)
+
+
+def select_student_record(
+    student_response: Any,
+    identifier: Optional[str] = None,
+    auth_group: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Pick a single student record from a lookup that may match several records.
+
+    `student_id` is no longer globally unique (db-service dropped the global unique
+    index), so a `student_id` lookup can legitimately return one record per auth group.
+    When the caller could not scope the lookup we mirror db-service's tie-break -
+    lowest `id` first, matching its `order_by: [asc: s.id], limit: 1` - so portal and
+    db-service resolve the same student instead of disagreeing on ordering.
+    """
+    records = (
+        [record for record in student_response if isinstance(record, dict)]
+        if isinstance(student_response, list)
+        else [student_response] if isinstance(student_response, dict) else []
+    )
+
+    if not records:
+        return {}
+
+    if len(records) > 1:
+        if auth_group:
+            # Scoped lookups should already be unambiguous; surface it if they aren't.
+            logger.warning(
+                f"{len(records)} student records matched {identifier} even when scoped "
+                f"to auth_group {auth_group}"
+            )
+        else:
+            logger.warning(
+                f"{len(records)} student records matched {identifier} across auth "
+                "groups; resolving by lowest id. Pass auth_group (or user_id) to "
+                "select a specific student."
+            )
+        records = sorted(
+            records,
+            key=lambda record: (
+                record.get("id") is None,
+                record.get("id"),
+            ),
+        )
+
+    return records[0]
 
 
 async def verify_student_by_id(student_id: str, **params) -> bool:
-    """Verify student exists - simplified version for internal use."""
+    """Verify student exists - simplified version for internal use.
+
+    Pass `auth_group=<name>` to scope the check to a single auth group; without it the
+    check is global (legacy behavior).
+    """
     try:
         student_data = get_students(student_id=student_id, **params)
         return bool(
@@ -410,11 +468,102 @@ def check_if_student_id_is_part_of_request(query_params: Dict[str, Any]) -> None
         )
 
 
+def _fetch_student_candidates(**params) -> list:
+    """Fetch student records for a lookup, always returned as a list of candidates.
+
+    `student_id` is only unique within an auth group, so a lookup can legitimately
+    match several records. Callers must evaluate every candidate rather than assuming
+    the first one is the right student.
+    """
+    response = requests.get(
+        student_db_url,
+        params={k: v for k, v in params.items() if v is not None},
+        headers=db_request_token(),
+    )
+
+    if not is_response_valid(response):
+        return []
+
+    student_data = is_response_empty(response.json(), False)
+    if not student_data:
+        return []
+
+    if isinstance(student_data, list):
+        return [record for record in student_data if isinstance(record, dict)]
+    if isinstance(student_data, dict):
+        return [student_data]
+    return []
+
+
+def _matches_verification_params(
+    student_record: Dict[str, Any],
+    query_params: Dict[str, Any],
+    skip_student_id_check: bool,
+) -> bool:
+    """Check a single student record against every supplied verification param."""
+    student_id = query_params.get("student_id")
+
+    for key, value in query_params.items():
+        if key in USER_QUERY_PARAMS:
+            user_data = student_record.get("user", {})
+            if not isinstance(user_data, dict):
+                logger.warning(f"Invalid user data structure for student: {student_id}")
+                return False
+            if user_data.get(key) != value:
+                logger.info(f"User verification failed for key: {key}")
+                return False
+
+        elif key in STUDENT_QUERY_PARAMS:
+            # Skip student_id verification if we found the student via apaar_id or phone
+            if key == "student_id" and skip_student_id_check:
+                logger.info(
+                    "Skipping student_id verification - found via alternative method"
+                )
+                continue
+            if student_record.get(key) != value:
+                logger.info(f"Student verification failed for key: {key}")
+                return False
+
+        elif key == "auth_group_id":
+            # Verify user belongs to the auth group
+            group_response = get_group_by_child_id_and_type(
+                child_id=value, group_type="auth_group"
+            )
+
+            if not (
+                group_response
+                and isinstance(group_response, dict)
+                and "id" in group_response
+            ):
+                logger.warning(f"Group not found for auth_group_id: {value}")
+                return False
+
+            user_data = student_record.get("user", {})
+            if not (isinstance(user_data, dict) and "id" in user_data):
+                logger.warning("Invalid user data in student record")
+                return False
+
+            group_user_response = get_group_user(
+                group_id=group_response["id"], user_id=user_data["id"]
+            )
+            if not group_user_response or group_user_response == []:
+                logger.info("User not found in auth group")
+                return False
+
+    return True
+
+
 async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str, Any]:
     """Comprehensive student verification with multiple fallback methods.
 
     Returns a payload containing verification status and core identifiers so that
     clients don't have to re-fetch the student record after validation.
+
+    A `student_id` is only unique within an auth group, so the same `student_id` can
+    resolve to several student records (one per auth group). Every candidate is checked
+    and the first one satisfying all verification params wins — otherwise a student
+    registered in multiple auth groups could only ever log into whichever record
+    db-service happened to return first.
     """
     student_id = query_params.get("student_id")
     phone = query_params.get("phone")
@@ -438,122 +587,45 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
             "Detected EnableStudents auth group - will try apaar_id fallback if needed"
         )
 
-    student_record = None
-
-    # Try student_id first
-    response = requests.get(
-        student_db_url,
-        params={"student_id": student_id},
-        headers=db_request_token(),
-    )
-
-    if is_response_valid(response):
-        student_data = is_response_empty(response.json(), False)
-        if student_data:
-            student_record = (
-                safe_get_first_item(student_data)
-                if isinstance(student_data, list)
-                else student_data
-            )
+    # Each lookup strategy yields candidates plus whether a student_id equality check
+    # still applies (it doesn't when the student was located via apaar_id or phone).
+    candidates = [
+        (record, False) for record in _fetch_student_candidates(student_id=student_id)
+    ]
 
     # For EnableStudents: if no student found with student_id, try apaar_id
-    found_via_apaar_id = False
-    if not student_record and is_enable_students:
+    if not candidates and is_enable_students:
         logger.info(f"EnableStudents: Trying apaar_id for: {student_id}")
-
-        response = requests.get(
-            student_db_url,
-            params={"apaar_id": student_id},
-            headers=db_request_token(),
-        )
-
-        if is_response_valid(response):
-            student_data = is_response_empty(response.json(), False)
-            if student_data:
-                student_record = (
-                    safe_get_first_item(student_data)
-                    if isinstance(student_data, list)
-                    else student_data
-                )
-                found_via_apaar_id = True
+        candidates = [
+            (record, True) for record in _fetch_student_candidates(apaar_id=student_id)
+        ]
 
     # If still no student found and we have phone, try searching by phone
-    found_via_phone = False
-    if not student_record and phone and phone != student_id:
+    if not candidates and phone and phone != student_id:
         logger.info(f"Trying phone search for: {phone}")
+        candidates = [
+            (record, True) for record in _fetch_student_candidates(phone=phone)
+        ]
 
-        response = requests.get(
-            student_db_url,
-            params={"phone": phone},
-            headers=db_request_token(),
-        )
-
-        if is_response_valid(response):
-            student_data = is_response_empty(response.json(), False)
-            if student_data:
-                student_record = (
-                    safe_get_first_item(student_data)
-                    if isinstance(student_data, list)
-                    else student_data
-                )
-                found_via_phone = True
-
-    if not student_record:
+    if not candidates:
         logger.warning(f"No student found for: {student_id}")
         return invalid_response
 
-    # Verify all query parameters
-    for key, value in query_params.items():
-        if key in USER_QUERY_PARAMS:
-            user_data = student_record.get("user", {})
-            if not isinstance(user_data, dict):
-                logger.warning(f"Invalid user data structure for student: {student_id}")
-                return invalid_response
-            if user_data.get(key) != value:
-                logger.info(f"User verification failed for key: {key}")
-                return invalid_response
+    if len(candidates) > 1:
+        logger.info(
+            f"Found {len(candidates)} student records for {student_id} - "
+            "checking each against verification params"
+        )
 
-        elif key in STUDENT_QUERY_PARAMS:
-            # Skip student_id verification if we found the student via apaar_id or phone
-            if key == "student_id" and (found_via_apaar_id or found_via_phone):
-                logger.info(
-                    "Skipping student_id verification - found via alternative method"
-                )
-                continue
-            if student_record.get(key) != value:
-                logger.info(f"Student verification failed for key: {key}")
-                return invalid_response
+    student_record = None
+    for candidate, skip_student_id_check in candidates:
+        if _matches_verification_params(candidate, query_params, skip_student_id_check):
+            student_record = candidate
+            break
 
-        elif key == "auth_group_id":
-            # Verify user belongs to the auth group
-            group_response = get_group_by_child_id_and_type(
-                child_id=value, group_type="auth_group"
-            )
-
-            if not (
-                group_response
-                and isinstance(group_response, dict)
-                and "id" in group_response
-            ):
-                logger.warning(f"Group not found for auth_group_id: {value}")
-                return invalid_response
-
-            group_record = group_response
-            if not (isinstance(group_record, dict) and "id" in group_record):
-                logger.warning("Invalid group record structure")
-                return invalid_response
-
-            user_data = student_record.get("user", {})
-            if not (isinstance(user_data, dict) and "id" in user_data):
-                logger.warning("Invalid user data in student record")
-                return invalid_response
-
-            group_user_response = get_group_user(
-                group_id=group_record["id"], user_id=user_data["id"]
-            )
-            if not group_user_response or group_user_response == []:
-                logger.info("User not found in auth group")
-                return invalid_response
+    if student_record is None:
+        logger.info(f"No student record satisfied verification for: {student_id}")
+        return invalid_response
 
     identifiers = {
         "student_id": student_record.get("student_id"),
@@ -582,6 +654,10 @@ async def complete_profile_details_service(
     try:
         student_identifier = data.get("user_id") or data.get("student_id")
         identifier_type = "user_id" if data.get("user_id") else "student_id"
+        # `student_id` is only unique within an auth group, so an auth_group (when the
+        # caller supplies one) scopes this to the right student. `auth_group` is not in
+        # STUDENT_QUERY_PARAMS, so it is filtered out of the patch payload below.
+        auth_group = data.get("auth_group")
 
         logger.info(
             f"Completing profile details for student ({identifier_type}): {student_identifier}"
@@ -595,24 +671,34 @@ async def complete_profile_details_service(
 
         student_data = build_student_and_user_data(data)
 
+        # Scope by auth_group whenever the caller supplied one, on both branches. A real
+        # user_id is globally unique and needs no scoping, but callers have been known to
+        # put a student_id in the user_id slot, and this is a write path - scoping
+        # defensively stops a mislabelled identifier from patching another auth group's
+        # student record.
         if identifier_type == "user_id":
-            student_response = get_students(user_id=student_identifier)
+            student_response = get_students(
+                user_id=student_identifier, auth_group=auth_group
+            )
         else:
-            student_response = get_student_by_id(student_identifier)
+            student_response = get_student_by_id(
+                student_identifier, auth_group=auth_group
+            )
 
-        if (
-            not student_response
-            or not isinstance(student_response, list)
-            or len(student_response) == 0
-        ):
+        if not student_response:
             logger.error(
                 f"Student not found for {identifier_type}: {student_identifier}"
             )
             raise HTTPException(status_code=404, detail="Student not found")
 
-        # Safe access to first student
-        first_student = student_response[0]
-        if not isinstance(first_student, dict) or "id" not in first_student:
+        # This is a write path: resolve the target record explicitly rather than
+        # assuming the lookup returned exactly one student.
+        first_student = select_student_record(
+            student_response,
+            identifier=str(student_identifier),
+            auth_group=auth_group,
+        )
+        if not first_student or "id" not in first_student:
             logger.error(f"Invalid student data structure: {first_student}")
             raise HTTPException(status_code=500, detail="Invalid student data")
 
@@ -689,8 +775,10 @@ async def create_student(request_or_data):
             if not student_id:
                 raise HTTPException(status_code=400, detail="Student ID is required")
 
-            if await verify_student_by_id(student_id):
-                student_record = normalize_student_record(get_student_by_id(student_id))
+            if await verify_student_by_id(student_id, auth_group=data["auth_group"]):
+                student_record = normalize_student_record(
+                    get_student_by_id(student_id, auth_group=data["auth_group"])
+                )
                 return build_student_signup_response(student_record, student_id, True)
         else:
             if data["auth_group"] == "EnableStudents":
@@ -716,8 +804,10 @@ async def create_student(request_or_data):
                         detail="Phone number is required for this auth group",
                     )
                 query_params["student_id"] = phone
-                if await verify_student_by_id(phone):
-                    student_record = normalize_student_record(get_student_by_id(phone))
+                if await verify_student_by_id(phone, auth_group=data["auth_group"]):
+                    student_record = normalize_student_record(
+                        get_student_by_id(phone, auth_group=data["auth_group"])
+                    )
                     return build_student_signup_response(student_record, phone, True)
             else:
                 if not (query_params.get("email") or query_params.get("phone")):
@@ -801,7 +891,11 @@ async def create_student(request_or_data):
                 "true" if query_params["physically_handicapped"] == "Yes" else "false"
             )
 
-        # Create student record
+        # Create student record. Send the auth_group so db-service scopes the
+        # (student_id, auth_group) lookup and creates the auth_group ownership
+        # enrollment record + group_user atomically within the same request.
+        query_params["auth_group"] = data["auth_group"]
+
         response = requests.post(
             student_db_url, json=query_params, headers=db_request_token()
         )
@@ -814,8 +908,8 @@ async def create_student(request_or_data):
             response.json(), True, "Student API could not fetch the created student"
         )
 
-        # Create related records
-        await create_auth_group_user_record(new_student_data, data["auth_group"])
+        # Auth_group ownership (enrollment record + group_user) is now established by
+        # db-service inside POST /student, so it is no longer created here.
 
         if data["auth_group"] in G12_REGISTRATION_AUTH_GROUPS and query_params.get(
             "batch_registration"

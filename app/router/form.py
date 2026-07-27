@@ -39,7 +39,15 @@ async def get_student_fields(request: Request):
     """Get student form fields"""
     query_params = validate_and_build_query_params(
         request.query_params,
-        ["number_of_fields_in_popup_form", "form_id", "student_id", "user_id"],
+        [
+            "number_of_fields_in_popup_form",
+            "form_id",
+            "student_id",
+            "user_id",
+            # `student_id` is only unique within an auth group, so callers that only
+            # have a student_id can pass auth_group to select the right student.
+            "auth_group",
+        ],
     )
 
     student_identifier = query_params.get("user_id") or query_params.get("student_id")
@@ -60,4 +68,5 @@ async def get_student_fields(request: Request):
         student_identifier,
         int(query_params["number_of_fields_in_popup_form"]),
         identifier_type,
+        auth_group=query_params.get("auth_group"),
     )
