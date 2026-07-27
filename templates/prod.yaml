@@ -27,6 +27,22 @@ Parameters:
     Type: String
     Description: Url to send SQS message for attendance logging
 
+  SashaktApiUrl:
+    Type: String
+    Description: Base URL of the Sashakt core API (e.g. https://.../api/v1)
+
+  SashaktWebappUrl:
+    Type: String
+    Description: Base URL of the Sashakt webapp used to build launch URLs
+
+  SashaktAdminEmail:
+    Type: String
+    Description: Sashakt admin email used to authenticate external provisioning
+
+  SashaktAdminPassword:
+    Type: String
+    Description: Sashakt admin password used to authenticate external provisioning
+
 Resources:
   Function:
     Type: AWS::Serverless::Function
@@ -45,6 +61,10 @@ Resources:
           SQS_ACCESS_KEY: !Ref SqsAccessKey
           SQS_SECRET_ACCESS_KEY: !Ref SqsSecretAccessKey
           AWS_SQS_URL: !Ref AwsSqsUrl
+          SASHAKT_API_URL: !Ref SashaktApiUrl
+          SASHAKT_WEBAPP_URL: !Ref SashaktWebappUrl
+          SASHAKT_ADMIN_EMAIL: !Ref SashaktAdminEmail
+          SASHAKT_ADMIN_PASSWORD: !Ref SashaktAdminPassword
       Events:
         Api:
           Type: HttpApi
