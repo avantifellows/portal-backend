@@ -35,8 +35,8 @@ def _get_sashakt_auth_headers() -> Dict[str, str]:
     return {"Authorization": f"Bearer {access_token}"}
 
 
-def _provision_sashakt_attempt(
-    external_user_id: str,
+def _provision_sashakt_candidate(
+    external_identifier: str,
     test_link_uuid: str,
     device_info: Optional[str],
 ) -> Dict[str, Any]:
@@ -45,7 +45,7 @@ def _provision_sashakt_attempt(
 
     payload: Dict[str, Any] = {
         "test_link_uuid": test_link_uuid,
-        "external_user_id": external_user_id,
+        "external_identifier": external_identifier,
     }
     if device_info:
         payload["device_info"] = device_info
@@ -55,55 +55,44 @@ def _provision_sashakt_attempt(
         json=payload,
         headers=_get_sashakt_auth_headers(),
     )
-    if is_response_valid(response, "Sashakt could not provision the test attempt"):
+    if is_response_valid(response, "Sashakt could not provision the candidate"):
         return response.json()
     raise HTTPException(status_code=500, detail="Sashakt provisioning failed")
 
 
-def _build_launch_url(
-    test_link_uuid: str,
-    candidate_uuid: str,
-    candidate_test_id: int,
-) -> str:
+def _build_launch_url(test_link_uuid: str, candidate_uuid: str) -> str:
     base_url = settings.SASHAKT_WEBAPP_URL.rstrip("/")
     if not base_url:
         raise HTTPException(
             status_code=500, detail="Sashakt webapp URL is not configured"
         )
 
-    query = urlencode(
-        {"candidate_uuid": candidate_uuid, "candidate_test_id": candidate_test_id}
-    )
+    query = urlencode({"candidate_uuid": candidate_uuid})
     return f"{base_url}/test/{test_link_uuid}?{query}"
 
 
 def create_sashakt_launch(data: Dict[str, Any]) -> Dict[str, Any]:
-    external_user_id = str(data.get("user_id") or "")
+    external_identifier = str(data.get("user_id") or "")
     test_link_uuid = str(data.get("test_link_uuid") or data.get("redirect_id") or "")
 
-    if not external_user_id or not test_link_uuid:
+    if not external_identifier or not test_link_uuid:
         raise HTTPException(
             status_code=400, detail="user_id and test_link_uuid are required"
         )
 
-    # Sashakt owns the candidate mapping now: it looks up-or-creates a single
-    # candidate per (organization, external_user_id), so re-launching the same
-    # user is idempotent server-side. Portal no longer stores the mapping.
-    provisioned = _provision_sashakt_attempt(
-        external_user_id=external_user_id,
+    # Sashakt owns the candidate mapping: it looks up-or-creates a single
+    # candidate per (organization, external_identifier), so re-launching the same
+    # user is idempotent server-side. Portal stores no mapping of its own. The
+    # attempt itself is created when the candidate starts the test.
+    provisioned = _provision_sashakt_candidate(
+        external_identifier=external_identifier,
         test_link_uuid=test_link_uuid,
         device_info=data.get("device_info"),
     )
 
     candidate_uuid = provisioned["candidate_uuid"]
-    candidate_test_id = provisioned["candidate_test_id"]
 
     return {
-        "launch_url": _build_launch_url(
-            test_link_uuid,
-            candidate_uuid,
-            candidate_test_id,
-        ),
+        "launch_url": _build_launch_url(test_link_uuid, candidate_uuid),
         "candidate_uuid": candidate_uuid,
-        "candidate_test_id": candidate_test_id,
     }
