@@ -1,14 +1,9 @@
 from fastapi import APIRouter, Request, HTTPException
-import requests
 from services.student_service import create_student
 from services.teacher_service import create_teacher
 from services.candidate_service import create_candidate
-from routes import user_db_url
 from helpers import (
-    db_request_token,
     validate_and_build_query_params,
-    is_response_valid,
-    is_response_empty,
 )
 from mapping import (
     USER_QUERY_PARAMS,
@@ -22,26 +17,6 @@ from logger_config import get_logger
 
 router = APIRouter(prefix="/user", tags=["User"])
 logger = get_logger()
-
-
-@router.get("/")
-def get_users(request: Request):
-    query_params = validate_and_build_query_params(
-        request.query_params, USER_QUERY_PARAMS
-    )
-
-    logger.info(f"Fetching users with params: {query_params}")
-
-    response = requests.get(
-        user_db_url, params=query_params, headers=db_request_token()
-    )
-
-    if is_response_valid(response, "User API could not fetch the data!"):
-        users_data = is_response_empty(response.json(), False, "User does not exist!")
-        logger.info(
-            f"Successfully retrieved {len(users_data) if isinstance(users_data, list) else 1} user(s)"
-        )
-        return users_data
 
 
 @router.post("/")
