@@ -53,6 +53,14 @@ Resources:
 
   Api:
     Type: AWS::Serverless::HttpApi
+    Properties:
+      # Global DoS ceiling only — set above the observed legitimate peak
+      # (~350 req/s sustained during large sign-in events) so real cohort
+      # surges are never throttled. Per-source enumeration is stopped by a
+      # WAF rate-based rule (see PR), not this limit.
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 1000
+        ThrottlingBurstLimit: 2000
 
 Outputs:
   ApiUrl:

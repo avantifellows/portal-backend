@@ -53,6 +53,11 @@ Resources:
 
   Api:
     Type: AWS::Serverless::HttpApi
+    Properties:
+      # Global DoS ceiling only; staging sees no cohort surges. See prod.yaml.
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 200
+        ThrottlingBurstLimit: 400
 
 Outputs:
   ApiUrl:
