@@ -31,6 +31,7 @@ dependencies = [
     "websockets>=14.1",
     "python-dateutil>=2.9.0",
     "boto3>=1.35.82",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]

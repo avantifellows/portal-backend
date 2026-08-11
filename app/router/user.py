@@ -4,6 +4,7 @@ from services.student_service import create_student
 from services.teacher_service import create_teacher
 from services.candidate_service import create_candidate
 from routes import user_db_url
+from limiter import limiter
 from helpers import (
     db_request_token,
     validate_and_build_query_params,
@@ -45,6 +46,7 @@ def get_users(request: Request):
 
 
 @router.post("/")
+@limiter.limit("10/second")
 async def create_user(request: Request):
     try:
         data = await request.json()
