@@ -1,18 +1,15 @@
 from router import (
     auth_group,
     auth,
-    batch,
     candidate,
     enrollment_record,
     form,
     group_session,
     group_user,
-    group,
     school,
     sashakt,
     session_occurrence,
     abtest,
-    session,
     student,
     teacher,
     user_session,
@@ -85,17 +82,14 @@ app.add_middleware(
 
 app.include_router(auth_group.router)
 app.include_router(auth.router)
-app.include_router(batch.router)
 app.include_router(enrollment_record.router)
 app.include_router(form.router)
 app.include_router(group_session.router)
 app.include_router(group_user.router)
-app.include_router(group.router)
 app.include_router(school.router)
 app.include_router(sashakt.router)
 app.include_router(session_occurrence.router)
 app.include_router(abtest.router)
-app.include_router(session.router)
 app.include_router(student.router)
 app.include_router(teacher.router)
 app.include_router(candidate.router)
