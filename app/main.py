@@ -7,6 +7,7 @@ from router import (
     group_session,
     group_user,
     school,
+    sashakt,
     session_occurrence,
     abtest,
     student,
@@ -60,6 +61,8 @@ origins = [
     "http://localhost:8080",
     "http://localhost:8081",
     "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
     "https://staging-auth.avantifellows.org",
     "https://auth.avantifellows.org",
     "https://staging-gurukul.avantifellows.org",
@@ -84,6 +87,7 @@ app.include_router(form.router)
 app.include_router(group_session.router)
 app.include_router(group_user.router)
 app.include_router(school.router)
+app.include_router(sashakt.router)
 app.include_router(session_occurrence.router)
 app.include_router(abtest.router)
 app.include_router(student.router)
