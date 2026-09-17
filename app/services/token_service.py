@@ -16,6 +16,7 @@ PERSISTENT_SESSION_MODE = "persistent"
 LAUNCH_SESSION_MODE = "launch"
 ALLOWED_SESSION_MODES = {PERSISTENT_SESSION_MODE, LAUNCH_SESSION_MODE}
 LAUNCH_AUDIENCES = {"quiz", "report", "form"}
+TESTING_AUTH_GROUPS = {"AFTesting"}
 
 ACCESS_TOKEN_TTL = datetime.timedelta(hours=1)
 LAUNCH_TOKEN_TTL = datetime.timedelta(minutes=15)
@@ -128,6 +129,13 @@ def resolve_auth_group(
     return None
 
 
+def resolve_auth_group_name(
+    auth_group: Optional[str] = None, auth_group_id: Optional[str] = None
+) -> Optional[str]:
+    group = resolve_auth_group(auth_group=auth_group, auth_group_id=auth_group_id)
+    return group.get("name") if isinstance(group, dict) else None
+
+
 def flatten_record(record: Any) -> Dict[str, Any]:
     """Merge nested `school` and `user` sub-records onto the top level."""
     if not isinstance(record, dict):
@@ -154,6 +162,7 @@ def build_token_data(
     user_type: str,
     group: str,
     identifiers: Dict[str, Any],
+    user_validated: bool = True,
 ) -> Optional[Dict[str, Any]]:
     """Build the claims stored under the token's custom data."""
     merged = {**flatten_record(record), **identifiers}
@@ -191,6 +200,7 @@ def build_token_data(
         "display_id": display_id,
         "display_id_type": display_id_type,
         "user_type": user_type,
+        "user_validated": user_validated,
     }
     for key in IDENTIFIER_KEYS:
         value = _str_or_none(merged.get(key))
@@ -278,21 +288,38 @@ def tokens_for_record(
     record: Any,
     user_type: str,
     identifiers: Dict[str, Any],
-    auth_group: Optional[str] = None,
-    auth_group_id: Optional[str] = None,
+    group_name: Optional[str],
+    user_validated: bool = True,
 ) -> Dict[str, Any]:
     """Session tokens for a verified record, or {} when the auth group is unknown."""
-    group = resolve_auth_group(auth_group=auth_group, auth_group_id=auth_group_id)
-    group_name = group.get("name") if isinstance(group, dict) else None
     if not group_name:
         return {}
 
-    data = build_token_data(record, user_type, group_name, identifiers)
+    data = build_token_data(record, user_type, group_name, identifiers, user_validated)
     if not data:
         return {}
 
-    tokens = issue_session_tokens(data["user_id"], data)
+    tokens = issue_session_tokens(data["user_id"], data, with_refresh=user_validated)
     return {
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
     }
+
+
+def invalid_verification_response(
+    group_name: Optional[str], user_type: str, typed_id: Optional[str]
+) -> Dict[str, Any]:
+    """Testing auth groups still get an unvalidated token for the typed id."""
+    response: Dict[str, Any] = {"is_valid": False}
+    if group_name in TESTING_AUTH_GROUPS and typed_id:
+        typed_id = str(typed_id)
+        response.update(
+            tokens_for_record(
+                None,
+                user_type,
+                {"user_id": typed_id, "display_id": typed_id},
+                group_name,
+                user_validated=False,
+            )
+        )
+    return response

@@ -29,7 +29,11 @@ from services.grade_service import get_grade_by_number
 from services.user_service import get_user_by_email_and_phone
 from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
-from services.token_service import resolve_auth_group, tokens_for_record
+from services.token_service import (
+    invalid_verification_response,
+    resolve_auth_group,
+    tokens_for_record,
+)
 from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
 from helpers import validate_and_build_query_params
 from fastapi import HTTPException
@@ -580,14 +584,17 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
 
-    invalid_response = {"is_valid": False}
-
     auth_group_name = query_params.get("auth_group")
-    if auth_group_name and not auth_group_id:
-        group = resolve_auth_group(auth_group=auth_group_name)
-        if isinstance(group, dict) and group.get("id") is not None:
+    group = resolve_auth_group(auth_group=auth_group_name, auth_group_id=auth_group_id)
+    if isinstance(group, dict):
+        auth_group_name = group.get("name") or auth_group_name
+        if not auth_group_id and group.get("id") is not None:
             auth_group_id = str(group["id"])
             query_params["auth_group_id"] = auth_group_id
+
+    invalid_response = invalid_verification_response(
+        auth_group_name, "student", student_id
+    )
 
     is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
     if is_enable_students:
@@ -655,13 +662,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     return {
         "is_valid": True,
         **identifiers,
-        **tokens_for_record(
-            student_record,
-            "student",
-            identifiers,
-            auth_group=auth_group_name,
-            auth_group_id=auth_group_id,
-        ),
+        **tokens_for_record(student_record, "student", identifiers, auth_group_name),
     }
 
 

@@ -13,7 +13,11 @@ from helpers import (
 from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapping
 from services.school_mapping_constants import GUJARAT_DISTRICT_SCHOOL_MAPPING
 
-from services.token_service import tokens_for_record
+from services.token_service import (
+    invalid_verification_response,
+    resolve_auth_group_name,
+    tokens_for_record,
+)
 
 logger = get_logger()
 
@@ -235,7 +239,10 @@ async def verify_school_comprehensive(
 ) -> Dict[str, Any]:
     """Comprehensive school verification returning canonical identifiers."""
     logger.info(f"Verifying school with code: {code} and params: {query_params}")
-    invalid_response = {"is_valid": False}
+    group_name = resolve_auth_group_name(
+        query_params.get("auth_group"), query_params.get("auth_group_id")
+    )
+    invalid_response = invalid_verification_response(group_name, "school", code)
 
     # Try school code first
     school_record = None
@@ -318,13 +325,7 @@ async def verify_school_comprehensive(
     return {
         "is_valid": True,
         **identifiers,
-        **tokens_for_record(
-            school_record,
-            "school",
-            identifiers,
-            auth_group=query_params.get("auth_group"),
-            auth_group_id=query_params.get("auth_group_id"),
-        ),
+        **tokens_for_record(school_record, "school", identifiers, group_name),
     }
 
 

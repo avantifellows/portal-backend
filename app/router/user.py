@@ -38,9 +38,7 @@ def with_session_tokens(response: dict, user_type: str, auth_group: str) -> dict
         record = safe_get_first_item(
             _fetch_created_record(user_type, response, auth_group)
         )
-        response.update(
-            tokens_for_record(record, user_type, response, auth_group=auth_group)
-        )
+        response.update(tokens_for_record(record, user_type, response, auth_group))
     except Exception as e:
         logger.warning(f"Could not issue session tokens after signup: {e}")
     return response
