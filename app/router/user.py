@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Request, HTTPException
-from services.student_service import create_student
-from services.teacher_service import create_teacher
-from services.candidate_service import create_candidate
+from services.student_service import create_student, get_students
+from services.teacher_service import create_teacher, get_teacher_by_id
+from services.candidate_service import create_candidate, get_candidate_by_id
+from services.token_service import tokens_for_record
+from helpers import safe_get_first_item
 from helpers import (
     validate_and_build_query_params,
 )
@@ -17,6 +19,31 @@ from logger_config import get_logger
 
 router = APIRouter(prefix="/user", tags=["User"])
 logger = get_logger()
+
+
+def _fetch_created_record(user_type: str, response: dict, auth_group: str):
+    if user_type == "student" and response.get("user_id"):
+        return get_students(user_id=response["user_id"], auth_group=auth_group)
+    if user_type == "teacher" and response.get("teacher_id"):
+        return get_teacher_by_id(response["teacher_id"])
+    if user_type == "candidate" and response.get("candidate_id"):
+        return get_candidate_by_id(response["candidate_id"])
+    return None
+
+
+def with_session_tokens(response: dict, user_type: str, auth_group: str) -> dict:
+    if not isinstance(response, dict) or not auth_group:
+        return response
+    try:
+        record = safe_get_first_item(
+            _fetch_created_record(user_type, response, auth_group)
+        )
+        response.update(
+            tokens_for_record(record, user_type, response, auth_group=auth_group)
+        )
+    except Exception as e:
+        logger.warning(f"Could not issue session tokens after signup: {e}")
+    return response
 
 
 @router.post("/")
@@ -66,7 +93,9 @@ async def create_user(request: Request):
 
             logger.info(f"Student creation result - Already exists: {already_exists}")
 
-            return create_student_response
+            return with_session_tokens(
+                create_student_response, "student", data.get("auth_group", "")
+            )
         elif data.get("user_type") == "teacher":
             teacher_data = {
                 "form_data": data["form_data"],
@@ -84,7 +113,9 @@ async def create_user(request: Request):
 
             logger.info(f"Teacher creation result - Already exists: {already_exists}")
 
-            return create_teacher_response
+            return with_session_tokens(
+                create_teacher_response, "teacher", data.get("auth_group", "")
+            )
         elif data.get("user_type") == "candidate":
             candidate_data = {
                 "form_data": data["form_data"],
@@ -102,7 +133,9 @@ async def create_user(request: Request):
 
             logger.info(f"Candidate creation result - Already exists: {already_exists}")
 
-            return create_candidate_response
+            return with_session_tokens(
+                create_candidate_response, "candidate", data.get("auth_group", "")
+            )
         else:
             logger.warning(f"Unsupported user type: {data.get('user_type')}")
             raise HTTPException(status_code=400, detail="Unsupported user type")

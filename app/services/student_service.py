@@ -29,6 +29,7 @@ from services.grade_service import get_grade_by_number
 from services.user_service import get_user_by_email_and_phone
 from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
+from services.token_service import resolve_auth_group, tokens_for_record
 from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
 from helpers import validate_and_build_query_params
 from fastapi import HTTPException
@@ -581,6 +582,13 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
 
     invalid_response = {"is_valid": False}
 
+    auth_group_name = query_params.get("auth_group")
+    if auth_group_name and not auth_group_id:
+        group = resolve_auth_group(auth_group=auth_group_name)
+        if isinstance(group, dict) and group.get("id") is not None:
+            auth_group_id = str(group["id"])
+            query_params["auth_group_id"] = auth_group_id
+
     is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
     if is_enable_students:
         logger.info(
@@ -644,7 +652,17 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
             identifiers["user_id"] = str(user_id)
 
     logger.info(f"Student verification successful for: {student_id}")
-    return {"is_valid": True, **identifiers}
+    return {
+        "is_valid": True,
+        **identifiers,
+        **tokens_for_record(
+            student_record,
+            "student",
+            identifiers,
+            auth_group=auth_group_name,
+            auth_group_id=auth_group_id,
+        ),
+    }
 
 
 async def complete_profile_details_service(

@@ -13,6 +13,8 @@ from helpers import (
 from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapping
 from services.school_mapping_constants import GUJARAT_DISTRICT_SCHOOL_MAPPING
 
+from services.token_service import tokens_for_record
+
 logger = get_logger()
 
 DB_SERVICE_MAX_PAGE_SIZE = 10_000
@@ -313,7 +315,17 @@ async def verify_school_comprehensive(
             identifiers["user_id"] = str(user_pk)
 
     identifiers = {k: v for k, v in identifiers.items() if v is not None}
-    return {"is_valid": True, **identifiers}
+    return {
+        "is_valid": True,
+        **identifiers,
+        **tokens_for_record(
+            school_record,
+            "school",
+            identifiers,
+            auth_group=query_params.get("auth_group"),
+            auth_group_id=query_params.get("auth_group_id"),
+        ),
+    }
 
 
 def get_districts_by_filters(

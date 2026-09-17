@@ -91,3 +91,7 @@ class AttendanceMessageSchema(BaseModel):
     batch: str = ""
     date_of_birth: str = ""
     user_validated: bool = True
+
+
+class LaunchTokenRequest(BaseModel):
+    audience: str

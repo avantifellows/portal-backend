@@ -20,6 +20,8 @@ from services.group_user_service import (
 )
 from fastapi import HTTPException
 
+from services.token_service import tokens_for_record
+
 logger = get_logger()
 
 
@@ -281,7 +283,17 @@ async def verify_teacher_comprehensive(
             identifiers = {k: v for k, v in identifiers.items() if v is not None}
 
             logger.info(f"Teacher verification successful for: {teacher_id}")
-            return {"is_valid": True, **identifiers}
+            return {
+                "is_valid": True,
+                **identifiers,
+                **tokens_for_record(
+                    teacher_record,
+                    "teacher",
+                    identifiers,
+                    auth_group=query_params.get("auth_group"),
+                    auth_group_id=query_params.get("auth_group_id"),
+                ),
+            }
 
     logger.warning(f"Teacher verification failed for: {teacher_id}")
     return invalid_response

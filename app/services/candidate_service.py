@@ -19,6 +19,8 @@ from services.group_user_service import (
 )
 from fastapi import HTTPException
 
+from services.token_service import tokens_for_record
+
 logger = get_logger()
 
 
@@ -241,7 +243,17 @@ async def verify_candidate_comprehensive(
             identifiers = {k: v for k, v in identifiers.items() if v is not None}
 
             logger.info(f"Candidate verification successful for: {candidate_id}")
-            return {"is_valid": True, **identifiers}
+            return {
+                "is_valid": True,
+                **identifiers,
+                **tokens_for_record(
+                    candidate_record,
+                    "candidate",
+                    identifiers,
+                    auth_group=query_params.get("auth_group"),
+                    auth_group_id=query_params.get("auth_group_id"),
+                ),
+            }
 
     logger.warning(f"Candidate verification failed for: {candidate_id}")
     return invalid_response
