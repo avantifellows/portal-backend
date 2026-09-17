@@ -25,15 +25,8 @@ REFRESH_TOKEN_TTL = datetime.timedelta(days=30)
 
 RESERVED_CLAIMS = {"sub", "exp", "iat", "aud", "type", "session_mode", "persist"}
 
-USER_FIELDS = [
-    "first_name",
-    "last_name",
-    "name",
-    "phone",
-    "email",
-    "gender",
-    "date_of_birth",
-]
+# phone, email and date_of_birth stay out of the token: no consumer reads them
+USER_FIELDS = ["first_name", "last_name", "name", "gender"]
 STUDENT_FIELDS = [
     "student_id",
     "apaar_id",
