@@ -34,6 +34,8 @@ def _fetch_created_record(user_type: str, response: dict, auth_group: str):
 def with_session_tokens(response: dict, user_type: str, auth_group: str) -> dict:
     if not isinstance(response, dict) or not auth_group:
         return response
+    if response.get("already_exists"):
+        return response
     try:
         record = safe_get_first_item(
             _fetch_created_record(user_type, response, auth_group)

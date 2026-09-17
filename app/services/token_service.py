@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict, Optional
 
 import jwt
+from fastapi import HTTPException
 
 from logger_config import get_logger
 from services.auth_group_service import get_auth_group
@@ -129,11 +130,30 @@ def resolve_auth_group(
     return None
 
 
+def resolve_verified_auth_group(
+    auth_group: Optional[str] = None, auth_group_id: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """One canonical group: id wins, and a supplied name must match it."""
+    if auth_group_id:
+        group = resolve_auth_group(auth_group_id=auth_group_id)
+    elif auth_group:
+        group = resolve_auth_group(auth_group=auth_group)
+    else:
+        return None
+    if not isinstance(group, dict):
+        return None
+    if auth_group and group.get("name") != auth_group:
+        raise HTTPException(
+            status_code=400, detail="auth_group does not match auth_group_id"
+        )
+    return group
+
+
 def resolve_auth_group_name(
     auth_group: Optional[str] = None, auth_group_id: Optional[str] = None
 ) -> Optional[str]:
-    group = resolve_auth_group(auth_group=auth_group, auth_group_id=auth_group_id)
-    return group.get("name") if isinstance(group, dict) else None
+    group = resolve_verified_auth_group(auth_group, auth_group_id)
+    return group.get("name") if group else None
 
 
 def flatten_record(record: Any) -> Dict[str, Any]:

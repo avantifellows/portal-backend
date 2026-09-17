@@ -31,7 +31,7 @@ from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
 from services.token_service import (
     invalid_verification_response,
-    resolve_auth_group,
+    resolve_verified_auth_group,
     tokens_for_record,
 )
 from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
@@ -584,13 +584,11 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
 
-    auth_group_name = query_params.get("auth_group")
-    group = resolve_auth_group(auth_group=auth_group_name, auth_group_id=auth_group_id)
-    if isinstance(group, dict):
-        auth_group_name = group.get("name") or auth_group_name
-        if not auth_group_id and group.get("id") is not None:
-            auth_group_id = str(group["id"])
-            query_params["auth_group_id"] = auth_group_id
+    group = resolve_verified_auth_group(query_params.get("auth_group"), auth_group_id)
+    auth_group_name = group.get("name") if group else None
+    if group and not auth_group_id and group.get("id") is not None:
+        auth_group_id = str(group["id"])
+        query_params["auth_group_id"] = auth_group_id
 
     invalid_response = invalid_verification_response(
         auth_group_name, "student", student_id
