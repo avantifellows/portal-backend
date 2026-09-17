@@ -27,6 +27,11 @@ Parameters:
     Type: String
     Description: Url to send SQS message for attendance logging
 
+  OtpServiceUrl:
+    Type: String
+    Default: ""
+    Description: Base URL of the OTP lambda used to confirm phone logins
+
 Resources:
   Function:
     Type: AWS::Serverless::Function
@@ -45,6 +50,7 @@ Resources:
           SQS_ACCESS_KEY: !Ref SqsAccessKey
           SQS_SECRET_ACCESS_KEY: !Ref SqsSecretAccessKey
           AWS_SQS_URL: !Ref AwsSqsUrl
+          OTP_SERVICE_URL: !Ref OtpServiceUrl
       Events:
         Api:
           Type: HttpApi

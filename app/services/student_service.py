@@ -29,6 +29,7 @@ from services.grade_service import get_grade_by_number
 from services.user_service import get_user_by_email_and_phone
 from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
+from services.otp_service import OTP_OK, verify_otp
 from services.token_service import (
     invalid_verification_response,
     resolve_verified_auth_group,
@@ -573,6 +574,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     student_id = query_params.get("student_id")
     phone = query_params.get("phone")
     auth_group_id = query_params.get("auth_group_id")
+    otp = query_params.pop("otp", None)
 
     if not student_id and not phone:
         raise HTTPException(
@@ -656,11 +658,24 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
         if user_id is not None:
             identifiers["user_id"] = str(user_id)
 
+    # Phone login is only proven once the OTP checks out; until then the token is unvalidated.
+    user_validated = True
+    if phone:
+        if otp is None:
+            user_validated = False
+        else:
+            otp_status = verify_otp(phone, otp)
+            if otp_status != OTP_OK:
+                logger.info(f"OTP check failed for {student_id}: status {otp_status}")
+                return {"is_valid": False, "otp_status_code": otp_status}
+
     logger.info(f"Student verification successful for: {student_id}")
     return {
         "is_valid": True,
         **identifiers,
-        **tokens_for_record(student_record, "student", identifiers, auth_group_name),
+        **tokens_for_record(
+            student_record, "student", identifiers, auth_group_name, user_validated
+        ),
     }
 
 

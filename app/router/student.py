@@ -54,7 +54,9 @@ def get_students(request: Request):
 async def verify_student(request: Request):
     query_params = validate_and_build_query_params(
         request.query_params,
-        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group", "auth_group_id"],
+        STUDENT_QUERY_PARAMS
+        + USER_QUERY_PARAMS
+        + ["auth_group", "auth_group_id", "otp"],
     )
 
     return await verify_student_comprehensive(query_params)
