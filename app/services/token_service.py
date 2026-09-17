@@ -313,11 +313,17 @@ def invalid_verification_response(
     response: Dict[str, Any] = {"is_valid": False}
     if group_name in TESTING_AUTH_GROUPS and typed_id:
         typed_id = str(typed_id)
+        id_key = "school_code" if user_type == "school" else f"{user_type}_id"
         response.update(
             tokens_for_record(
                 None,
                 user_type,
-                {"user_id": typed_id, "display_id": typed_id},
+                {
+                    "user_id": typed_id,
+                    "display_id": typed_id,
+                    "display_id_type": id_key,
+                    id_key: typed_id,
+                },
                 group_name,
                 user_validated=False,
             )
