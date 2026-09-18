@@ -29,6 +29,13 @@ from services.grade_service import get_grade_by_number
 from services.user_service import get_user_by_email_and_phone
 from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
+from services.otp_service import OTP_OK, verify_otp
+from services.token_service import (
+    group_requires_otp,
+    invalid_verification_response,
+    resolve_verified_auth_group,
+    tokens_for_record,
+)
 from mapping import SCHOOL_QUERY_PARAMS, authgroup_state_mapping
 from helpers import validate_and_build_query_params
 from fastapi import HTTPException
@@ -568,6 +575,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     student_id = query_params.get("student_id")
     phone = query_params.get("phone")
     auth_group_id = query_params.get("auth_group_id")
+    otp = query_params.pop("otp", None)
 
     if not student_id and not phone:
         raise HTTPException(
@@ -579,7 +587,15 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
 
     logger.info(f"Verifying student: {student_id} with params: {query_params}")
 
-    invalid_response = {"is_valid": False}
+    group = resolve_verified_auth_group(query_params.get("auth_group"), auth_group_id)
+    auth_group_name = group.get("name") if group else None
+    if group and not auth_group_id and group.get("id") is not None:
+        auth_group_id = str(group["id"])
+        query_params["auth_group_id"] = auth_group_id
+
+    invalid_response = invalid_verification_response(
+        auth_group_name, "student", student_id
+    )
 
     is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
     if is_enable_students:
@@ -643,8 +659,29 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
         if user_id is not None:
             identifiers["user_id"] = str(user_id)
 
+    # OTP groups: the session stays unvalidated until the OTP for the account's own
+    # registered phone checks out, whichever field the caller used to find the record.
+    user_validated = True
+    if group_requires_otp(group):
+        account_phone = (student_record.get("user") or {}).get("phone")
+        if otp is None:
+            user_validated = False
+        elif not account_phone:
+            return {"is_valid": False, "otp_status_code": 0}
+        else:
+            otp_status = verify_otp(str(account_phone), otp)
+            if otp_status != OTP_OK:
+                logger.info(f"OTP check failed for {student_id}: status {otp_status}")
+                return {"is_valid": False, "otp_status_code": otp_status}
+
     logger.info(f"Student verification successful for: {student_id}")
-    return {"is_valid": True, **identifiers}
+    return {
+        "is_valid": True,
+        **identifiers,
+        **tokens_for_record(
+            student_record, "student", identifiers, auth_group_name, user_validated
+        ),
+    }
 
 
 async def complete_profile_details_service(

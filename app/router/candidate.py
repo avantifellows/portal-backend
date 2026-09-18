@@ -47,7 +47,8 @@ def get_candidates(request: Request):
 async def verify_candidate(request: Request, candidate_id: str):
     """Verify candidate"""
     query_params = validate_and_build_query_params(
-        request.query_params, CANDIDATE_QUERY_PARAMS + USER_QUERY_PARAMS
+        request.query_params,
+        CANDIDATE_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group", "auth_group_id"],
     )
 
     return await verify_candidate_comprehensive(candidate_id, query_params)

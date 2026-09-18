@@ -65,6 +65,7 @@ jobs:
           SQS_ACCESS_KEY: ${{ secrets.SQS_ACCESS_KEY }}
           SQS_SECRET_ACCESS_KEY: ${{ secrets.SQS_SECRET_ACCESS_KEY }}
           AWS_SQS_URL: ${{ secrets.AWS_SQS_URL }}
+          OTP_SERVICE_URL: ${{ secrets.OTP_SERVICE_URL }}
 
         run: >
            sam deploy
@@ -82,3 +83,4 @@ jobs:
            SqsAccessKey=$SQS_ACCESS_KEY
            SqsSecretAccessKey=$SQS_SECRET_ACCESS_KEY
            AwsSqsUrl=$AWS_SQS_URL
+           OtpServiceUrl=$OTP_SERVICE_URL

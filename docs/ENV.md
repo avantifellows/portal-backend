@@ -11,6 +11,9 @@ The URL to connect to our database service (e.g., `http://localhost:8000`)
 #### `DB_SERVICE_TOKEN`
 Token to authenticate with the database service
 
+#### `OTP_SERVICE_URL`
+Base URL of the OTP lambda (the same value the frontend uses as `VITE_APP_OTP_SERVICE`). Phone logins are only marked validated after the backend confirms the OTP here.
+
 ### Business Logic
 
 #### `DEFAULT_ACADEMIC_YEAR` *(optional)*

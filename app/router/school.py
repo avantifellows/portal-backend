@@ -27,7 +27,8 @@ def get_school_endpoint(request: Request):
 async def verify_school(request: Request, code: str):
     """Verify school"""
     query_params = validate_and_build_query_params(
-        request.query_params, SCHOOL_QUERY_PARAMS + USER_QUERY_PARAMS
+        request.query_params,
+        SCHOOL_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group", "auth_group_id"],
     )
     return await verify_school_comprehensive(code, query_params)
 
