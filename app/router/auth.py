@@ -7,6 +7,7 @@ from services.token_service import (
     LAUNCH_SESSION_MODE,
     PERSISTENT_SESSION_MODE,
     encode,
+    is_launch_allowed,
     issue_launch_token,
     issue_session_tokens,
 )
@@ -86,6 +87,8 @@ def create_launch_token(
 ):
     if payload.get("type") == "refresh":
         raise HTTPException(status_code=401, detail="Access token required")
+    if not is_launch_allowed(payload):
+        raise HTTPException(status_code=401, detail="Session not validated")
     if request.audience not in LAUNCH_AUDIENCES:
         raise HTTPException(
             status_code=400,

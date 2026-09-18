@@ -31,6 +31,7 @@ from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
 from services.otp_service import OTP_OK, verify_otp
 from services.token_service import (
+    group_requires_otp,
     invalid_verification_response,
     resolve_verified_auth_group,
     tokens_for_record,
@@ -658,13 +659,17 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
         if user_id is not None:
             identifiers["user_id"] = str(user_id)
 
-    # Phone login is only proven once the OTP checks out; until then the token is unvalidated.
+    # OTP groups: the session stays unvalidated until the OTP for the account's own
+    # registered phone checks out, whichever field the caller used to find the record.
     user_validated = True
-    if phone:
+    if group_requires_otp(group):
+        account_phone = (student_record.get("user") or {}).get("phone")
         if otp is None:
             user_validated = False
+        elif not account_phone:
+            return {"is_valid": False, "otp_status_code": 0}
         else:
-            otp_status = verify_otp(phone, otp)
+            otp_status = verify_otp(str(account_phone), otp)
             if otp_status != OTP_OK:
                 logger.info(f"OTP check failed for {student_id}: status {otp_status}")
                 return {"is_valid": False, "otp_status_code": otp_status}

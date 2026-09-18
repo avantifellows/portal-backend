@@ -18,6 +18,7 @@ LAUNCH_SESSION_MODE = "launch"
 ALLOWED_SESSION_MODES = {PERSISTENT_SESSION_MODE, LAUNCH_SESSION_MODE}
 LAUNCH_AUDIENCES = {"quiz", "report", "form"}
 TESTING_AUTH_GROUPS = {"AFTesting"}
+OTP_AUTH_TYPE = "PH"
 
 ACCESS_TOKEN_TTL = datetime.timedelta(hours=1)
 LAUNCH_TOKEN_TTL = datetime.timedelta(minutes=15)
@@ -140,6 +141,23 @@ def resolve_verified_auth_group(
             status_code=400, detail="auth_group does not match auth_group_id"
         )
     return group
+
+
+def group_requires_otp(group: Optional[Dict[str, Any]]) -> bool:
+    """True when the auth group's login rules include phone (OTP) auth."""
+    if not isinstance(group, dict):
+        return False
+    auth_type = (group.get("input_schema") or {}).get("auth_type") or ""
+    if isinstance(auth_type, str):
+        auth_type = auth_type.split(",")
+    return OTP_AUTH_TYPE in [str(t).strip() for t in auth_type]
+
+
+def is_launch_allowed(payload: Dict[str, Any]) -> bool:
+    """Unvalidated sessions may not launch, except the explicit testing groups."""
+    if payload.get("user_validated", True):
+        return True
+    return payload.get("group") in TESTING_AUTH_GROUPS
 
 
 def resolve_auth_group_name(
