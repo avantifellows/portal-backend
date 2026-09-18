@@ -1,53 +1,16 @@
-from fastapi import APIRouter, HTTPException, Request
-import requests
+from fastapi import APIRouter, Depends, HTTPException, Request
 from services.student_service import (
     create_student as create_student_service,
     verify_student_comprehensive,
     complete_profile_details_service,
-    patch_student_service,
 )
-from routes import student_db_url
-from helpers import (
-    db_request_token,
-    validate_and_build_query_params,
-    is_response_valid,
-    is_response_empty,
-)
+from router.auth import require_validated_session, session_user_id
+from helpers import validate_and_build_query_params
 from logger_config import get_logger
-from mapping import (
-    USER_QUERY_PARAMS,
-    STUDENT_QUERY_PARAMS,
-    ENROLLMENT_RECORD_PARAMS,
-)
+from mapping import USER_QUERY_PARAMS, STUDENT_QUERY_PARAMS
 
 router = APIRouter(prefix="/student", tags=["Student"])
 logger = get_logger()
-
-
-@router.get("/")
-def get_students(request: Request):
-    query_params = validate_and_build_query_params(
-        request.query_params,
-        STUDENT_QUERY_PARAMS + USER_QUERY_PARAMS + ENROLLMENT_RECORD_PARAMS
-        # `student_id` is only unique within an auth group; db-service scopes the lookup
-        # to the matching auth_group enrollment record when either of these is supplied.
-        + ["auth_group", "auth_group_id"],
-    )
-
-    logger.info(f"Fetching students with params: {query_params}")
-
-    response = requests.get(
-        student_db_url, params=query_params, headers=db_request_token()
-    )
-
-    if is_response_valid(response, "Student API could not fetch the student!"):
-        students_data = is_response_empty(
-            response.json(), False, "Student does not exist"
-        )
-        logger.info(
-            f"Successfully retrieved {len(students_data) if isinstance(students_data, list) else 1} student(s)"
-        )
-        return students_data
 
 
 @router.get("/verify")
@@ -67,22 +30,16 @@ async def create_student(request: Request):
     return await create_student_service(request)
 
 
-@router.patch("/")
-async def update_student(request: Request):
-    try:
-        data = await request.json()
-        return await patch_student_service(data)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in update_student router: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error updating student")
-
-
 @router.post("/complete-profile-details")
-async def complete_profile_details(request: Request):
+async def complete_profile_details(
+    request: Request, session: dict = Depends(require_validated_session)
+):
     try:
         data = await request.json()
+        # identity comes from the token, never from the body
+        data.pop("student_id", None)
+        data["user_id"] = session_user_id(session)
+        data["auth_group"] = session.get("group")
         return await complete_profile_details_service(data)
     except HTTPException:
         raise

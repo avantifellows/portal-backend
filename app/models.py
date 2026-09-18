@@ -10,16 +10,6 @@ class AuthGroupResponse(BaseModel):
     locale_data: Optional[Dict] = {}
 
 
-class AuthUser(BaseModel):
-    id: str
-    type: str
-    name: Optional[str] = None
-    is_user_valid: Optional[bool] = None
-    data: Optional[Dict[str, Any]] = None
-    session_mode: Optional[str] = "persistent"
-    audience: Optional[str] = None
-
-
 class BatchResponse(BaseModel):
     id: int
     name: str
