@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 import requests
 from models import UserSession, AttendanceMessageSchema
 from datetime import datetime
@@ -10,6 +10,7 @@ from helpers import (
     safe_get_first_item,
 )
 from services.session_service import get_session_by_id
+from router.auth import require_session, require_validated_session, session_user_id
 from settings import settings
 import boto3
 from typing import Dict, Any
@@ -46,8 +47,12 @@ sqs_service = SQSService()
 
 
 @router.post("/send-message")
-async def send_message(message: AttendanceMessageSchema):
+async def send_message(
+    message: AttendanceMessageSchema, session: dict = Depends(require_session)
+):
     try:
+        message.user_id = session_user_id(session)
+        message.user_validated = bool(session.get("user_validated", True))
         response = await sqs_service.send_message(message)
         return response
     except Exception as e:
@@ -55,9 +60,12 @@ async def send_message(message: AttendanceMessageSchema):
 
 
 @router.post("/")
-async def user_session(user_session: UserSession):
+async def user_session(
+    user_session: UserSession, session: dict = Depends(require_validated_session)
+):
     try:
         query_params = user_session.dict()
+        query_params["user_id"] = session_user_id(session)
         query_params["timestamp"] = datetime.now().isoformat()
 
         # Validate user_id is not empty

@@ -2,10 +2,8 @@ from router import (
     auth_group,
     auth,
     candidate,
-    enrollment_record,
     form,
     group_session,
-    group_user,
     school,
     session_occurrence,
     abtest,
@@ -79,10 +77,8 @@ app.add_middleware(
 
 app.include_router(auth_group.router)
 app.include_router(auth.router)
-app.include_router(enrollment_record.router)
 app.include_router(form.router)
 app.include_router(group_session.router)
-app.include_router(group_user.router)
 app.include_router(school.router)
 app.include_router(session_occurrence.router)
 app.include_router(abtest.router)

@@ -2,7 +2,6 @@ from fastapi import APIRouter, Request
 from helpers import validate_and_build_query_params
 from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS
 from services.school_service import (
-    get_school,
     verify_school_comprehensive,
     get_dependant_field_mapping_for_auth_group,
 )
@@ -10,17 +9,6 @@ from logger_config import get_logger
 
 router = APIRouter(prefix="/school", tags=["School"])
 logger = get_logger()
-
-
-@router.get("/")
-def get_school_endpoint(request: Request):
-    """Get school"""
-    query_params = validate_and_build_query_params(
-        request.query_params, SCHOOL_QUERY_PARAMS
-    )
-
-    logger.info(f"Fetching school with params: {query_params}")
-    return get_school(**query_params)
 
 
 @router.get("/verify")

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, Request
 from services.form_service import (
     get_form_schema_with_enhancement,
     get_student_fields_for_form,
 )
 from mapping import FORM_SCHEMA_QUERY_PARAMS
 from helpers import validate_and_build_query_params
+from router.auth import require_validated_session, session_user_id
 from logger_config import get_logger
 
 router = APIRouter(prefix="/form-schema", tags=["Form"])
@@ -35,38 +36,31 @@ def get_form_schema(request: Request):
 
 
 @router.get("/student")
-async def get_student_fields(request: Request):
-    """Get student form fields"""
+async def get_student_fields(
+    request: Request, session: dict = Depends(require_validated_session)
+):
+    """Missing profile fields for the signed-in student."""
     query_params = validate_and_build_query_params(
         request.query_params,
+        # user_id/student_id/auth_group are still accepted from older clients but ignored
         [
             "number_of_fields_in_popup_form",
             "form_id",
             "student_id",
             "user_id",
-            # `student_id` is only unique within an auth group, so callers that only
-            # have a student_id can pass auth_group to select the right student.
             "auth_group",
         ],
     )
-
-    student_identifier = query_params.get("user_id") or query_params.get("student_id")
-    identifier_type = "user_id" if query_params.get("user_id") else "student_id"
-
-    if not student_identifier:
-        raise HTTPException(
-            status_code=400,
-            detail="user_id or student_id is required for student form fields",
-        )
+    user_id = session_user_id(session)
 
     logger.info(
-        f"Getting student fields for form: {query_params['form_id']}, {identifier_type}: {student_identifier}"
+        f"Getting student fields for form: {query_params['form_id']}, user_id: {user_id}"
     )
 
     return get_student_fields_for_form(
         query_params["form_id"],
-        student_identifier,
+        user_id,
         int(query_params["number_of_fields_in_popup_form"]),
-        identifier_type,
-        auth_group=query_params.get("auth_group"),
+        "user_id",
+        auth_group=session.get("group"),
     )

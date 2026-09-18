@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models import AuthUser, LaunchTokenRequest
+from models import LaunchTokenRequest
 from services.token_service import (
-    ALLOWED_SESSION_MODES,
     LAUNCH_AUDIENCES,
     LAUNCH_SESSION_MODE,
-    PERSISTENT_SESSION_MODE,
     encode,
     is_launch_allowed,
     issue_launch_token,
-    issue_session_tokens,
 )
 import datetime
 import jwt
@@ -40,53 +37,28 @@ def index():
     return "Portal Authentication!"
 
 
-@router.post("/create-access-token")
-def create_access_token(auth_user: AuthUser):
-    session_mode = auth_user.session_mode or PERSISTENT_SESSION_MODE
-    data = {k: v for k, v in (auth_user.data or {}).items() if v is not None}
+def require_session(payload: dict = Depends(verify_jwt)) -> dict:
+    """Any live access token (not a refresh token)."""
+    if payload.get("type") == "refresh":
+        raise HTTPException(status_code=401, detail="Access token required")
+    return payload
 
-    if session_mode not in ALLOWED_SESSION_MODES:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid session_mode. Must be 'persistent' or 'launch'",
-        )
 
-    if auth_user.type not in ["user", "organization"]:
-        raise HTTPException(
-            status_code=400, detail="Invalid type. Must be 'user' or 'organization'"
-        )
+def require_validated_session(payload: dict = Depends(require_session)) -> dict:
+    """An access token whose login was fully verified (OTP done, not a testing id)."""
+    if not payload.get("user_validated", True):
+        raise HTTPException(status_code=401, detail="Session not validated")
+    return payload
 
-    if auth_user.type == "organization":
-        if not auth_user.name:
-            return HTTPException(
-                status_code=400, detail="Data Parameter {} is missing!".format("name")
-            )
-        payload = {
-            "sub": auth_user.id,
-            "name": auth_user.name,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(weeks=260),
-        }
-        return {
-            "access_token": encode(payload),
-            "refresh_token": "",
-            "session_mode": session_mode,
-        }
 
-    return issue_session_tokens(
-        subject=auth_user.id,
-        data=data,
-        session_mode=session_mode,
-        audience=auth_user.audience,
-        with_refresh=bool(auth_user.is_user_valid),
-    )
+def session_user_id(payload: dict) -> str:
+    return str(payload.get("user_id") or payload.get("sub"))
 
 
 @router.post("/launch-token")
 def create_launch_token(
-    request: LaunchTokenRequest, payload: dict = Depends(verify_jwt)
+    request: LaunchTokenRequest, payload: dict = Depends(require_session)
 ):
-    if payload.get("type") == "refresh":
-        raise HTTPException(status_code=401, detail="Access token required")
     if not is_launch_allowed(payload):
         raise HTTPException(status_code=401, detail="Session not validated")
     if request.audience not in LAUNCH_AUDIENCES:
