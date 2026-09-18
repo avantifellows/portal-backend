@@ -16,7 +16,7 @@ ALGORITHM = "HS256"
 PERSISTENT_SESSION_MODE = "persistent"
 LAUNCH_SESSION_MODE = "launch"
 ALLOWED_SESSION_MODES = {PERSISTENT_SESSION_MODE, LAUNCH_SESSION_MODE}
-LAUNCH_AUDIENCES = {"quiz", "report", "form"}
+LAUNCH_AUDIENCES = {"quiz", "report", "form", "futures"}
 TESTING_AUTH_GROUPS = {"AFTesting"}
 OTP_AUTH_TYPE = "PH"
 
@@ -27,7 +27,7 @@ REFRESH_TOKEN_TTL = datetime.timedelta(days=30)
 RESERVED_CLAIMS = {"sub", "exp", "iat", "aud", "type", "session_mode", "persist"}
 
 # phone, email and date_of_birth stay out of the token: no consumer reads them
-USER_FIELDS = ["first_name", "last_name", "name", "gender"]
+USER_FIELDS = ["first_name", "last_name", "name", "gender", "state"]
 STUDENT_FIELDS = [
     "student_id",
     "apaar_id",
@@ -35,6 +35,7 @@ STUDENT_FIELDS = [
     "grade",
     "stream",
     "status",
+    "category",
     "g12_graduating_year",
     "school_id",
     "school_code",
