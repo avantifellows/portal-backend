@@ -2,10 +2,7 @@ from fastapi import APIRouter, Request
 from helpers import validate_and_build_query_params
 from mapping import USER_QUERY_PARAMS, CANDIDATE_QUERY_PARAMS
 from logger_config import get_logger
-from services.candidate_service import (
-    create_candidate as create_candidate_service,
-    verify_candidate_comprehensive,
-)
+from services.candidate_service import verify_candidate_comprehensive
 
 router = APIRouter(prefix="/candidate", tags=["Candidate"])
 logger = get_logger()
@@ -20,8 +17,3 @@ async def verify_candidate(request: Request, candidate_id: str):
     )
 
     return await verify_candidate_comprehensive(candidate_id, query_params)
-
-
-@router.post("/")
-async def create_candidate(request: Request):
-    return await create_candidate_service(request)

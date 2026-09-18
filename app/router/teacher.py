@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Request
 from helpers import validate_and_build_query_params
 from mapping import USER_QUERY_PARAMS, TEACHER_QUERY_PARAMS
-from services.teacher_service import (
-    verify_teacher_comprehensive,
-    create_teacher as create_teacher_service,
-)
+from services.teacher_service import verify_teacher_comprehensive
 from logger_config import get_logger
 
 router = APIRouter(prefix="/teacher", tags=["Teacher"])
@@ -20,8 +17,3 @@ async def verify_teacher(request: Request, teacher_id: str):
     )
 
     return await verify_teacher_comprehensive(teacher_id, query_params)
-
-
-@router.post("/")
-async def create_teacher(request: Request):
-    return await create_teacher_service(request)

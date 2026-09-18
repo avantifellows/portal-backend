@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from services.student_service import (
-    create_student as create_student_service,
     verify_student_comprehensive,
     complete_profile_details_service,
 )
@@ -23,11 +22,6 @@ async def verify_student(request: Request):
     )
 
     return await verify_student_comprehensive(query_params)
-
-
-@router.post("/")
-async def create_student(request: Request):
-    return await create_student_service(request)
 
 
 @router.post("/complete-profile-details")
