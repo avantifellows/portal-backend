@@ -1,7 +1,7 @@
 """Form service for business logic without HTTP dependencies."""
 
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from logger_config import get_logger
 from routes import form_db_url
 from helpers import db_request_token, is_response_valid, safe_get_first_item
@@ -10,6 +10,7 @@ from mapping import (
     USER_QUERY_PARAMS,
     STUDENT_QUERY_PARAMS,
     authgroup_state_mapping,
+    states_for_auth_group,
 )
 from services.school_service import (
     get_states_list,
@@ -98,11 +99,20 @@ def enhance_form_schema_with_dynamic_data(
         and not needs_district_block_school
     )
 
-    # For district/school mappings, we need the auth_group to be in the mapping
-    if auth_group in authgroup_state_mapping:
-        state = authgroup_state_mapping[auth_group]
+    group_states = states_for_auth_group(auth_group)
+    is_multi_state = len(group_states) > 1
 
-        if needs_district_block_school:
+    # For district/school mappings, we need the auth_group to be in the mapping
+    if group_states:
+        state = group_states[0]
+
+        if is_multi_state:
+            # The district list depends on which state the student picks, which
+            # is only known in the browser. Baking one merged list here would
+            # offer every state's districts at once, so the chain is left for
+            # the frontend to fill per state via /school/dependant-mapping.
+            _mark_state_scoped_location_fields(attributes, group_states)
+        elif needs_district_block_school:
             _enhance_with_district_block_school_mapping(attributes, auth_group, state)
         elif needs_district_school:
             _enhance_with_district_school_mapping(attributes, auth_group, state)
@@ -119,7 +129,10 @@ def enhance_form_schema_with_dynamic_data(
     if needs_colleges:
         _enhance_with_colleges(attributes)
 
-    if needs_states:
+    # A multi-state group's state field is already the authored list of states it
+    # covers; replacing it with all of India would let students pick a state the
+    # group has no schools in.
+    if needs_states and not is_multi_state:
         _enhance_with_states(attributes)
 
     logger.info(f"Enhanced form schema for auth_group: {auth_group}")
@@ -139,6 +152,45 @@ def _find_field_by_key(
         if attr.get("key") == field_key:
             return attr
     return None
+
+
+def _mark_state_scoped_location_fields(
+    attributes: Dict[str, Any], group_states: List[str]
+):
+    """Prepare the location chain of a multi-state form.
+
+    Sets the state field to exactly the states the group covers, makes district
+    depend on state, and flags the chain as state-scoped so the frontend knows
+    to fetch districts/blocks/schools per selected state rather than expecting
+    a pre-baked dependantFieldMapping.
+    """
+    state_field = _find_field_by_key(attributes, "state")
+    if state_field:
+        # Authored options win if present; otherwise fall back to the mapping.
+        authored = [
+            option.get("value")
+            for option in state_field.get("options", {}).get("en", [])
+            if option.get("value")
+        ]
+        states = [s for s in authored if s in group_states] or group_states
+        state_field["options"] = {
+            "en": [{"label": s, "value": s} for s in states],
+            "hi": [{"label": s, "value": s} for s in states],
+        }
+
+    district_field = _find_field_by_key(attributes, "district")
+    if district_field:
+        # District is populated from the chosen state at runtime.
+        district_field["dependant"] = True
+        district_field["dependantField"] = "state"
+        district_field["stateScoped"] = True
+
+    for key in ("block_name", "school_name"):
+        field = _find_field_by_key(attributes, key)
+        if field:
+            field["stateScoped"] = True
+
+    logger.info(f"Marked location fields as state-scoped for states: {group_states}")
 
 
 def _enhance_with_district_school_mapping(

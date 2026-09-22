@@ -53,6 +53,7 @@ G12_REGISTRATION_AUTH_GROUPS = {
     "HimachalStudents",
     "BiharStudents",
     "MaharashtraStudents",
+    "OLFStudents",
 }
 
 G12_REGISTRATION_BATCH_OVERRIDES = {
@@ -337,6 +338,7 @@ def validate_school_exists(
     district: str,
     auth_group_name: str,
     block_name: Optional[str] = None,
+    state: Optional[str] = None,
 ) -> tuple[bool, str]:
     """Validate that school exists before creating student - fail fast."""
     try:
@@ -346,7 +348,7 @@ def validate_school_exists(
             )
             return False, "School name and district are required"
 
-        state = authgroup_state_mapping.get(auth_group_name, "")
+        state = state or authgroup_state_mapping.get(auth_group_name, "")
 
         logger.info(
             f"Validating school: {school_name}, {district}, {state}, block: {block_name}"
@@ -791,7 +793,11 @@ async def create_student(request_or_data):
                 )
 
             block_name = query_params.get("block_name")
-            state = authgroup_state_mapping.get(data["auth_group"], "")
+            # A multi-state auth group has no single state of its own, so trust
+            # the state the student submitted, falling back to the group's.
+            state = query_params.get("state") or authgroup_state_mapping.get(
+                data["auth_group"], ""
+            )
 
             school_params = {"name": str(school_name), "district": str(district)}
             if state:

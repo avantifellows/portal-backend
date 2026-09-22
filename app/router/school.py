@@ -22,6 +22,13 @@ async def verify_school(request: Request, code: str):
 
 
 @router.get("/dependant-mapping/{auth_group}")
-def get_dependant_field_mapping(auth_group: str, include_blocks: bool = False):
-    """Generate dependantFieldMapping - thin router layer."""
-    return get_dependant_field_mapping_for_auth_group(auth_group, include_blocks)
+def get_dependant_field_mapping(
+    auth_group: str, include_blocks: bool = False, state: str = None
+):
+    """Generate dependantFieldMapping - thin router layer.
+
+    `state` scopes a multi-state auth group to one state.
+    """
+    return get_dependant_field_mapping_for_auth_group(
+        auth_group, include_blocks, state=state
+    )
