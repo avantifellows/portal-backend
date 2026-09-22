@@ -56,6 +56,23 @@ G12_REGISTRATION_AUTH_GROUPS = {
     "OLFStudents",
 }
 
+# Auth groups whose students are identified by their phone number: the signup
+# form does not ask for a student ID, so the phone becomes it. A group missing
+# from here falls through to the email/phone branch, which never assigns a
+# student_id, and db-service then rejects the student with "Student ID or APAAR
+# ID is required" -- a 500 at the end of an otherwise complete form.
+PHONE_AS_STUDENT_ID_AUTH_GROUPS = {
+    "FeedingIndiaStudents",
+    "UttarakhandStudents",
+    "HimachalStudents",
+    "AllIndiaStudents",
+    "GujaratStudents",
+    "ChhattisgarhStudents",
+    "BiharStudents",
+    "MaharashtraStudents",
+    "OLFStudents",
+}
+
 G12_REGISTRATION_BATCH_OVERRIDES = {
     "AllIndiaStudents": {
         2026: "AllIndiaStudents_DP_2028_common_Z001",
@@ -829,17 +846,7 @@ async def create_student(request_or_data):
                 query_params["student_id"] = student_id
                 if student_id == "":
                     return build_student_signup_response({}, student_id, True)
-            elif data["auth_group"] in [
-                "FeedingIndiaStudents",
-                "UttarakhandStudents",
-                "HimachalStudents",
-                "AllIndiaStudents",
-                "GujaratStudents",
-                "ChhattisgarhStudents",
-                "BiharStudents",
-                "MaharashtraStudents",
-                "BiharStudents",
-            ]:
+            elif data["auth_group"] in PHONE_AS_STUDENT_ID_AUTH_GROUPS:
                 phone = query_params.get("phone")
                 if not phone:
                     raise HTTPException(
