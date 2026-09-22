@@ -135,5 +135,32 @@ authgroup_state_mapping = {
     "BiharStudents": "Bihar",
 }
 
+# Auth groups that span several states. OLFStudents (Open Link Foundation) runs
+# one registration form across five states, so it cannot be expressed in
+# authgroup_state_mapping, which is one group -> one state and is still what
+# callers wanting a single state (student/group_user services) read.
+#
+# Anything resolving states for school lookups should call states_for_auth_group
+# rather than reading either dict directly.
+authgroup_states_mapping = {
+    "OLFStudents": [
+        "Gujarat",
+        "Bihar",
+        "Chhattisgarh",
+        "Maharashtra",
+        "Madhya Pradesh",
+    ],
+}
+
+
+def states_for_auth_group(auth_group):
+    """Return every state an auth group covers, or [] if it covers none."""
+    if auth_group in authgroup_states_mapping:
+        return list(authgroup_states_mapping[auth_group])
+    if auth_group in authgroup_state_mapping:
+        return [authgroup_state_mapping[auth_group]]
+    return []
+
+
 # Reverse mapping for state to authgroup lookup
 state_authgroup_mapping = {v: k for k, v in authgroup_state_mapping.items()}

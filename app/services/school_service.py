@@ -10,8 +10,15 @@ from helpers import (
     safe_get_first_item,
     is_response_empty,
 )
-from mapping import SCHOOL_QUERY_PARAMS, USER_QUERY_PARAMS, authgroup_state_mapping
-from services.school_mapping_constants import GUJARAT_DISTRICT_SCHOOL_MAPPING
+from mapping import (
+    SCHOOL_QUERY_PARAMS,
+    USER_QUERY_PARAMS,
+    states_for_auth_group,
+)
+from services.school_mapping_constants import (
+    GUJARAT_DISTRICT_SCHOOL_MAPPING,
+    STATE_DISTRICT_ALLOWLISTS,
+)
 
 from services.token_service import (
     invalid_verification_response,
@@ -74,6 +81,54 @@ MAHARASHTRA_SCHOOL_DISTRICTS = [
     "Nagpur Zp",
     "Wardha",
 ]
+
+
+def is_school_allocated(school: Dict[str, Any], auth_group: Optional[str]) -> bool:
+    """Whether a school is one the given auth group may enrol into.
+
+    Single source of truth for the allocation filter. This used to be two
+    inline copies of the same if/elif chain -- one in get_districts_by_filters
+    and one in get_dependant_field_mapping_for_auth_group -- which had drifted:
+    only the latter checked Gujarat at school level. Both now call this.
+
+    Allocation is keyed off the school's own state rather than off the auth
+    group, so a multi-state group gets each state's allocation applied.
+    """
+    district = school.get("district")
+    if not district:
+        return False
+
+    if auth_group == "PunjabTeachers":
+        return school.get("af_school_category") in ["SoE", "RSMS"]
+
+    state = school.get("state")
+
+    # Gujarat is allocated per school, not per district.
+    if state == "Gujarat":
+        return (
+            district in GUJARAT_DISTRICT_SCHOOL_MAPPING
+            and school.get("name") in GUJARAT_DISTRICT_SCHOOL_MAPPING[district]
+        )
+
+    allowed_districts = STATE_DISTRICT_ALLOWLISTS.get(state)
+    if allowed_districts is not None:
+        return district in allowed_districts
+
+    # States with no allowlist are unrestricted.
+    return True
+
+
+def _fetch_schools_for_states(
+    states: List[str], error_message: str
+) -> Optional[List[Dict[str, Any]]]:
+    """Fetch schools across one or more states, since DB Service filters by one."""
+    all_schools = []
+    for state in states:
+        page = _get_all_schools({"state": state}, error_message)
+        if page is None:
+            return None
+        all_schools.extend(page)
+    return all_schools
 
 
 def _get_all_schools(
@@ -333,57 +388,33 @@ def get_districts_by_filters(
     auth_group: Optional[str] = None, state: Optional[str] = None
 ) -> Dict[str, Any]:
     """Get list of unique districts, filtered by auth_group or state."""
-    query_params = {}
+    # An explicit state wins over the auth group's own states, so a multi-state
+    # group can ask for the districts of the one state the student picked.
+    if state:
+        states = [state]
+    elif auth_group:
+        states = states_for_auth_group(auth_group)
+    else:
+        states = []
 
-    # If auth_group provided, map to state
-    if auth_group and auth_group in authgroup_state_mapping:
-        query_params["state"] = authgroup_state_mapping[auth_group]
-        logger.info(
-            f"Mapped auth_group '{auth_group}' to state '{query_params['state']}'"
-        )
-    elif state:
-        query_params["state"] = state
-
-    if query_params.get("state") == "Tamil Nadu":
+    if states == ["Tamil Nadu"]:
         return {"districts": TAMIL_NADU_SCHOOL_DISTRICTS}
 
-    logger.info(f"Fetching districts with params: {query_params}")
+    logger.info(f"Fetching districts for states: {states}, auth_group: {auth_group}")
 
-    schools_data = _get_all_schools(
-        query_params,
-        "Could not fetch districts!",
-    )
+    if states:
+        schools_data = _fetch_schools_for_states(states, "Could not fetch districts!")
+    else:
+        schools_data = _get_all_schools({}, "Could not fetch districts!")
 
     if schools_data is not None:
-        districts = []
-        chhattisgarh_districts = "Bastar+DANTEWADA+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
-            "+"
+        districts = sorted(
+            school["district"]
+            for school in schools_data
+            if is_school_allocated(school, auth_group)
         )
-        bihar_districts = ["Begusarai"]
-        gujarat_districts = set(GUJARAT_DISTRICT_SCHOOL_MAPPING)
-        for school in schools_data:
-            if school.get("district"):
-                if auth_group == "PunjabTeachers":
-                    if school.get("af_school_category") in ["SoE", "RSMS"]:
-                        districts.append(school.get("district"))
-                elif auth_group == "ChhattisgarhStudents":
-                    if school.get("district") in chhattisgarh_districts:
-                        districts.append(school.get("district"))  # change later
-                elif auth_group == "MaharashtraStudents":
-                    if school.get("district") in MAHARASHTRA_SCHOOL_DISTRICTS:
-                        districts.append(school.get("district"))  # change later
-                elif auth_group == "GujaratStudents":
-                    if school.get("district") in gujarat_districts:
-                        districts.append(school.get("district"))
-                elif auth_group == "BiharStudents":
-                    if school.get("district") in bihar_districts:
-                        districts.append(school.get("district"))  # change later
-                else:
-                    districts.append(school.get("district"))
 
-        districts.sort()
-
-        logger.info(f"Found {len(districts)} unique districts")
+        logger.info(f"Found {len(districts)} districts")
         return {"districts": districts}
 
     return {"districts": []}
@@ -397,11 +428,14 @@ def get_blocks_by_filters(
     """Get list of unique blocks, filtered by auth_group/state and district."""
     query_params = {}
 
-    # If auth_group provided, map to state
-    if auth_group and auth_group in authgroup_state_mapping:
-        query_params["state"] = authgroup_state_mapping[auth_group]
-    elif state:
+    # An explicit state wins, so a multi-state auth group can scope to the one
+    # state the student picked; otherwise fall back to the group's own state.
+    if state:
         query_params["state"] = state
+    elif auth_group:
+        group_states = states_for_auth_group(auth_group)
+        if len(group_states) == 1:
+            query_params["state"] = group_states[0]
 
     if district:
         query_params["district"] = district
@@ -419,7 +453,7 @@ def get_blocks_by_filters(
             set(
                 school.get("block_name")
                 for school in schools_data
-                if school.get("block_name")
+                if school.get("block_name") and is_school_allocated(school, auth_group)
             )
         )
         blocks.sort()
@@ -439,11 +473,14 @@ def get_schools_for_dropdown_by_filters(
     """Get list of schools for dropdown, filtered by location hierarchy."""
     query_params = {}
 
-    # If auth_group provided, map to state
-    if auth_group and auth_group in authgroup_state_mapping:
-        query_params["state"] = authgroup_state_mapping[auth_group]
-    elif state:
+    # An explicit state wins, so a multi-state auth group can scope to the one
+    # state the student picked; otherwise fall back to the group's own state.
+    if state:
         query_params["state"] = state
+    elif auth_group:
+        group_states = states_for_auth_group(auth_group)
+        if len(group_states) == 1:
+            query_params["state"] = group_states[0]
 
     if district:
         query_params["district"] = district
@@ -469,7 +506,7 @@ def get_schools_for_dropdown_by_filters(
                 "block_name": school.get("block_name"),
             }
             for school in schools_data
-            if school.get("name")
+            if school.get("name") and is_school_allocated(school, auth_group)
         ]
 
         # Sort by name
@@ -482,61 +519,43 @@ def get_schools_for_dropdown_by_filters(
 
 
 def get_dependant_field_mapping_for_auth_group(
-    auth_group: str, include_blocks: bool = False
+    auth_group: str, include_blocks: bool = False, state: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Generate dependantFieldMapping for district->school or district->block->school hierarchy.
     This replaces manual google sheets and prevents data mismatches!
 
     Returns the exact structure needed for form schema dependantFieldMapping.
+
+    `state` narrows a multi-state auth group to one state. Without it a
+    multi-state group returns every state's districts merged together.
     """
-    if auth_group not in authgroup_state_mapping:
+    states = states_for_auth_group(auth_group)
+    if not states:
         logger.warning(f"Unknown auth_group: {auth_group}")
         return {"error": "Invalid auth group"}
 
-    state = authgroup_state_mapping[auth_group]
+    if state:
+        if state not in states:
+            logger.warning(f"State '{state}' is not covered by auth group {auth_group}")
+            return {"error": "Invalid state for auth group"}
+        states = [state]
+
     logger.info(
-        f"Generating dependant mapping for '{auth_group}' -> '{state}', include_blocks: {include_blocks}"
+        f"Generating dependant mapping for '{auth_group}' -> {states}, include_blocks: {include_blocks}"
     )
 
-    schools_data = _get_all_schools(
-        {"state": state},
+    schools_data = _fetch_schools_for_states(
+        states,
         "Could not fetch schools for dependant mapping!",
     )
 
     if schools_data is None:
         return {"error": "Database error"}
 
-    # Apply same filtering logic as get_districts_by_filters for consistency
-    filtered_schools = []
-    chhattisgarh_districts = "Bastar+DANTEWADA+Dhamtari+Durg+Gariaband+Janjgir - Champa+Jashpur+Raigarh+Raipur+Rajnandgaon".split(
-        "+"
-    )
-    bihar_districts = ["Begusarai"]
-    gujarat_districts = set(GUJARAT_DISTRICT_SCHOOL_MAPPING)
-    for school in schools_data:
-        if school.get("district"):
-            if auth_group == "PunjabTeachers":
-                if school.get("af_school_category") in ["SoE", "RSMS"]:
-                    filtered_schools.append(school)
-            elif auth_group == "ChhattisgarhStudents":
-                if school.get("district") in chhattisgarh_districts:
-                    filtered_schools.append(school)
-            elif auth_group == "MaharashtraStudents":
-                if school.get("district") in MAHARASHTRA_SCHOOL_DISTRICTS:
-                    filtered_schools.append(school)
-            elif auth_group == "GujaratStudents":
-                district = school.get("district")
-                if (
-                    district in gujarat_districts
-                    and school.get("name") in GUJARAT_DISTRICT_SCHOOL_MAPPING[district]
-                ):
-                    filtered_schools.append(school)
-            elif auth_group == "BiharStudents":
-                if school.get("district") in bihar_districts:
-                    filtered_schools.append(school)
-            else:
-                filtered_schools.append(school)
+    filtered_schools = [
+        school for school in schools_data if is_school_allocated(school, auth_group)
+    ]
 
     if include_blocks:
         # District -> Block -> School hierarchy
@@ -555,15 +574,22 @@ def get_dependant_field_mapping_for_auth_group(
             if district not in district_block_mapping:
                 district_block_mapping[district] = {"en": [], "hi": []}
 
-            if block:
-                if block not in district_block_mapping[district]["en"]:
-                    district_block_mapping[district]["en"].append(block)
-                    district_block_mapping[district]["hi"].append(block)
+            # A handful of allocated schools still have no block_name -- mostly
+            # the one JNV per district, which no mapping sheet covers. Bucket
+            # them under the district so they stay selectable rather than
+            # silently vanishing from a district -> block -> school form.
+            if not block:
+                block = f"{district} (Other)"
 
-                # Build block -> schools mapping
-                if block not in block_school_mapping:
-                    block_school_mapping[block] = {"en": [], "hi": []}
+            if block not in district_block_mapping[district]["en"]:
+                district_block_mapping[district]["en"].append(block)
+                district_block_mapping[district]["hi"].append(block)
 
+            # Build block -> schools mapping
+            if block not in block_school_mapping:
+                block_school_mapping[block] = {"en": [], "hi": []}
+
+            if school_name not in block_school_mapping[block]["en"]:
                 block_school_mapping[block]["en"].append(school_name)
                 block_school_mapping[block]["hi"].append(school_name)
 
@@ -577,7 +603,8 @@ def get_dependant_field_mapping_for_auth_group(
 
         return {
             "auth_group": auth_group,
-            "state": state,
+            "state": states[0] if len(states) == 1 else None,
+            "states": states,
             "has_blocks": True,
             "district_block_mapping": district_block_mapping,
             "block_school_mapping": block_school_mapping,
@@ -608,7 +635,8 @@ def get_dependant_field_mapping_for_auth_group(
 
         return {
             "auth_group": auth_group,
-            "state": state,
+            "state": states[0] if len(states) == 1 else None,
+            "states": states,
             "has_blocks": False,
             "district_school_mapping": district_school_mapping,
         }
