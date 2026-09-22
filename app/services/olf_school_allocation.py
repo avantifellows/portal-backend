@@ -5,7 +5,12 @@ Generated from the five "<state>_School Mapping Template" tabs of the OLF
 portal form workbook, which Mushahid confirmed is the allocation: schools
 outside these lists are "not part of the OLF program". Matching is by UDISE
 code because school names are not unique -- the same name recurs across
-blocks, and some schools were entered twice under variant codes.
+blocks.
+
+Eight Chhattisgarh schools appear in the sheet twice, once under their real
+UDISE code and once with an "E" appended. Mushahid verified the plain code in
+each case, the duplicate school records were deleted, and the "E" codes are
+left out here -- so the 1194 sheet rows are 1185 distinct schools.
 
 Note this is deliberately OLF-only. The district allowlists in
 STATE_DISTRICT_ALLOWLISTS describe AF's own allocation and are wider; using
@@ -308,7 +313,7 @@ OLF_SCHOOL_UDISE_CODES = {
             "10204100491",
         ]
     ),
-    # Chhattisgarh: 1193 schools
+    # Chhattisgarh: 1185 schools
     "Chhattisgarh": frozenset(
         [
             "22030103827",
@@ -601,7 +606,6 @@ OLF_SCHOOL_UDISE_CODES = {
             "22041709903",
             "22060100333",
             "22060100334",
-            "22060100334E",
             "22060101407",
             "22060102803",
             "22060104107",
@@ -616,7 +620,6 @@ OLF_SCHOOL_UDISE_CODES = {
             "22060110904",
             "22060200143",
             "22060200144",
-            "22060200144E",
             "22060200807",
             "22060201204",
             "22060201407",
@@ -637,7 +640,6 @@ OLF_SCHOOL_UDISE_CODES = {
             "22060210006",
             "22060400258",
             "22060400259",
-            "22060400259E",
             "22060400260",
             "22060400261",
             "22060400511",
@@ -646,13 +648,11 @@ OLF_SCHOOL_UDISE_CODES = {
             "22060401505",
             "22060401807",
             "22060403411",
-            "22060403411E",
             "22060404609",
             "22060405311",
             "22060405704",
             "22060405814",
             "22060405816",
-            "22060405816E",
             "22060405906",
             "22060406803",
             "22060407208",
@@ -664,7 +664,6 @@ OLF_SCHOOL_UDISE_CODES = {
             "22061701437",
             "22061701439",
             "22061701450",
-            "22061701450E",
             "22061703227",
             "22061703314",
             "22061703811",
@@ -678,7 +677,6 @@ OLF_SCHOOL_UDISE_CODES = {
             "22061707409",
             "22061707711",
             "22061707814",
-            "22061707814E",
             "22061708808",
             "22061709108",
             "22061711212",
@@ -696,7 +694,6 @@ OLF_SCHOOL_UDISE_CODES = {
             "22061905021",
             "22061905022",
             "22061906027",
-            "22061906027E",
             "22061906028",
             "22061906311",
             "22061906407",
