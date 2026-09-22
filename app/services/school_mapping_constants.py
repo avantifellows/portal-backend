@@ -55,3 +55,44 @@ GUJARAT_DISTRICT_SCHOOL_MAPPING = {
     "Vadodara": ["EMRS Goraj Waghodia-1", "EMRS Waghodiya-2"],
     "Valsad": ["EMRS Dharampur", "EMRS Kaprada", "EMRS Paradi"],
 }
+
+
+# District-level allowlists, one per state. These express "which schools in this
+# state are ours to enrol" and were previously duplicated as inline literals in
+# two separate filter blocks in school_service.py, which had already drifted
+# apart. Keyed by state so a multi-state auth group (OLFStudents) can reuse the
+# same allocation as the single-state groups.
+#
+# Gujarat is deliberately absent: it is the one state allocated at school level
+# rather than district level, so it is filtered through
+# GUJARAT_DISTRICT_SCHOOL_MAPPING above.
+#
+# TODO: this belongs on the school record in db-service as an allocation field
+# rather than as a Python literal. Until that exists, adding a state or moving a
+# district between AF and OLF means editing this file.
+STATE_DISTRICT_ALLOWLISTS = {
+    "Chhattisgarh": [
+        "Bastar",
+        "DANTEWADA",
+        "Dhamtari",
+        "Durg",
+        "Gariaband",
+        "Janjgir - Champa",
+        "Jashpur",
+        "Raigarh",
+        "Raipur",
+        "Rajnandgaon",
+    ],
+    "Bihar": ["Begusarai"],
+    "Maharashtra": [
+        "Bhandara",
+        "Chandrapur",
+        "Gadchiroli",
+        "Gondia",
+        "Nagpur Zp",
+        "Wardha",
+    ],
+    # Balaghat is the only allocated MP district; its 261 schools carry
+    # block_name, so MP drives the district -> block -> school hierarchy.
+    "Madhya Pradesh": ["Balaghat"],
+}
