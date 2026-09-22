@@ -19,6 +19,7 @@ from services.school_mapping_constants import (
     GUJARAT_DISTRICT_SCHOOL_MAPPING,
     STATE_DISTRICT_ALLOWLISTS,
 )
+from services.olf_school_allocation import OLF_SCHOOL_UDISE_CODES
 
 from services.token_service import (
     invalid_verification_response,
@@ -102,6 +103,15 @@ def is_school_allocated(school: Dict[str, Any], auth_group: Optional[str]) -> bo
         return school.get("af_school_category") in ["SoE", "RSMS"]
 
     state = school.get("state")
+
+    # OLF publishes its allocation per school rather than per district, so it
+    # is matched on UDISE. The district allowlists below are AF's own, wider
+    # allocation and would admit schools that are not part of the programme.
+    if auth_group == "OLFStudents":
+        allocated = OLF_SCHOOL_UDISE_CODES.get(state)
+        if allocated is None:
+            return False
+        return str(school.get("udise_code") or "").strip() in allocated
 
     # Gujarat is allocated per school, not per district.
     if state == "Gujarat":
@@ -574,12 +584,12 @@ def get_dependant_field_mapping_for_auth_group(
             if district not in district_block_mapping:
                 district_block_mapping[district] = {"en": [], "hi": []}
 
-            # A handful of allocated schools still have no block_name -- mostly
-            # the one JNV per district, which no mapping sheet covers. Bucket
-            # them under the district so they stay selectable rather than
-            # silently vanishing from a district -> block -> school form.
+            # Every allocated school is expected to carry a block. Skipping the
+            # rare one that does not is safer than inventing a placeholder
+            # block name, which would show students a block that exists in no
+            # government data.
             if not block:
-                block = f"{district} (Other)"
+                continue
 
             if block not in district_block_mapping[district]["en"]:
                 district_block_mapping[district]["en"].append(block)
