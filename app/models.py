@@ -85,3 +85,5 @@ class AttendanceMessageSchema(BaseModel):
 
 class LaunchTokenRequest(BaseModel):
     audience: str
+    source: Optional[str] = None
+    target: Optional[str] = None

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models import LaunchTokenRequest
+from models import AttendanceMessageSchema, LaunchTokenRequest
 from services.token_service import (
     LAUNCH_AUDIENCES,
     LAUNCH_SESSION_MODE,
@@ -8,11 +8,17 @@ from services.token_service import (
     is_launch_allowed,
     issue_launch_token,
 )
+from services.sqs_service import sqs_service
 import datetime
 import jwt
 import os
+import re
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Callers that launch directly, without a portal visit, name themselves so the
+# launch lands in the attendance log. The portal logs its own launches.
+LAUNCH_SOURCE = re.compile(r"^gurukul-[a-z]+$")
 
 security = HTTPBearer()
 
@@ -56,7 +62,7 @@ def session_user_id(payload: dict) -> str:
 
 
 @router.post("/launch-token")
-def create_launch_token(
+async def create_launch_token(
     request: LaunchTokenRequest, payload: dict = Depends(require_session)
 ):
     if not is_launch_allowed(payload):
@@ -66,10 +72,27 @@ def create_launch_token(
             status_code=400,
             detail=f"Invalid audience. Must be one of {sorted(LAUNCH_AUDIENCES)}",
         )
-    return {
-        "access_token": issue_launch_token(payload, request.audience),
-        "session_mode": LAUNCH_SESSION_MODE,
-    }
+    token = issue_launch_token(payload, request.audience)
+    if request.source and LAUNCH_SOURCE.match(request.source):
+        await record_launch(payload, request)
+    return {"access_token": token, "session_mode": LAUNCH_SESSION_MODE}
+
+
+async def record_launch(payload: dict, request: LaunchTokenRequest) -> None:
+    await sqs_service.send_message(
+        AttendanceMessageSchema(
+            type="sign-in",
+            sub_type=request.source,
+            platform=request.audience,
+            platform_id=request.target or "",
+            user_id=session_user_id(payload),
+            auth_type="",
+            auth_group=payload.get("group") or "",
+            user_type=payload.get("user_type") or "",
+            session_id="",
+            user_validated=bool(payload.get("user_validated", True)),
+        )
+    )
 
 
 @router.post("/refresh-token")
