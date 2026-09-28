@@ -10,9 +10,9 @@ from helpers import (
     safe_get_first_item,
 )
 from services.session_service import get_session_by_id
+from services.sqs_service import sqs_service
 from router.auth import require_session, require_validated_session, session_user_id
 from settings import settings
-import boto3
 from typing import Dict, Any
 import json
 from logger_config import get_logger
@@ -20,30 +20,7 @@ from logger_config import get_logger
 logger = get_logger()
 
 
-class SQSService:
-    def __init__(self):
-        self.sqs_client = boto3.client(
-            "sqs",
-            region_name="ap-south-1",
-            aws_access_key_id=settings.SQS_ACCESS_KEY,
-            aws_secret_access_key=settings.SQS_SECRET_ACCESS_KEY,
-        )
-        self.queue_url = settings.AWS_SQS_URL
-
-    async def send_message(self, message: AttendanceMessageSchema) -> Dict[str, Any]:
-        try:
-            response = self.sqs_client.send_message(
-                QueueUrl=self.queue_url,
-                MessageBody=json.dumps([message.dict()]),
-            )
-            print(f"Message sent. MessageId: {response['MessageId']}")
-            return {"success": True, "message_id": response["MessageId"]}
-        except Exception as e:
-            print(f"Error sending message: {str(e)}")
-
-
 router = APIRouter(prefix="/user-session", tags=["User-Session"])
-sqs_service = SQSService()
 
 
 @router.post("/send-message")
