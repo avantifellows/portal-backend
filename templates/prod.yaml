@@ -31,6 +31,21 @@ Parameters:
     Type: String
     Default: ""
     Description: Base URL of the OTP lambda used to confirm phone logins
+  SashaktApiUrl:
+    Type: String
+    Description: Base URL of the Sashakt core API (e.g. https://.../api/v1)
+
+  SashaktWebappUrl:
+    Type: String
+    Description: Base URL of the Sashakt webapp used to build launch URLs
+
+  SashaktAdminEmail:
+    Type: String
+    Description: Sashakt admin email used to authenticate external provisioning
+
+  SashaktAdminPassword:
+    Type: String
+    Description: Sashakt admin password used to authenticate external provisioning
 
 Resources:
   Function:
@@ -51,6 +66,10 @@ Resources:
           SQS_SECRET_ACCESS_KEY: !Ref SqsSecretAccessKey
           AWS_SQS_URL: !Ref AwsSqsUrl
           OTP_SERVICE_URL: !Ref OtpServiceUrl
+          SASHAKT_API_URL: !Ref SashaktApiUrl
+          SASHAKT_WEBAPP_URL: !Ref SashaktWebappUrl
+          SASHAKT_ADMIN_EMAIL: !Ref SashaktAdminEmail
+          SASHAKT_ADMIN_PASSWORD: !Ref SashaktAdminPassword
       Events:
         Api:
           Type: HttpApi

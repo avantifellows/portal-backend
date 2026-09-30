@@ -66,6 +66,10 @@ jobs:
           SQS_SECRET_ACCESS_KEY: ${{ secrets.SQS_SECRET_ACCESS_KEY }}
           AWS_SQS_URL: ${{ secrets.AWS_SQS_URL }}
           OTP_SERVICE_URL: ${{ secrets.OTP_SERVICE_URL }}
+          SASHAKT_API_URL: ${{ secrets.SASHAKT_API_URL }}
+          SASHAKT_WEBAPP_URL: ${{ secrets.SASHAKT_WEBAPP_URL }}
+          SASHAKT_ADMIN_EMAIL: ${{ secrets.SASHAKT_ADMIN_EMAIL }}
+          SASHAKT_ADMIN_PASSWORD: ${{ secrets.SASHAKT_ADMIN_PASSWORD }}
 
         run: >
            sam deploy
@@ -84,3 +88,7 @@ jobs:
            SqsSecretAccessKey=$SQS_SECRET_ACCESS_KEY
            AwsSqsUrl=$AWS_SQS_URL
            OtpServiceUrl=$OTP_SERVICE_URL
+           SashaktApiUrl=$SASHAKT_API_URL
+           SashaktWebappUrl=$SASHAKT_WEBAPP_URL
+           SashaktAdminEmail=$SASHAKT_ADMIN_EMAIL
+           SashaktAdminPassword=$SASHAKT_ADMIN_PASSWORD
