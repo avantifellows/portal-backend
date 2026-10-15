@@ -144,14 +144,32 @@ def resolve_verified_auth_group(
     return group
 
 
-def group_requires_otp(group: Optional[Dict[str, Any]]) -> bool:
-    """True when the auth group's login rules include phone (OTP) auth."""
+DOB_AUTH_TYPE = "DOB"
+
+
+def group_auth_types(group: Optional[Dict[str, Any]]) -> set:
+    """The auth group's login factors from input_schema.auth_type, e.g. {"ID", "DOB"}."""
     if not isinstance(group, dict):
-        return False
+        return set()
     auth_type = (group.get("input_schema") or {}).get("auth_type") or ""
     if isinstance(auth_type, str):
         auth_type = auth_type.split(",")
-    return OTP_AUTH_TYPE in [str(t).strip() for t in auth_type]
+    return {str(t).strip().upper() for t in auth_type if str(t).strip()}
+
+
+def group_requires_otp(group: Optional[Dict[str, Any]]) -> bool:
+    """True when the auth group's login rules include phone (OTP) auth."""
+    return OTP_AUTH_TYPE in group_auth_types(group)
+
+
+def missing_login_fields(
+    group: Optional[Dict[str, Any]], params: Dict[str, Any]
+) -> list:
+    """Login factors the group requires that the request did not supply."""
+    missing = []
+    if DOB_AUTH_TYPE in group_auth_types(group) and not params.get("date_of_birth"):
+        missing.append("date_of_birth")
+    return missing
 
 
 def is_launch_allowed(payload: Dict[str, Any]) -> bool:

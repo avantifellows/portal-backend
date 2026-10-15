@@ -21,7 +21,8 @@ from fastapi import HTTPException
 
 from services.token_service import (
     invalid_verification_response,
-    resolve_auth_group_name,
+    missing_login_fields,
+    resolve_verified_auth_group,
     tokens_for_record,
 )
 
@@ -189,12 +190,15 @@ async def verify_candidate_comprehensive(
     """Comprehensive candidate verification returning identifiers."""
     logger.info(f"Verifying candidate: {candidate_id} with params: {query_params}")
 
-    group_name = resolve_auth_group_name(
+    group = resolve_verified_auth_group(
         query_params.get("auth_group"), query_params.get("auth_group_id")
     )
+    group_name = group.get("name") if group else None
     invalid_response = invalid_verification_response(
         group_name, "candidate", candidate_id
     )
+    if missing_login_fields(group, query_params):
+        return invalid_response
 
     response = requests.get(
         candidate_db_url,
