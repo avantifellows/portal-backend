@@ -18,7 +18,7 @@ async def verify_student(request: Request):
         request.query_params,
         STUDENT_QUERY_PARAMS
         + USER_QUERY_PARAMS
-        + ["auth_group", "auth_group_id", "otp"],
+        + ["auth_group", "auth_group_id", "otp", "session_id"],
     )
 
     return await verify_student_comprehensive(query_params)
