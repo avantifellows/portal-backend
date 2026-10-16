@@ -23,7 +23,8 @@ from services.olf_school_allocation import OLF_SCHOOL_UDISE_CODES
 
 from services.token_service import (
     invalid_verification_response,
-    resolve_auth_group_name,
+    missing_login_fields,
+    resolve_verified_auth_group,
     tokens_for_record,
 )
 
@@ -304,10 +305,13 @@ async def verify_school_comprehensive(
 ) -> Dict[str, Any]:
     """Comprehensive school verification returning canonical identifiers."""
     logger.info(f"Verifying school with code: {code} and params: {query_params}")
-    group_name = resolve_auth_group_name(
+    group = resolve_verified_auth_group(
         query_params.get("auth_group"), query_params.get("auth_group_id")
     )
+    group_name = group.get("name") if group else None
     invalid_response = invalid_verification_response(group_name, "school", code)
+    if missing_login_fields(group, query_params):
+        return invalid_response
 
     # Try school code first
     school_record = None

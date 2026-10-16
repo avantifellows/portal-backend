@@ -33,6 +33,7 @@ from services.otp_service import OTP_OK, verify_otp
 from services.token_service import (
     group_requires_otp,
     invalid_verification_response,
+    missing_login_fields,
     resolve_verified_auth_group,
     tokens_for_record,
 )
@@ -615,6 +616,17 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     invalid_response = invalid_verification_response(
         auth_group_name, "student", student_id
     )
+
+    # The group's auth_type decides which factors are required, not the caller.
+    if not group:
+        logger.info(f"Student verify without a resolvable auth group: {student_id}")
+        return {"is_valid": False}
+    missing = missing_login_fields(group, query_params)
+    if missing:
+        logger.info(
+            f"Student verify missing {missing} for {auth_group_name}: {student_id}"
+        )
+        return invalid_response
 
     is_enable_students = auth_group_id == "3"  # EnableStudents auth_group_id
     if is_enable_students:
