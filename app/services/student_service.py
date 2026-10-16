@@ -29,7 +29,9 @@ from services.grade_service import get_grade_by_number
 from services.user_service import get_user_by_email_and_phone
 from services.batch_service import get_batch_by_id
 from auth_group_classes import EnableStudents
+from services.auth_group_service import get_auth_group_for_session
 from services.otp_service import OTP_OK, verify_otp
+from services.session_service import get_session_by_id
 from services.token_service import (
     group_requires_otp,
     invalid_verification_response,
@@ -580,6 +582,28 @@ def _matches_verification_params(
     return True
 
 
+async def _session_login_rule(group: Dict[str, Any], session_id: str):
+    """The login factors a session sets for itself, as a group-shaped rule.
+
+    Only honoured when the session belongs to the same auth group being verified,
+    and looked up here rather than taken from the request, so a caller cannot
+    pick a weaker rule by naming another group's session.
+    """
+    try:
+        session = await get_session_by_id(session_id)
+        auth_type = (session or {}).get("auth_type") or ""
+        session_group = get_auth_group_for_session(session_id)
+    except Exception as e:
+        logger.warning(f"Could not read login rule of session {session_id}: {e}")
+        return None
+    if not auth_type or not session_group:
+        return None
+    if str(session_group.get("id")) != str(group.get("id")):
+        logger.info(f"Session {session_id} is not in auth group {group.get('name')}")
+        return None
+    return {"input_schema": {"auth_type": auth_type}}
+
+
 async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str, Any]:
     """Comprehensive student verification with multiple fallback methods.
 
@@ -621,7 +645,11 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     if not group:
         logger.info(f"Student verify without a resolvable auth group: {student_id}")
         return {"is_valid": False}
-    missing = missing_login_fields(group, query_params)
+    session_id = query_params.pop("session_id", None)
+    rule_group = group
+    if session_id:
+        rule_group = await _session_login_rule(group, session_id) or group
+    missing = missing_login_fields(rule_group, query_params)
     if missing:
         logger.info(
             f"Student verify missing {missing} for {auth_group_name}: {student_id}"

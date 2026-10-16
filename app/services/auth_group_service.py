@@ -3,11 +3,27 @@
 import requests
 from typing import Dict, Any, Optional
 from logger_config import get_logger
-from routes import auth_group_db_url
+from routes import auth_group_db_url, group_session_db_url
 from helpers import db_request_token, is_response_valid, safe_get_first_item
 from mapping import AUTH_GROUP_QUERY_PARAMS
 
 logger = get_logger()
+
+
+def get_auth_group_for_session(session_id: str) -> Optional[Dict[str, Any]]:
+    """The auth group a session belongs to, or None when it cannot be resolved."""
+    try:
+        response = requests.get(
+            group_session_db_url + "/session-auth-group",
+            params={"session_id": session_id},
+            headers=db_request_token(),
+            timeout=10,
+        )
+        data = response.json() if response.status_code == 200 else None
+        return data if isinstance(data, dict) and data.get("id") is not None else None
+    except Exception as e:
+        logger.warning(f"Could not resolve auth group for session {session_id}: {e}")
+        return None
 
 
 def get_auth_group_by_name(name: str) -> Optional[Dict[str, Any]]:
