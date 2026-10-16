@@ -590,15 +590,24 @@ async def _session_login_rule(group: Dict[str, Any], session_id: str):
     pick a weaker rule by naming another group's session.
     """
     try:
-        session = await get_session_by_id(session_id)
-        auth_type = (session or {}).get("auth_type") or ""
-        session_group = get_auth_group_for_session(session_id)
+        session = await get_session_by_id(session_id) or {}
+        auth_type = session.get("auth_type") or ""
+        if not auth_type:
+            return None
+        # Same order the portal uses to pick a session's group: the name the
+        # session carries, else the group db-service links it to.
+        group_name = (session.get("meta_data") or {}).get("group")
+        if group_name:
+            same_group = group_name == group.get("name")
+        else:
+            session_group = get_auth_group_for_session(session_id)
+            same_group = bool(session_group) and str(session_group.get("id")) == str(
+                group.get("id")
+            )
     except Exception as e:
         logger.warning(f"Could not read login rule of session {session_id}: {e}")
         return None
-    if not auth_type or not session_group:
-        return None
-    if str(session_group.get("id")) != str(group.get("id")):
+    if not same_group:
         logger.info(f"Session {session_id} is not in auth group {group.get('name')}")
         return None
     return {"input_schema": {"auth_type": auth_type}}
