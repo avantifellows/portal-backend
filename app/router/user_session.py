@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-import requests
+import db_http
 from models import UserSession, AttendanceMessageSchema
 from datetime import datetime
 from routes import user_session_db_url
@@ -88,7 +88,7 @@ async def user_session(
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Create user session record
-        response = requests.post(
+        response = db_http.post(
             user_session_db_url, json=query_params, headers=db_request_token()
         )
 

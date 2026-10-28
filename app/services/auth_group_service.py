@@ -1,6 +1,6 @@
 """Auth Group service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import auth_group_db_url, group_session_db_url
@@ -13,7 +13,7 @@ logger = get_logger()
 def get_auth_group_for_session(session_id: str) -> Optional[Dict[str, Any]]:
     """The auth group a session belongs to, or None when it cannot be resolved."""
     try:
-        response = requests.get(
+        response = db_http.get(
             group_session_db_url + "/session-auth-group",
             params={"session_id": session_id},
             headers=db_request_token(),
@@ -47,7 +47,7 @@ def get_auth_group(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching auth group with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         auth_group_db_url, params=query_params, headers=db_request_token()
     )
 

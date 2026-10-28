@@ -1,6 +1,6 @@
 """Form service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, List, Optional
 from logger_config import get_logger
 from routes import form_db_url
@@ -44,9 +44,7 @@ def get_form_schema(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching form schema with params: {query_params}")
 
-    response = requests.get(
-        form_db_url, params=query_params, headers=db_request_token()
-    )
+    response = db_http.get(form_db_url, params=query_params, headers=db_request_token())
 
     if is_response_valid(response, "Form API could not fetch the data!"):
         form_data = safe_get_first_item(response.json(), "Form schema does not exist!")

@@ -1,6 +1,6 @@
 """School service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, List, Optional
 from logger_config import get_logger
 from routes import school_db_url
@@ -150,7 +150,7 @@ def _get_all_schools(
     offset = 0
 
     while True:
-        response = requests.get(
+        response = db_http.get(
             school_db_url,
             params={
                 **query_params,
@@ -208,7 +208,7 @@ def get_school(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching school with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         school_db_url, params=query_params, headers=db_request_token()
     )
 
@@ -317,7 +317,7 @@ async def verify_school_comprehensive(
     school_record = None
     found_via_udise_code = False
 
-    response = requests.get(
+    response = db_http.get(
         school_db_url,
         params={"code": code},
         headers=db_request_token(),
@@ -334,7 +334,7 @@ async def verify_school_comprehensive(
     if not school_record:
         logger.info(f"No school found with code, trying udise_code for: {code}")
 
-        response = requests.get(
+        response = db_http.get(
             school_db_url,
             params={"udise_code": code},
             headers=db_request_token(),
