@@ -99,4 +99,9 @@ def index():
     return "Welcome to Portal!"
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 handler = Mangum(app)
