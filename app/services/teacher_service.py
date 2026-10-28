@@ -1,6 +1,6 @@
 """Teacher service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import teacher_db_url
@@ -44,7 +44,7 @@ def get_teachers(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching teachers with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         teacher_db_url, params=query_params, headers=db_request_token()
     )
 
@@ -148,7 +148,7 @@ async def create_teacher(request_or_data):
                     status_code=500, detail="Error processing subject information"
                 )
 
-        response = requests.post(
+        response = db_http.post(
             teacher_db_url, json=query_params, headers=db_request_token()
         )
         if not is_response_valid(response, "Teacher API could not post the data!"):
@@ -193,7 +193,7 @@ def create_new_teacher_record(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
         logger.info("Creating new teacher record")
 
-        response = requests.post(teacher_db_url, json=data, headers=db_request_token())
+        response = db_http.post(teacher_db_url, json=data, headers=db_request_token())
 
         if is_response_valid(response, "Teacher API could not post the data!"):
             try:
@@ -240,7 +240,7 @@ async def verify_teacher_comprehensive(
     if missing_login_fields(group, query_params):
         return invalid_response
 
-    response = requests.get(
+    response = db_http.get(
         teacher_db_url,
         params={"teacher_id": teacher_id},
         headers=db_request_token(),

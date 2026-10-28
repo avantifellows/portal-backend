@@ -1,4 +1,4 @@
-import requests
+import db_http
 from logger_config import get_logger
 from routes import student_db_url
 from helpers import db_request_token
@@ -38,7 +38,7 @@ class EnableStudents:
                 "category": self.data["category"],
                 "first_name": self.data["first_name"],
             }
-            response = requests.post(
+            response = db_http.post(
                 student_db_url + "/generate-id",
                 json=payload,
                 headers=db_request_token(),

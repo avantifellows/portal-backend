@@ -1,6 +1,6 @@
 """Batch service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import batch_db_url
@@ -24,7 +24,7 @@ def get_batch(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching batch with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         batch_db_url, params=query_params, headers=db_request_token()
     )
 

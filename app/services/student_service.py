@@ -3,6 +3,7 @@
 from datetime import date
 
 import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import student_db_url
@@ -20,7 +21,6 @@ from services.exam_service import get_exam_by_name
 from services.school_service import get_school
 from services.group_service import get_group_by_child_id_and_type
 from services.group_user_service import (
-    get_group_user,
     create_batch_user_record,
     create_school_user_record,
     create_grade_user_record,
@@ -175,7 +175,7 @@ def get_students(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching students with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         student_db_url, params=query_params, headers=db_request_token()
     )
 
@@ -320,7 +320,7 @@ async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         # Build URL with ID in path: /api/student/86081
         patch_url = f"{student_db_url}/{student_record_id}"
 
-        response = requests.patch(patch_url, json=data, headers=db_request_token())
+        response = db_http.patch(patch_url, json=data, headers=db_request_token())
 
     except requests.exceptions.RequestException as e:
         logger.error(f"PATCH Request failed with exception: {e}")
@@ -440,7 +440,7 @@ def create_new_student_record(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
         logger.info("Creating new student record")
 
-        response = requests.post(student_db_url, json=data, headers=db_request_token())
+        response = db_http.post(student_db_url, json=data, headers=db_request_token())
 
         if is_response_valid(response, "Student API could not post the data!"):
             try:
@@ -504,7 +504,7 @@ def _fetch_student_candidates(**params) -> list:
     match several records. Callers must evaluate every candidate rather than assuming
     the first one is the right student.
     """
-    response = requests.get(
+    response = db_http.get(
         student_db_url,
         params={k: v for k, v in params.items() if v is not None},
         headers=db_request_token(),
@@ -551,32 +551,6 @@ def _matches_verification_params(
                 continue
             if student_record.get(key) != value:
                 logger.info(f"Student verification failed for key: {key}")
-                return False
-
-        elif key == "auth_group_id":
-            # Verify user belongs to the auth group
-            group_response = get_group_by_child_id_and_type(
-                child_id=value, group_type="auth_group"
-            )
-
-            if not (
-                group_response
-                and isinstance(group_response, dict)
-                and "id" in group_response
-            ):
-                logger.warning(f"Group not found for auth_group_id: {value}")
-                return False
-
-            user_data = student_record.get("user", {})
-            if not (isinstance(user_data, dict) and "id" in user_data):
-                logger.warning("Invalid user data in student record")
-                return False
-
-            group_user_response = get_group_user(
-                group_id=group_response["id"], user_id=user_data["id"]
-            )
-            if not group_user_response or group_user_response == []:
-                logger.info("User not found in auth group")
                 return False
 
     return True
@@ -673,22 +647,25 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
 
     # Each lookup strategy yields candidates plus whether a student_id equality check
     # still applies (it doesn't when the student was located via apaar_id or phone).
+    scope = {"auth_group_id": auth_group_id, "include_inactive": "true"}
     candidates = [
-        (record, False) for record in _fetch_student_candidates(student_id=student_id)
+        (record, False)
+        for record in _fetch_student_candidates(student_id=student_id, **scope)
     ]
 
     # For EnableStudents: if no student found with student_id, try apaar_id
     if not candidates and is_enable_students:
         logger.info(f"EnableStudents: Trying apaar_id for: {student_id}")
         candidates = [
-            (record, True) for record in _fetch_student_candidates(apaar_id=student_id)
+            (record, True)
+            for record in _fetch_student_candidates(apaar_id=student_id, **scope)
         ]
 
     # If still no student found and we have phone, try searching by phone
     if not candidates and phone and phone != student_id:
         logger.info(f"Trying phone search for: {phone}")
         candidates = [
-            (record, True) for record in _fetch_student_candidates(phone=phone)
+            (record, True) for record in _fetch_student_candidates(phone=phone, **scope)
         ]
 
     if not candidates:
@@ -995,7 +972,7 @@ async def create_student(request_or_data):
         # enrollment record + group_user atomically within the same request.
         query_params["auth_group"] = data["auth_group"]
 
-        response = requests.post(
+        response = db_http.post(
             student_db_url, json=query_params, headers=db_request_token()
         )
         if not is_response_valid(response, "Student API could not post the data!"):
@@ -1049,7 +1026,7 @@ async def patch_student_service(data: Dict[str, Any]) -> Optional[Dict[str, Any]
     try:
         logger.info("Updating student record")
 
-        response = requests.patch(student_db_url, json=data, headers=db_request_token())
+        response = db_http.patch(student_db_url, json=data, headers=db_request_token())
 
         if is_response_valid(response, "Student API could not patch the data!"):
             updated_data = is_response_empty(

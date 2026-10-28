@@ -1,6 +1,6 @@
 """Exam service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import exam_db_url
@@ -55,9 +55,7 @@ def get_exam(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching exam with params: {query_params}")
 
-    response = requests.get(
-        exam_db_url, params=query_params, headers=db_request_token()
-    )
+    response = db_http.get(exam_db_url, params=query_params, headers=db_request_token())
 
     if is_response_valid(response, "Exam API could not fetch the data!"):
         exam_data = safe_get_first_item(response.json())

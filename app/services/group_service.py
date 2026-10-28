@@ -1,6 +1,6 @@
 """Group service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import group_db_url
@@ -31,7 +31,7 @@ def get_group(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching group with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         group_db_url, params=query_params, headers=db_request_token()
     )
 

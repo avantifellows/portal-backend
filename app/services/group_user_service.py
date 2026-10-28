@@ -1,6 +1,6 @@
 """Group User service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from datetime import datetime
 from fastapi import HTTPException
@@ -32,7 +32,7 @@ async def create_group_user(
 
     logger.info(f"Creating group user record: {data}")
 
-    response = requests.post(group_user_db_url, data=data, headers=db_request_token())
+    response = db_http.post(group_user_db_url, data=data, headers=db_request_token())
 
     if is_response_valid(response, "Group User API could not create the record!"):
         result = response.json()
@@ -49,7 +49,7 @@ def get_group_user(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching group user with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         group_user_db_url, params=query_params, headers=db_request_token()
     )
 
