@@ -160,3 +160,10 @@ static/admin/*
 zappa_settings.json
 
 templates/staging-test.yaml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform/envs/*.tfvars
