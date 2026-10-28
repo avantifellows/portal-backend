@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-import requests
+import db_http
 from models import AuthGroupResponse
 from routes import auth_group_db_url
 from helpers import (
@@ -23,7 +23,7 @@ def get_auth_group(request: Request):
 
     logger.info(f"Fetching auth group with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         auth_group_db_url, params=query_params, headers=db_request_token()
     )
 

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 import requests
+import db_http
 from settings import settings
 from models import SessionResponse
 from helpers import db_request_token
@@ -40,7 +41,7 @@ async def get_session_occurrence_data(request: Request):
     # First check if session exists at all
     try:
         session_params = {"session_id": session_id}
-        session_response = requests.get(
+        session_response = db_http.get(
             session_db_url,
             params=session_params,
             headers=db_request_token(),
@@ -69,7 +70,7 @@ async def get_session_occurrence_data(request: Request):
     # Now check for active occurrences
     query_params["is_start_time"] = "active"
     try:
-        response = requests.get(
+        response = db_http.get(
             session_occurrence_db_url,
             params=query_params,
             headers=db_request_token(),

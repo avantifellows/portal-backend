@@ -3,6 +3,7 @@
 from datetime import date
 
 import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import student_db_url
@@ -175,7 +176,7 @@ def get_students(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching students with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         student_db_url, params=query_params, headers=db_request_token()
     )
 
@@ -320,7 +321,7 @@ async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         # Build URL with ID in path: /api/student/86081
         patch_url = f"{student_db_url}/{student_record_id}"
 
-        response = requests.patch(patch_url, json=data, headers=db_request_token())
+        response = db_http.patch(patch_url, json=data, headers=db_request_token())
 
     except requests.exceptions.RequestException as e:
         logger.error(f"PATCH Request failed with exception: {e}")
@@ -440,7 +441,7 @@ def create_new_student_record(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
         logger.info("Creating new student record")
 
-        response = requests.post(student_db_url, json=data, headers=db_request_token())
+        response = db_http.post(student_db_url, json=data, headers=db_request_token())
 
         if is_response_valid(response, "Student API could not post the data!"):
             try:
@@ -504,7 +505,7 @@ def _fetch_student_candidates(**params) -> list:
     match several records. Callers must evaluate every candidate rather than assuming
     the first one is the right student.
     """
-    response = requests.get(
+    response = db_http.get(
         student_db_url,
         params={k: v for k, v in params.items() if v is not None},
         headers=db_request_token(),
@@ -995,7 +996,7 @@ async def create_student(request_or_data):
         # enrollment record + group_user atomically within the same request.
         query_params["auth_group"] = data["auth_group"]
 
-        response = requests.post(
+        response = db_http.post(
             student_db_url, json=query_params, headers=db_request_token()
         )
         if not is_response_valid(response, "Student API could not post the data!"):
@@ -1049,7 +1050,7 @@ async def patch_student_service(data: Dict[str, Any]) -> Optional[Dict[str, Any]
     try:
         logger.info("Updating student record")
 
-        response = requests.patch(student_db_url, json=data, headers=db_request_token())
+        response = db_http.patch(student_db_url, json=data, headers=db_request_token())
 
         if is_response_valid(response, "Student API could not patch the data!"):
             updated_data = is_response_empty(

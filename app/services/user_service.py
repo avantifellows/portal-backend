@@ -1,6 +1,6 @@
 """User service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import user_db_url
@@ -19,9 +19,7 @@ def get_users(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching users with params: {query_params}")
 
-    response = requests.get(
-        user_db_url, params=query_params, headers=db_request_token()
-    )
+    response = db_http.get(user_db_url, params=query_params, headers=db_request_token())
 
     if is_response_valid(response, "User API could not fetch the data!"):
         user_data = is_response_empty(response.json(), False)

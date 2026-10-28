@@ -1,6 +1,6 @@
 """Candidate service for business logic without HTTP dependencies."""
 
-import requests
+import db_http
 from typing import Dict, Any, Optional
 from logger_config import get_logger
 from routes import candidate_db_url
@@ -43,7 +43,7 @@ def get_candidates(**params) -> Optional[Dict[str, Any]]:
 
     logger.info(f"Fetching candidates with params: {query_params}")
 
-    response = requests.get(
+    response = db_http.get(
         candidate_db_url, params=query_params, headers=db_request_token()
     )
 
@@ -151,7 +151,7 @@ async def create_candidate(request_or_data):
         query_params["role"] = "candidate"
 
         # Create new candidate record
-        response = requests.post(
+        response = db_http.post(
             candidate_db_url, json=query_params, headers=db_request_token()
         )
         if not is_response_valid(response, "Candidate API could not post the data!"):
@@ -200,7 +200,7 @@ async def verify_candidate_comprehensive(
     if missing_login_fields(group, query_params):
         return invalid_response
 
-    response = requests.get(
+    response = db_http.get(
         candidate_db_url,
         params={"candidate_id": candidate_id},
         headers=db_request_token(),
