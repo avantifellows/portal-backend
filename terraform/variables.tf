@@ -80,3 +80,60 @@ variable "cpu_target" {
   type    = number
   default = 50
 }
+
+# Secrets come in as TF_VAR_<name> (lowercase) from the environment's GitHub secrets.
+
+variable "jwt_secret_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "db_service_url" {
+  type      = string
+  sensitive = true
+}
+
+variable "db_service_token" {
+  type      = string
+  sensitive = true
+}
+
+variable "sqs_access_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "sqs_secret_access_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "aws_sqs_url" {
+  type      = string
+  sensitive = true
+}
+
+variable "otp_service_url" {
+  type      = string
+  sensitive = true
+}
+
+variable "sashakt_api_url" {
+  type      = string
+  sensitive = true
+}
+
+variable "sashakt_webapp_url" {
+  type      = string
+  sensitive = true
+}
+
+variable "sashakt_admin_email" {
+  type      = string
+  sensitive = true
+}
+
+variable "sashakt_admin_password" {
+  type      = string
+  sensitive = true
+}
