@@ -20,7 +20,6 @@ from services.exam_service import get_exam_by_name
 from services.school_service import get_school
 from services.group_service import get_group_by_child_id_and_type
 from services.group_user_service import (
-    get_group_user,
     create_batch_user_record,
     create_school_user_record,
     create_grade_user_record,
@@ -553,32 +552,6 @@ def _matches_verification_params(
                 logger.info(f"Student verification failed for key: {key}")
                 return False
 
-        elif key == "auth_group_id":
-            # Verify user belongs to the auth group
-            group_response = get_group_by_child_id_and_type(
-                child_id=value, group_type="auth_group"
-            )
-
-            if not (
-                group_response
-                and isinstance(group_response, dict)
-                and "id" in group_response
-            ):
-                logger.warning(f"Group not found for auth_group_id: {value}")
-                return False
-
-            user_data = student_record.get("user", {})
-            if not (isinstance(user_data, dict) and "id" in user_data):
-                logger.warning("Invalid user data in student record")
-                return False
-
-            group_user_response = get_group_user(
-                group_id=group_response["id"], user_id=user_data["id"]
-            )
-            if not group_user_response or group_user_response == []:
-                logger.info("User not found in auth group")
-                return False
-
     return True
 
 
@@ -673,22 +646,25 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
 
     # Each lookup strategy yields candidates plus whether a student_id equality check
     # still applies (it doesn't when the student was located via apaar_id or phone).
+    scope = {"auth_group_id": auth_group_id, "include_inactive": "true"}
     candidates = [
-        (record, False) for record in _fetch_student_candidates(student_id=student_id)
+        (record, False)
+        for record in _fetch_student_candidates(student_id=student_id, **scope)
     ]
 
     # For EnableStudents: if no student found with student_id, try apaar_id
     if not candidates and is_enable_students:
         logger.info(f"EnableStudents: Trying apaar_id for: {student_id}")
         candidates = [
-            (record, True) for record in _fetch_student_candidates(apaar_id=student_id)
+            (record, True)
+            for record in _fetch_student_candidates(apaar_id=student_id, **scope)
         ]
 
     # If still no student found and we have phone, try searching by phone
     if not candidates and phone and phone != student_id:
         logger.info(f"Trying phone search for: {phone}")
         candidates = [
-            (record, True) for record in _fetch_student_candidates(phone=phone)
+            (record, True) for record in _fetch_student_candidates(phone=phone, **scope)
         ]
 
     if not candidates:
