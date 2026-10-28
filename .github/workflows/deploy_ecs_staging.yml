@@ -1,0 +1,124 @@
+name: Deploy to ECS (staging)
+
+# Manual only while the ECS move is validated; the Lambda deploys are unchanged.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or SHA to deploy. Defaults to the branch the workflow is run from."
+        required: false
+        type: string
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: portal-backend-staging
+  ECS_CLUSTER: portal-backend-staging
+  ECS_SERVICE: portal-backend-staging
+  TASK_DEFINITION: portal-backend-staging
+  CONTAINER_NAME: portal-backend
+  SERVICE_HOST: staging-portal-backend.avantifellows.org
+  ALB_NAME: af-load-balancer
+
+concurrency:
+  group: deploy-ecs-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: Staging
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          set -euo pipefail
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:staging-$(git rev-parse HEAD)"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$TASK_DEFINITION" \
+            --query 'taskDefinition' > task-definition.json
+
+      - name: Render new task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build.outputs.image }}
+
+      - name: Register task definition and update service
+        id: register
+        run: |
+          set -euo pipefail
+          ARN=$(aws ecs register-task-definition \
+            --cli-input-json "file://${{ steps.render.outputs.task-definition }}" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --task-definition "$ARN" > /dev/null
+          DESIRED=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+            --query 'services[0].desiredCount' --output text)
+          echo "desired=$DESIRED" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the rollout
+        if: steps.register.outputs.desired != '0'
+        run: |
+          set -euo pipefail
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
+          ACTIVE=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+            --query "services[0].deployments[?status=='PRIMARY'].taskDefinition | [0]" --output text)
+          if [ "$ACTIVE" != "${{ steps.register.outputs.arn }}" ]; then
+            echo "::error::Rollout did not finish on the new task definition; ECS probably rolled it back."
+            exit 1
+          fi
+
+      - name: Smoke check
+        if: steps.register.outputs.desired != '0'
+        run: |
+          set -euo pipefail
+          ALB_DNS=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" \
+            --query 'LoadBalancers[0].DNSName' --output text)
+          ALB_IP=$(getent hosts "$ALB_DNS" | awk '{print $1; exit}')
+          for i in 1 2 3 4 5 6; do
+            CODE=$(curl -sk -o /dev/null -w "%{http_code}" \
+              --resolve "${SERVICE_HOST}:443:${ALB_IP}" "https://${SERVICE_HOST}/health" || echo 000)
+            echo "attempt $i: HTTP $CODE"
+            [ "$CODE" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::error::Smoke check failed"
+          exit 1
+
+      - name: Image registered, service still at zero tasks
+        if: steps.register.outputs.desired == '0'
+        run: echo "::notice::Service has desired count 0, so nothing was started. Scale up with terraform to run it."
