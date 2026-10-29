@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from services.student_service import create_student, get_students
 from services.teacher_service import create_teacher, get_teacher_by_id
 from services.candidate_service import create_candidate, get_candidate_by_id
@@ -83,7 +84,9 @@ async def create_user(request: Request):
             }
 
             # Call create_student service function directly with the data
-            create_student_response = await create_student(student_data)
+            create_student_response = await run_in_threadpool(
+                create_student, student_data
+            )
 
             if not create_student_response:
                 logger.error("Failed to create student - no response received")
@@ -93,8 +96,11 @@ async def create_user(request: Request):
 
             logger.info(f"Student creation result - Already exists: {already_exists}")
 
-            return with_session_tokens(
-                create_student_response, "student", data.get("auth_group", "")
+            return await run_in_threadpool(
+                with_session_tokens,
+                create_student_response,
+                "student",
+                data.get("auth_group", ""),
             )
         elif data.get("user_type") == "teacher":
             teacher_data = {
@@ -103,7 +109,9 @@ async def create_user(request: Request):
                 "auth_group": data.get("auth_group", ""),
             }
 
-            create_teacher_response = await create_teacher(teacher_data)
+            create_teacher_response = await run_in_threadpool(
+                create_teacher, teacher_data
+            )
 
             if not create_teacher_response:
                 logger.error("Failed to create teacher - no response received")
@@ -113,8 +121,11 @@ async def create_user(request: Request):
 
             logger.info(f"Teacher creation result - Already exists: {already_exists}")
 
-            return with_session_tokens(
-                create_teacher_response, "teacher", data.get("auth_group", "")
+            return await run_in_threadpool(
+                with_session_tokens,
+                create_teacher_response,
+                "teacher",
+                data.get("auth_group", ""),
             )
         elif data.get("user_type") == "candidate":
             candidate_data = {
@@ -122,7 +133,9 @@ async def create_user(request: Request):
                 "id_generation": data.get("id_generation", False),
                 "auth_group": data.get("auth_group", ""),
             }
-            create_candidate_response = await create_candidate(candidate_data)
+            create_candidate_response = await run_in_threadpool(
+                create_candidate, candidate_data
+            )
             if not create_candidate_response:
                 logger.error("Failed to create candidate - no response received")
                 raise HTTPException(
@@ -133,8 +146,11 @@ async def create_user(request: Request):
 
             logger.info(f"Candidate creation result - Already exists: {already_exists}")
 
-            return with_session_tokens(
-                create_candidate_response, "candidate", data.get("auth_group", "")
+            return await run_in_threadpool(
+                with_session_tokens,
+                create_candidate_response,
+                "candidate",
+                data.get("auth_group", ""),
             )
         else:
             logger.warning(f"Unsupported user type: {data.get('user_type')}")

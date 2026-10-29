@@ -57,7 +57,7 @@ def get_candidates(**params) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def verify_candidate_by_id(candidate_id: str, **params) -> bool:
+def verify_candidate_by_id(candidate_id: str, **params) -> bool:
     """Verify candidate exists."""
     try:
         candidate_data = get_candidates(candidate_id=candidate_id, **params)
@@ -89,15 +89,9 @@ def build_candidate_signup_response(
     }
 
 
-async def create_candidate(request_or_data):
+def create_candidate(data):
     """Create candidate with full business logic"""
     try:
-        # Handle both Request objects (from API calls) and direct data (from internal calls)
-        if hasattr(request_or_data, "json"):
-            data = await request_or_data.json()
-        else:
-            data = request_or_data
-
         logger.info(
             f"Creating candidate with auth_group: {data.get('auth_group', 'unknown')}"
         )
@@ -120,7 +114,7 @@ async def create_candidate(request_or_data):
             candidate_id = phone
 
             # Check if candidate already exists
-            candidate_already_exists = await verify_candidate_by_id(candidate_id)
+            candidate_already_exists = verify_candidate_by_id(candidate_id)
 
             if candidate_already_exists:
                 logger.info(f"Candidate already exists: {candidate_id}")
@@ -164,12 +158,12 @@ async def create_candidate(request_or_data):
         )
 
         # Create auth group user record (HiringCandidates)
-        await create_auth_group_user_record(new_candidate_data, data["auth_group"])
+        create_auth_group_user_record(new_candidate_data, data["auth_group"])
 
         # Create batch user record (H-CN-25)
         if data["auth_group"] == "HiringCandidates":
             batch_id = "H-CN-25"
-            await create_batch_user_record(new_candidate_data, batch_id)
+            create_batch_user_record(new_candidate_data, batch_id)
 
         final_candidate_id = query_params.get("candidate_id", "unknown")
         logger.info(f"Successfully created candidate: {final_candidate_id}")
@@ -184,7 +178,7 @@ async def create_candidate(request_or_data):
         raise HTTPException(status_code=500, detail="Error creating candidate")
 
 
-async def verify_candidate_comprehensive(
+def verify_candidate_comprehensive(
     candidate_id: str, query_params: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Comprehensive candidate verification returning identifiers."""

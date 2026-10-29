@@ -25,6 +25,7 @@ def _get_sashakt_auth_headers() -> Dict[str, str]:
             "username": settings.SASHAKT_ADMIN_EMAIL,
             "password": settings.SASHAKT_ADMIN_PASSWORD,
         },
+        timeout=10,
     )
     if not is_response_valid(response, "Sashakt authentication failed"):
         raise HTTPException(status_code=500, detail="Sashakt authentication failed")
@@ -54,6 +55,7 @@ def _provision_sashakt_candidate(
         f"{settings.SASHAKT_API_URL.rstrip('/')}/candidate/external/provision",
         json=payload,
         headers=_get_sashakt_auth_headers(),
+        timeout=10,
     )
     if is_response_valid(response, "Sashakt could not provision the candidate"):
         return response.json()

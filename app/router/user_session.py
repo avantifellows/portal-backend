@@ -24,20 +24,20 @@ router = APIRouter(prefix="/user-session", tags=["User-Session"])
 
 
 @router.post("/send-message")
-async def send_message(
+def send_message(
     message: AttendanceMessageSchema, session: dict = Depends(require_session)
 ):
     try:
         message.user_id = session_user_id(session)
         message.user_validated = bool(session.get("user_validated", True))
-        response = await sqs_service.send_message(message)
+        response = sqs_service.send_message(message)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/")
-async def user_session(
+def user_session(
     user_session: UserSession, session: dict = Depends(require_validated_session)
 ):
     try:
@@ -71,7 +71,7 @@ async def user_session(
 
         # Simple session validation
         try:
-            session_pk_id_response = await get_session_by_id(query_params["session_id"])
+            session_pk_id_response = get_session_by_id(query_params["session_id"])
 
             session_data = safe_get_first_item(
                 session_pk_id_response, "Session not found"

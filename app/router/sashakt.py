@@ -19,5 +19,5 @@ class SashaktLaunchRequest(BaseModel):
 
 
 @router.post("/launch")
-async def launch_sashakt_test(payload: SashaktLaunchRequest):
+def launch_sashakt_test(payload: SashaktLaunchRequest):
     return create_sashakt_launch(payload.dict(exclude_none=True))

@@ -300,7 +300,7 @@ def get_states_list() -> Dict[str, Any]:
     return {"states": states}
 
 
-async def verify_school_comprehensive(
+def verify_school_comprehensive(
     code: str, query_params: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Comprehensive school verification returning canonical identifiers."""

@@ -17,7 +17,7 @@ from services.school_service import get_school
 logger = get_logger()
 
 
-async def create_group_user(
+def create_group_user(
     group_id: str, user_id: str, academic_year: str = None, start_date: str = None
 ) -> Optional[Dict[str, Any]]:
     """Create group user record."""
@@ -61,7 +61,7 @@ def get_group_user(**params) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def create_auth_group_user_record(data, auth_group_name):
+def create_auth_group_user_record(data, auth_group_name):
     """Create auth group user record"""
     auth_group_data = get_auth_group_by_name(auth_group_name)
     if not auth_group_data or "id" not in auth_group_data:
@@ -77,14 +77,14 @@ async def create_auth_group_user_record(data, auth_group_name):
     if not isinstance(user_data, dict) or "id" not in user_data:
         raise HTTPException(status_code=500, detail="Invalid user data")
 
-    await create_group_user(
+    create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
 
 
-async def create_batch_user_record(data, batch_id):
+def create_batch_user_record(data, batch_id):
     """Create batch user record"""
     batch_data = get_batch_by_id(batch_id)
     if not batch_data or "id" not in batch_data:
@@ -100,14 +100,14 @@ async def create_batch_user_record(data, batch_id):
     if not isinstance(user_data, dict) or "id" not in user_data:
         raise HTTPException(status_code=500, detail="Invalid user data")
 
-    await create_group_user(
+    create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
 
 
-async def create_school_user_record(
+def create_school_user_record(
     data, school_name, district, auth_group_name=None, block_name=None
 ):
     """Create school user record"""
@@ -137,14 +137,14 @@ async def create_school_user_record(
     if not isinstance(user_data, dict) or "id" not in user_data:
         raise HTTPException(status_code=500, detail="Invalid user data")
 
-    await create_group_user(
+    create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
         start_date=datetime.now().strftime("%Y-%m-%d"),
     )
 
 
-async def create_grade_user_record(data):
+def create_grade_user_record(data):
     """Create grade user record"""
     grade_id = data.get("grade_id")
     if not grade_id:
@@ -158,7 +158,7 @@ async def create_grade_user_record(data):
     if not isinstance(user_data, dict) or "id" not in user_data:
         raise HTTPException(status_code=500, detail="Invalid user data")
 
-    await create_group_user(
+    create_group_user(
         group_id=group_data["id"],
         user_id=user_data["id"],
         start_date=datetime.now().strftime("%Y-%m-%d"),
