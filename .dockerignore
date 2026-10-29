@@ -1,0 +1,10 @@
+.git
+.github
+.venv
+.env
+.claude
+.pytest_cache
+**/__pycache__
+docs
+templates
+tmp-*
