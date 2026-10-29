@@ -50,7 +50,7 @@ Most of this can be copied for portal-backend with names changed.
    - reporting: `PORTAL_BACKEND_URL`
    - college-predictor: default in `utils/portalSession.js`
 
-   Give it a proper domain first (say `portal-api.avantifellows.org`), point it at API Gateway, move every consumer to the domain, and only then repoint the domain at the ALB. That way the switch to ECS is a DNS change, not five deploys.
+   Give it a proper domain first (`portal-backend.avantifellows.org`, the name `terraform/dns` manages), point it at API Gateway with `-var target=<api gateway domain>`, move every consumer to the domain, and only then re-apply `terraform/dns` without `target` so it points at the ALB. That way the switch to ECS is a DNS change, not five deploys.
 4. **CORS.** The allowed origins live in `app/main.py` and don't change, but check the ALB doesn't strip anything.
 
 ## Rollout
