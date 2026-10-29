@@ -167,3 +167,7 @@ templates/staging-test.yaml
 *.tfstate.*
 *.tfvars
 !terraform/envs/*.tfvars
+
+# terraform plan files can contain secret variable values
+*.plan
+tfplan

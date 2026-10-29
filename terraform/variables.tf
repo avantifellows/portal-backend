@@ -38,7 +38,7 @@ variable "alb_https_listener_arn" {
 
 variable "app_port" {
   type    = number
-  default = 8000
+  default = 8080
 }
 
 variable "cpu" {
