@@ -81,7 +81,7 @@ variable "cpu_target" {
   default = 50
 }
 
-# Secrets come in as TF_VAR_<name> (lowercase) from the environment's GitHub secrets.
+# Secrets come in as TF_VAR_<name> (lowercase); see README.md for where each value comes from.
 
 variable "jwt_secret_key" {
   type      = string

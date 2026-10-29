@@ -48,6 +48,12 @@ variable "alb_name" {
   default = "af-load-balancer"
 }
 
+variable "target" {
+  type        = string
+  default     = null
+  description = "CNAME target. Defaults to the shared ALB; set it to point the name at API Gateway before cutover."
+}
+
 variable "proxied" {
   type    = bool
   default = false
@@ -61,7 +67,7 @@ resource "cloudflare_record" "this" {
   zone_id = var.cloudflare_zone_id
   name    = var.name
   type    = "CNAME"
-  content = data.aws_lb.shared.dns_name
+  content = coalesce(var.target, data.aws_lb.shared.dns_name)
   proxied = var.proxied
   ttl     = 1
 }
