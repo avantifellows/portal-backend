@@ -9,6 +9,7 @@ RUN uv export --format requirements-txt --no-hashes --no-dev | grep -v "^-e " > 
     && pip install --no-cache-dir -r requirements.txt
 
 COPY app/ .
+RUN chmod -R a+rX /app
 
 RUN useradd --no-create-home appuser
 USER appuser
