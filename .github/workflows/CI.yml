@@ -45,12 +45,12 @@ jobs:
         run: docker build -t portal-backend:ci .
       - name: Health check
         run: |
-          docker run -d --name pb -p 8000:8000 \
+          docker run -d --name pb -p 8080:8080 \
             -e JWT_SECRET_KEY=x -e DB_SERVICE_URL=http://db.invalid -e DB_SERVICE_TOKEN=t \
             -e SQS_ACCESS_KEY=a -e SQS_SECRET_ACCESS_KEY=b -e AWS_SQS_URL=http://sqs.invalid \
             -e AWS_DEFAULT_REGION=ap-south-1 portal-backend:ci
           for i in $(seq 1 20); do
-            curl -sf localhost:8000/health && exit 0
+            curl -sf localhost:8080/health && exit 0
             sleep 2
           done
           docker logs pb
