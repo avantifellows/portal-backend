@@ -62,7 +62,7 @@ def session_user_id(payload: dict) -> str:
 
 
 @router.post("/launch-token")
-async def create_launch_token(
+def create_launch_token(
     request: LaunchTokenRequest, payload: dict = Depends(require_session)
 ):
     if not is_launch_allowed(payload):
@@ -74,12 +74,12 @@ async def create_launch_token(
         )
     token = issue_launch_token(payload, request.audience)
     if request.source and LAUNCH_SOURCE.match(request.source):
-        await record_launch(payload, request)
+        record_launch(payload, request)
     return {"access_token": token, "session_mode": LAUNCH_SESSION_MODE}
 
 
-async def record_launch(payload: dict, request: LaunchTokenRequest) -> None:
-    await sqs_service.send_message(
+def record_launch(payload: dict, request: LaunchTokenRequest) -> None:
+    sqs_service.send_message(
         AttendanceMessageSchema(
             type="sign-in",
             sub_type=request.source,

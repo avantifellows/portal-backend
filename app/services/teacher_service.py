@@ -56,7 +56,7 @@ def get_teachers(**params) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def verify_teacher_by_id(teacher_id: str, **params) -> bool:
+def verify_teacher_by_id(teacher_id: str, **params) -> bool:
     """Verify teacher exists."""
     try:
         teacher_data = get_teachers(teacher_id=teacher_id, **params)
@@ -88,14 +88,8 @@ def build_teacher_signup_response(
     }
 
 
-async def create_teacher(request_or_data):
+def create_teacher(data):
     try:
-        # Handle both Request objects (from API calls) and direct data (from internal calls)
-        if hasattr(request_or_data, "json"):
-            data = await request_or_data.json()
-        else:
-            data = request_or_data
-
         logger.info(
             f"Creating teacher with auth_group: {data.get('auth_group', 'unknown')}"
         )
@@ -121,7 +115,7 @@ async def create_teacher(request_or_data):
             teacher_id = phone
 
             # Check if teacher already exists
-            teacher_already_exists = await verify_teacher_by_id(teacher_id)
+            teacher_already_exists = verify_teacher_by_id(teacher_id)
 
             if teacher_already_exists:
                 logger.info(f"Teacher already exists: {teacher_id}")
@@ -161,19 +155,19 @@ async def create_teacher(request_or_data):
         )
 
         # Create auth group user record (PunjabTeachers)
-        await create_auth_group_user_record(new_teacher_data, data["auth_group"])
+        create_auth_group_user_record(new_teacher_data, data["auth_group"])
 
         # Create batch user record (PunjabTeachers_25_001)
         if data["auth_group"] == "PunjabTeachers":
             batch_id = "PunjabTeachers_25_001"
-            await create_batch_user_record(new_teacher_data, batch_id)
+            create_batch_user_record(new_teacher_data, batch_id)
 
         # Create school user record
         if "school_name" in query_params and "district" in query_params:
             school_name = query_params["school_name"]
             district = query_params["district"]
             block_name = query_params.get("block_name")
-            await create_school_user_record(
+            create_school_user_record(
                 new_teacher_data, school_name, district, data["auth_group"], block_name
             )
 
@@ -226,7 +220,7 @@ def create_new_teacher_record(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def verify_teacher_comprehensive(
+def verify_teacher_comprehensive(
     teacher_id: str, query_params: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Comprehensive teacher verification returning identifiers."""

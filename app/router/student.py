@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from services.student_service import (
     verify_student_comprehensive,
     complete_profile_details_service,
@@ -13,7 +14,7 @@ logger = get_logger()
 
 
 @router.get("/verify")
-async def verify_student(request: Request):
+def verify_student(request: Request):
     query_params = validate_and_build_query_params(
         request.query_params,
         STUDENT_QUERY_PARAMS
@@ -21,7 +22,7 @@ async def verify_student(request: Request):
         + ["auth_group", "auth_group_id", "otp", "session_id"],
     )
 
-    return await verify_student_comprehensive(query_params)
+    return verify_student_comprehensive(query_params)
 
 
 @router.post("/complete-profile-details")
@@ -34,7 +35,7 @@ async def complete_profile_details(
         data.pop("student_id", None)
         data["user_id"] = session_user_id(session)
         data["auth_group"] = session.get("group")
-        return await complete_profile_details_service(data)
+        return await run_in_threadpool(complete_profile_details_service, data)
     except HTTPException:
         raise
     except Exception as e:

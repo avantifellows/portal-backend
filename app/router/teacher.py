@@ -9,11 +9,11 @@ logger = get_logger()
 
 
 @router.get("/verify")
-async def verify_teacher(request: Request, teacher_id: str):
+def verify_teacher(request: Request, teacher_id: str):
     """Verify teacher"""
     query_params = validate_and_build_query_params(
         request.query_params,
         TEACHER_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group", "auth_group_id"],
     )
 
-    return await verify_teacher_comprehensive(teacher_id, query_params)
+    return verify_teacher_comprehensive(teacher_id, query_params)

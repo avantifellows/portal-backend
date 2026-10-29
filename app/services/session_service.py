@@ -15,7 +15,7 @@ def get_session_by_id(session_id: str) -> Optional[Dict[str, Any]]:
     return get_session(session_id=session_id)
 
 
-async def get_session(**params) -> Optional[Dict[str, Any]]:
+def get_session(**params) -> Optional[Dict[str, Any]]:
     """Get session with flexible parameters."""
     # Filter out None values and validate against allowed params
     query_params = {

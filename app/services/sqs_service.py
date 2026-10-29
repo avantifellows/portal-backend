@@ -17,7 +17,7 @@ class SQSService:
         )
         self.queue_url = settings.AWS_SQS_URL
 
-    async def send_message(self, message: AttendanceMessageSchema) -> Dict[str, Any]:
+    def send_message(self, message: AttendanceMessageSchema) -> Dict[str, Any]:
         try:
             response = self.sqs_client.send_message(
                 QueueUrl=self.queue_url,

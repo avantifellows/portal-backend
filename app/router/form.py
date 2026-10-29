@@ -36,7 +36,7 @@ def get_form_schema(request: Request):
 
 
 @router.get("/student")
-async def get_student_fields(
+def get_student_fields(
     request: Request, session: dict = Depends(require_validated_session)
 ):
     """Missing profile fields for the signed-in student."""

@@ -13,7 +13,7 @@ logger = get_logger()
 
 
 @router.get("/", response_model=SessionResponse)
-async def get_session_occurrence_data(request: Request):
+def get_session_occurrence_data(request: Request):
     """
     This API returns session occurrence details corresponding to the provided session ID, if the ID exists in the database and if the session is open
 

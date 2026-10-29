@@ -12,13 +12,13 @@ logger = get_logger()
 
 
 @router.get("/verify")
-async def verify_school(request: Request, code: str):
+def verify_school(request: Request, code: str):
     """Verify school"""
     query_params = validate_and_build_query_params(
         request.query_params,
         SCHOOL_QUERY_PARAMS + USER_QUERY_PARAMS + ["auth_group", "auth_group_id"],
     )
-    return await verify_school_comprehensive(code, query_params)
+    return verify_school_comprehensive(code, query_params)
 
 
 @router.get("/dependant-mapping/{auth_group}")

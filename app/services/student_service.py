@@ -245,7 +245,7 @@ def select_student_record(
     return records[0]
 
 
-async def verify_student_by_id(student_id: str, **params) -> bool:
+def verify_student_by_id(student_id: str, **params) -> bool:
     """Verify student exists - simplified version for internal use.
 
     Pass `auth_group=<name>` to scope the check to a single auth group; without it the
@@ -306,7 +306,7 @@ def build_student_signup_response(
     }
 
 
-async def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def update_student_data(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Update student record."""
     logger.info("Updating student record")
 
@@ -556,7 +556,7 @@ def _matches_verification_params(
     return True
 
 
-async def _session_login_rule(group: Dict[str, Any], session_id: str):
+def _session_login_rule(group: Dict[str, Any], session_id: str):
     """The login factors a session sets for itself, as a group-shaped rule.
 
     Only honoured when the session belongs to the same auth group being verified,
@@ -564,7 +564,7 @@ async def _session_login_rule(group: Dict[str, Any], session_id: str):
     pick a weaker rule by naming another group's session.
     """
     try:
-        session = await get_session_by_id(session_id) or {}
+        session = get_session_by_id(session_id) or {}
         auth_type = session.get("auth_type") or ""
         if not auth_type:
             return None
@@ -587,7 +587,7 @@ async def _session_login_rule(group: Dict[str, Any], session_id: str):
     return {"input_schema": {"auth_type": auth_type}}
 
 
-async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str, Any]:
+def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str, Any]:
     """Comprehensive student verification with multiple fallback methods.
 
     Returns a payload containing verification status and core identifiers so that
@@ -631,7 +631,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     session_id = query_params.pop("session_id", None)
     rule_group = group
     if session_id:
-        rule_group = await _session_login_rule(group, session_id) or group
+        rule_group = _session_login_rule(group, session_id) or group
     missing = missing_login_fields(rule_group, query_params)
     if missing:
         logger.info(
@@ -729,7 +729,7 @@ async def verify_student_comprehensive(query_params: Dict[str, Any]) -> Dict[str
     }
 
 
-async def complete_profile_details_service(
+def complete_profile_details_service(
     data: Dict[str, Any],
 ) -> Optional[Dict[str, Any]]:
     """Complete profile details - business logic."""
@@ -790,7 +790,7 @@ async def complete_profile_details_service(
             del student_data["student_id"]
         if "user_id" in student_data:
             del student_data["user_id"]
-        result = await update_student_data(student_data)
+        result = update_student_data(student_data)
 
         logger.info("Successfully completed profile details")
         return result
@@ -802,16 +802,10 @@ async def complete_profile_details_service(
         raise HTTPException(status_code=500, detail="Error completing profile details")
 
 
-async def create_student(request_or_data):
+def create_student(data):
     """Create student with full business logic - moved from router."""
 
     try:
-        # Handle both Request objects (from API calls) and direct data (from internal calls)
-        if hasattr(request_or_data, "json"):
-            data = await request_or_data.json()
-        else:
-            data = request_or_data
-
         logger.info(
             f"Creating student with auth_group: {data.get('auth_group', 'unknown')}"
         )
@@ -861,7 +855,7 @@ async def create_student(request_or_data):
             if not student_id:
                 raise HTTPException(status_code=400, detail="Student ID is required")
 
-            if await verify_student_by_id(student_id, auth_group=data["auth_group"]):
+            if verify_student_by_id(student_id, auth_group=data["auth_group"]):
                 student_record = normalize_student_record(
                     get_student_by_id(student_id, auth_group=data["auth_group"])
                 )
@@ -880,7 +874,7 @@ async def create_student(request_or_data):
                         detail="Phone number is required for this auth group",
                     )
                 query_params["student_id"] = phone
-                if await verify_student_by_id(phone, auth_group=data["auth_group"]):
+                if verify_student_by_id(phone, auth_group=data["auth_group"]):
                     student_record = normalize_student_record(
                         get_student_by_id(phone, auth_group=data["auth_group"])
                     )
@@ -991,17 +985,17 @@ async def create_student(request_or_data):
             "batch_registration"
         ):
             batch_id = g12_registration_data["batch_id"]
-            await create_batch_user_record(new_student_data, batch_id)
+            create_batch_user_record(new_student_data, batch_id)
 
         grade_user_data = dict(new_student_data)
         if query_params.get("grade_id"):
             grade_user_data["grade_id"] = query_params["grade_id"]
 
         if grade_user_data.get("grade_id"):
-            await create_grade_user_record(grade_user_data)
+            create_grade_user_record(grade_user_data)
 
         if "school_name" in query_params:
-            await create_school_user_record(
+            create_school_user_record(
                 new_student_data,
                 query_params["school_name"],
                 query_params.get("district"),
@@ -1021,7 +1015,7 @@ async def create_student(request_or_data):
         raise HTTPException(status_code=500, detail="Error creating student")
 
 
-async def patch_student_service(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def patch_student_service(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Update student record - service layer."""
     try:
         logger.info("Updating student record")
