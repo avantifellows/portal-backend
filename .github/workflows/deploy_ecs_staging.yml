@@ -61,12 +61,16 @@ jobs:
           TAG="staging-$(git rev-parse HEAD)"
           IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${TAG}"
           # Tags are immutable, so a re-run of the same commit reuses the image already pushed.
-          if aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
-               --image-ids imageTag="$TAG" > /dev/null 2>&1; then
-            echo "Image $TAG already in ECR, skipping build."
-          else
+          # Only "image not found" means build; any other error (e.g. missing permission) fails.
+          if CHECK=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+               --image-ids imageTag="$TAG" --query 'imageDetails[0].imageDigest' --output text 2>&1); then
+            echo "Image $TAG already in ECR ($CHECK), skipping build."
+          elif grep -q 'ImageNotFoundException' <<< "$CHECK"; then
             docker build -t "$IMAGE" .
             docker push "$IMAGE"
+          else
+            echo "::error::Could not check ECR for $TAG: $CHECK"
+            exit 1
           fi
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
