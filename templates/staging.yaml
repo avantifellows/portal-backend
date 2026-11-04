@@ -47,6 +47,10 @@ Parameters:
     Type: String
     Description: Sashakt admin password used to authenticate external provisioning
 
+Globals:
+  Function:
+    PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/portal-backend-staging-lambda-boundary"
+
 Resources:
   Function:
     Type: AWS::Serverless::Function
