@@ -14,10 +14,12 @@ env:
   ECR_REPOSITORY: portal-backend-staging
   ECS_CLUSTER: portal-backend-staging
   ECS_SERVICE: portal-backend-staging
-  TASK_DEFINITION: portal-backend-staging
   CONTAINER_NAME: portal-backend
   SERVICE_HOST: staging-portal-backend.avantifellows.org
-  ALB_NAME: af-load-balancer
+  # The task definition is read from Terraform state (terraform/ecs.tf is the source of truth).
+  TF_STATE_BUCKET: 111766607077-dbservice-test-terraform-state
+  TF_STATE_KEY: portal-backend/staging/terraform.tfstate
+  SECRET_ARN_PREFIX: arn:aws:secretsmanager:ap-south-1:111766607077:secret:portal-backend/staging/app-
 
 concurrency:
   group: deploy-ecs-staging
@@ -32,6 +34,7 @@ jobs:
       name: Staging
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - name: Checkout
@@ -42,8 +45,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::111766607077:role/portal-backend-ecs-staging-deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -56,22 +58,82 @@ jobs:
           ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
         run: |
           set -euo pipefail
-          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:staging-$(git rev-parse HEAD)"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
+          TAG="staging-$(git rev-parse HEAD)"
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${TAG}"
+          # Tags are immutable, so a re-run of the same commit reuses the image already pushed.
+          # Only "image not found" means build; any other error (e.g. missing permission) fails.
+          if CHECK=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+               --image-ids imageTag="$TAG" --query 'imageDetails[0].imageDigest' --output text 2>&1); then
+            echo "Image $TAG already in ECR ($CHECK), skipping build."
+          elif grep -q 'ImageNotFoundException' <<< "$CHECK"; then
+            docker build -t "$IMAGE" .
+            docker push "$IMAGE"
+          else
+            echo "::error::Could not check ECR for $TAG: $CHECK"
+            exit 1
+          fi
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Download current task definition
+      # No describe-task-definition: that permission can't be scoped and would expose every
+      # service's task definition. Nothing from the state file or task definition is printed.
+      - name: Read task definition from Terraform state
+        id: taskdef
         run: |
-          aws ecs describe-task-definition \
-            --task-definition "$TASK_DEFINITION" \
-            --query 'taskDefinition' > task-definition.json
+          set -euo pipefail
+          STATE="$RUNNER_TEMP/tfstate.json"
+          OUT="$RUNNER_TEMP/task-definition.json"
+          aws s3 cp "s3://${TF_STATE_BUCKET}/${TF_STATE_KEY}" "$STATE" --only-show-errors
+
+          if ! jq -e '
+              [.resources[] | select(.mode == "managed" and .type == "aws_ecs_task_definition" and .name == "this") | .instances[]]
+              | if length == 1 then .[0].attributes else error("count") end
+              | {
+                  family,
+                  containerDefinitions: (.container_definitions | fromjson),
+                  cpu,
+                  memory,
+                  networkMode: .network_mode,
+                  requiresCompatibilities: .requires_compatibilities,
+                  executionRoleArn: .execution_role_arn
+                }
+              | if ([.family, .cpu, .memory, .networkMode, .executionRoleArn] | all(. != null and . != ""))
+                   and (.containerDefinitions | length == 1)
+                then . else error("fields") end
+            ' "$STATE" > "$OUT" 2> /dev/null; then
+            rm -f "$STATE" "$OUT"
+            echo "::error::Could not read exactly one complete aws_ecs_task_definition.this from Terraform state. Is an apply running or did one fail?"
+            exit 1
+          fi
+
+          # Values must come only from Secrets Manager, never plain-text env.
+          if ! jq -e '[.containerDefinitions[0].environment[]?.name] - ["WEB_CONCURRENCY", "AWS_DEFAULT_REGION"] | length == 0' \
+               "$OUT" > /dev/null 2>&1; then
+            rm -f "$STATE" "$OUT"
+            echo "::error::The task definition in state has plain-text env vars besides WEB_CONCURRENCY/AWS_DEFAULT_REGION. Move them to the Secrets Manager secret (see terraform/README.md)."
+            exit 1
+          fi
+          if ! jq -e --arg p "$SECRET_ARN_PREFIX" \
+               '[.containerDefinitions[0].secrets[]?.valueFrom] | length > 0 and all(startswith($p))' \
+               "$OUT" > /dev/null 2>&1; then
+            rm -f "$STATE" "$OUT"
+            echo "::error::The task definition in state has no secrets, or secrets outside portal-backend/staging/app."
+            exit 1
+          fi
+
+          ALB_DNS=$(jq -er '.outputs.alb_dns_name.value' "$STATE" 2> /dev/null) || {
+            rm -f "$STATE" "$OUT"
+            echo "::error::alb_dns_name output missing from Terraform state."
+            exit 1
+          }
+          rm -f "$STATE"
+          echo "file=$OUT" >> "$GITHUB_OUTPUT"
+          echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
 
       - name: Render new task definition
         id: render
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition.json
+          task-definition: ${{ steps.taskdef.outputs.file }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build.outputs.image }}
 
@@ -106,8 +168,7 @@ jobs:
         if: steps.register.outputs.desired != '0'
         run: |
           set -euo pipefail
-          ALB_DNS=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" \
-            --query 'LoadBalancers[0].DNSName' --output text)
+          ALB_DNS="${{ steps.taskdef.outputs.alb_dns }}"
           ALB_IP=$(getent hosts "$ALB_DNS" | awk '{print $1; exit}')
           for i in 1 2 3 4 5 6; do
             CODE=$(curl -sk -o /dev/null -w "%{http_code}" \

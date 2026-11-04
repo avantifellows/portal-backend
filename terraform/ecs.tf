@@ -29,18 +29,10 @@ resource "aws_ecs_task_definition" "this" {
       environment = [
         { name = "WEB_CONCURRENCY", value = var.web_concurrency },
         { name = "AWS_DEFAULT_REGION", value = var.aws_region },
-        { name = "JWT_SECRET_KEY", value = var.jwt_secret_key },
-        { name = "DB_SERVICE_URL", value = var.db_service_url },
-        { name = "DB_SERVICE_TOKEN", value = var.db_service_token },
-        { name = "SQS_ACCESS_KEY", value = var.sqs_access_key },
-        { name = "SQS_SECRET_ACCESS_KEY", value = var.sqs_secret_access_key },
-        { name = "AWS_SQS_URL", value = var.aws_sqs_url },
-        { name = "OTP_SERVICE_URL", value = var.otp_service_url },
-        { name = "SASHAKT_API_URL", value = var.sashakt_api_url },
-        { name = "SASHAKT_WEBAPP_URL", value = var.sashakt_webapp_url },
-        { name = "SASHAKT_ADMIN_EMAIL", value = var.sashakt_admin_email },
-        { name = "SASHAKT_ADMIN_PASSWORD", value = var.sashakt_admin_password },
       ]
+
+      # Read from Secrets Manager when each task starts; the task definition holds only references.
+      secrets = [for k in local.secret_keys : { name = k, valueFrom = "${aws_secretsmanager_secret.app.arn}:${k}::" }]
 
       logConfiguration = {
         logDriver = "awslogs"

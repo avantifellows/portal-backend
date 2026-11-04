@@ -42,7 +42,7 @@ Most of this can be copied for portal-backend with names changed.
 ## What's different for portal-backend
 
 1. **Connection pool to db-service.** The point of the move. One shared `requests.Session`/`httpx.Client` per worker, with timeouts. (Also in `signin-fewer-dbservice-calls.md`.)
-2. **Env vars.** Today they come from GitHub secrets into the SAM template: `JWT_SECRET_KEY`, `DB_SERVICE_URL`, `DB_SERVICE_TOKEN`, `SQS_ACCESS_KEY`, `SQS_SECRET_ACCESS_KEY`, `AWS_SQS_URL`, `OTP_SERVICE_URL`, and the Sashakt ones added with the Sashakt launch (`SASHAKT_API_URL`, `SASHAKT_WEBAPP_URL`, `SASHAKT_ADMIN_EMAIL`, `SASHAKT_ADMIN_PASSWORD`). They move into the ECS task definition. Most are per-environment secrets (Staging / Production); the SQS ones are repo-level. The current list is always the `Environment.Variables` block in `templates/prod.yaml`.
+2. **Env vars.** Today they come from GitHub secrets into the SAM template: `JWT_SECRET_KEY`, `DB_SERVICE_URL`, `DB_SERVICE_TOKEN`, `SQS_ACCESS_KEY`, `SQS_SECRET_ACCESS_KEY`, `AWS_SQS_URL`, `OTP_SERVICE_URL`, and the Sashakt ones added with the Sashakt launch (`SASHAKT_API_URL`, `SASHAKT_WEBAPP_URL`, `SASHAKT_ADMIN_EMAIL`, `SASHAKT_ADMIN_PASSWORD`). On ECS they live in one Secrets Manager secret, `portal-backend/<env>/app`, which the task definition references (see `terraform/README.md`). Most are per-environment secrets (Staging / Production); the SQS ones are repo-level. The current list is always the `Environment.Variables` block in `templates/prod.yaml`.
 3. **The URL. This is the real work.** portal-backend is reached through the raw API Gateway URL, hard-coded or configured in:
    - portal-frontend: `VITE_APP_PORTAL_BACKEND` in both deploy workflows
    - gurukul: `NEXT_PUBLIC_AF_PORTAL_BACKEND_URL`
